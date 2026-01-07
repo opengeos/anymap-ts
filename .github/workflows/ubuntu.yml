@@ -42,10 +42,9 @@ jobs:
                   uv venv --python ${{ matrix.python-version }}
                   uv pip install .
 
-            # - name: Install optional dependencies
-            #   run: |
-            #       # uv pip install --find-links https://girder.github.io/large_image_wheels gdal pyproj
-            #       uv pip install pytest
+            - name: Install test dependencies
+              run: |
+                  uv pip install pytest pytest-cov
 
             - name: Test import
               run: |
