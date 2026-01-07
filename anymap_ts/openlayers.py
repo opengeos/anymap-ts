@@ -469,7 +469,9 @@ class OpenLayersMap(MapWidget):
             zoom: Target zoom level (optional).
             duration: Animation duration in milliseconds.
         """
-        self.call_js_method("flyTo", lng, lat, zoom=zoom or self.zoom, duration=duration)
+        self.call_js_method(
+            "flyTo", lng, lat, zoom=zoom or self.zoom, duration=duration
+        )
 
     def fit_bounds(
         self,

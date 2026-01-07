@@ -332,7 +332,9 @@ class MapboxMap(MapWidget):
     # Terrain Methods (Mapbox-specific)
     # -------------------------------------------------------------------------
 
-    def add_terrain(self, exaggeration: float = 1.0, source: str = "mapbox-dem") -> None:
+    def add_terrain(
+        self, exaggeration: float = 1.0, source: str = "mapbox-dem"
+    ) -> None:
         """Add 3D terrain to the map.
 
         Args:
@@ -475,7 +477,9 @@ class MapboxMap(MapWidget):
             popup: HTML content for popup.
             marker_id: Unique marker ID.
         """
-        self.call_js_method("addMarker", lng, lat, color=color, popup=popup, id=marker_id)
+        self.call_js_method(
+            "addMarker", lng, lat, color=color, popup=popup, id=marker_id
+        )
 
     def remove_marker(self, marker_id: str) -> None:
         """Remove a marker from the map.
