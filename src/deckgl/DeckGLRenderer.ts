@@ -7,10 +7,27 @@ import { MapboxOverlay } from '@deck.gl/mapbox';
 import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer } from '@deck.gl/layers';
 import { HexagonLayer, HeatmapLayer, GridLayer, ContourLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
 import { GeoJsonLayer } from '@deck.gl/layers';
+import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
+import { toProj4 } from 'geotiff-geokeys-to-proj4';
 
 import { MapLibreRenderer } from '../maplibre/MapLibreRenderer';
 import type { MapWidgetModel } from '../types/anywidget';
-import type { DeckGLLayerConfig } from '../types/deckgl';
+import type { DeckGLLayerConfig, COGLayerProps } from '../types/deckgl';
+
+/**
+ * Parse GeoKeys to proj4 definition for COG reprojection.
+ */
+async function geoKeysParser(
+  geoKeys: Record<string, unknown>,
+): Promise<proj.ProjectionInfo> {
+  const projDefinition = toProj4(geoKeys as Parameters<typeof toProj4>[0]);
+
+  return {
+    def: projDefinition.proj4,
+    parsed: proj.parseCrs(projDefinition.proj4),
+    coordinatesUnits: projDefinition.coordinatesUnits as proj.SupportedCrsUnit,
+  };
+}
 
 /**
  * DeckGL map renderer extending MapLibre.
@@ -56,6 +73,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.registerMethod('addGeoJsonLayer', this.handleAddGeoJsonLayer.bind(this));
     this.registerMethod('addContourLayer', this.handleAddContourLayer.bind(this));
     this.registerMethod('addScreenGridLayer', this.handleAddScreenGridLayer.bind(this));
+    this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
 
     // Layer management
     this.registerMethod('removeDeckLayer', this.handleRemoveDeckLayer.bind(this));
@@ -363,6 +381,40 @@ export class DeckGLRenderer extends MapLibreRenderer {
       ],
     });
 
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string || `cog-${Date.now()}`;
+    const geotiff = kwargs.geotiff as string;
+    const fitBounds = kwargs.fitBounds !== false;
+
+    const layer = new COGLayer({
+      id,
+      geotiff,
+      opacity: kwargs.opacity as number ?? 1,
+      visible: kwargs.visible !== false,
+      debug: kwargs.debug as boolean ?? false,
+      debugOpacity: kwargs.debugOpacity as number ?? 0.25,
+      maxError: kwargs.maxError as number ?? 0.125,
+      beforeId: kwargs.beforeId as string | undefined,
+      geoKeysParser,
+      onGeoTIFFLoad: (tiff: unknown, options: { geographicBounds: { west: number; south: number; east: number; north: number } }) => {
+        if (fitBounds && this.map) {
+          const { west, south, east, north } = options.geographicBounds;
+          this.map.fitBounds(
+            [[west, south], [east, north]],
+            { padding: 40, duration: 1000 }
+          );
+        }
+      },
+    });
+
+    // Ensure the deck.gl overlay is initialized before adding the layer.
+    if (!this.deckOverlay) {
+      this.initializeDeckOverlay();
+    }
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }

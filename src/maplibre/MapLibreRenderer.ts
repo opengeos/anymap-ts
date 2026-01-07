@@ -13,6 +13,9 @@ import maplibregl, {
   Popup,
   GlobeControl,
 } from 'maplibre-gl';
+import { MapboxOverlay } from '@deck.gl/mapbox';
+import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
+import { toProj4 } from 'geotiff-geokeys-to-proj4';
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
 import { StateManager } from '../core/StateManager';
 import type { MapWidgetModel } from '../types/anywidget';
@@ -31,6 +34,21 @@ import { GeoEditorPlugin } from './plugins/GeoEditorPlugin';
 import { LayerControlPlugin } from './plugins/LayerControlPlugin';
 
 /**
+ * Parse GeoKeys to proj4 definition for COG reprojection.
+ */
+async function geoKeysParser(
+  geoKeys: Record<string, unknown>,
+): Promise<proj.ProjectionInfo> {
+  const projDefinition = toProj4(geoKeys as Parameters<typeof toProj4>[0]);
+
+  return {
+    def: projDefinition.proj4,
+    parsed: proj.parseCrs(projDefinition.proj4),
+    coordinatesUnits: projDefinition.coordinatesUnits as proj.SupportedCrsUnit,
+  };
+}
+
+/**
  * MapLibre GL JS map renderer.
  */
 export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
@@ -41,6 +59,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private geoEditorPlugin: GeoEditorPlugin | null = null;
   private layerControlPlugin: LayerControlPlugin | null = null;
   private resizeObserver: ResizeObserver | null = null;
+
+  // Deck.gl overlay for COG layers
+  protected deckOverlay: MapboxOverlay | null = null;
+  protected deckLayers: globalThis.Map<string, unknown> = new globalThis.Map();
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -225,6 +247,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // Markers and popups
     this.registerMethod('addMarker', this.handleAddMarker.bind(this));
     this.registerMethod('removeMarker', this.handleRemoveMarker.bind(this));
+
+    // COG layers (deck.gl)
+    this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
+    this.registerMethod('removeCOGLayer', this.handleRemoveCOGLayer.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -762,6 +788,73 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   }
 
   // -------------------------------------------------------------------------
+  // COG layer handlers (deck.gl)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Initialize deck.gl overlay if not already created.
+   */
+  protected initializeDeckOverlay(): void {
+    if (this.deckOverlay || !this.map) return;
+
+    this.deckOverlay = new MapboxOverlay({
+      layers: [],
+    });
+    this.map.addControl(this.deckOverlay as unknown as maplibregl.IControl);
+  }
+
+  /**
+   * Update deck.gl overlay with current layers.
+   */
+  protected updateDeckOverlay(): void {
+    if (this.deckOverlay) {
+      const layers = Array.from(this.deckLayers.values());
+      this.deckOverlay.setProps({ layers });
+    }
+  }
+
+  private handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    // Initialize deck.gl overlay if needed
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `cog-${Date.now()}`;
+    const geotiff = kwargs.geotiff as string;
+    const fitBounds = kwargs.fitBounds !== false;
+
+    const layer = new COGLayer({
+      id,
+      geotiff,
+      opacity: kwargs.opacity as number ?? 1,
+      visible: kwargs.visible !== false,
+      debug: kwargs.debug as boolean ?? false,
+      debugOpacity: kwargs.debugOpacity as number ?? 0.25,
+      maxError: kwargs.maxError as number ?? 0.125,
+      beforeId: kwargs.beforeId as string | undefined,
+      geoKeysParser,
+      onGeoTIFFLoad: (tiff: unknown, options: { geographicBounds: { west: number; south: number; east: number; north: number } }) => {
+        if (fitBounds && this.map) {
+          const { west, south, east, north } = options.geographicBounds;
+          this.map.fitBounds(
+            [[west, south], [east, north]],
+            { padding: 40, duration: 1000 }
+          );
+        }
+      },
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleRemoveCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    this.deckLayers.delete(id);
+    this.updateDeckOverlay();
+  }
+
+  // -------------------------------------------------------------------------
   // Trait change handlers
   // -------------------------------------------------------------------------
 
@@ -809,6 +902,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.layerControlPlugin.destroy();
       this.layerControlPlugin = null;
     }
+
+    // Remove deck.gl overlay
+    if (this.deckOverlay && this.map) {
+      this.map.removeControl(this.deckOverlay as unknown as maplibregl.IControl);
+      this.deckOverlay = null;
+    }
+    this.deckLayers.clear();
 
     // Remove markers
     this.markersMap.forEach((marker) => marker.remove());

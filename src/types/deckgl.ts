@@ -118,6 +118,18 @@ export interface TextLayerProps {
   pickable?: boolean;
 }
 
+export interface COGLayerProps {
+  id: string;
+  geotiff: string;
+  opacity?: number;
+  visible?: boolean;
+  debug?: boolean;
+  debugOpacity?: number;
+  maxError?: number;
+  beforeId?: string;
+  fitBounds?: boolean;
+}
+
 /**
  * Convert color from various formats to [r, g, b, a].
  */
