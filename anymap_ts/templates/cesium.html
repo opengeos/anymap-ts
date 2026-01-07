@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Cesium -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        #cesiumContainer { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <script>
+        // Map state from Python
+        const state = {{state}};
+
+        // Set Ion access token
+        if (state.access_token) {
+            Cesium.Ion.defaultAccessToken = state.access_token;
+        }
+
+        // Track layers
+        const imageryLayers = {};
+        const tilesets = {};
+        const dataSources = {};
+
+        // Calculate camera height from zoom
+        function zoomToHeight(zoom) {
+            return 40000000 / Math.pow(2, zoom);
+        }
+
+        // Create viewer
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            baseLayerPicker: false,
+            geocoder: false,
+            homeButton: false,
+            sceneModePicker: false,
+            navigationHelpButton: false,
+            animation: false,
+            timeline: false,
+            fullscreenButton: false,
+            vrButton: false,
+            selectionIndicator: false,
+            infoBox: false
+        });
+
+        // Set initial camera
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(
+                state.center[0],
+                state.center[1],
+                zoomToHeight(state.zoom)
+            )
+        });
+
+        // Replay JS calls
+        for (const call of state.js_calls || []) {
+            try {
+                executeMethod(call.method, call.args, call.kwargs);
+            } catch (e) {
+                console.error('Error executing', call.method, e);
+            }
+        }
+
+        async function executeMethod(method, args, kwargs) {
+            switch (method) {
+                case 'addBasemap': {
+                    const url = args[0];
+                    const name = kwargs.name || 'basemap';
+                    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+                        url: url
+                    });
+                    const layer = viewer.imageryLayers.addImageryProvider(imageryProvider);
+                    imageryLayers[name] = layer;
+                    break;
+                }
+
+                case 'addImageryLayer': {
+                    const url = kwargs.url;
+                    const name = kwargs.name || 'imagery';
+                    let imageryProvider;
+
+                    if (kwargs.type === 'wms') {
+                        imageryProvider = new Cesium.WebMapServiceImageryProvider({
+                            url: url,
+                            layers: kwargs.layers,
+                            parameters: kwargs.parameters || {}
+                        });
+                    } else if (kwargs.type === 'arcgis') {
+                        imageryProvider = new Cesium.ArcGisMapServerImageryProvider({
+                            url: url
+                        });
+                    } else {
+                        imageryProvider = new Cesium.UrlTemplateImageryProvider({
+                            url: url
+                        });
+                    }
+
+                    const layer = viewer.imageryLayers.addImageryProvider(imageryProvider);
+                    layer.alpha = kwargs.alpha || 1;
+                    imageryLayers[name] = layer;
+                    break;
+                }
+
+                case 'setTerrain': {
+                    if (kwargs.url === 'cesium-world-terrain' || !kwargs.url) {
+                        viewer.scene.setTerrain(
+                            Cesium.Terrain.fromWorldTerrain({
+                                requestVertexNormals: kwargs.requestVertexNormals !== false,
+                                requestWaterMask: kwargs.requestWaterMask !== false
+                            })
+                        );
+                    } else {
+                        const terrainProvider = await Cesium.CesiumTerrainProvider.fromUrl(kwargs.url, {
+                            requestVertexNormals: kwargs.requestVertexNormals !== false,
+                            requestWaterMask: kwargs.requestWaterMask !== false
+                        });
+                        viewer.terrainProvider = terrainProvider;
+                    }
+                    break;
+                }
+
+                case 'removeTerrain': {
+                    viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+                    break;
+                }
+
+                case 'add3DTileset': {
+                    const url = kwargs.url;
+                    const name = kwargs.name || 'tileset';
+                    let tileset;
+
+                    if (/^\d+$/.test(url)) {
+                        tileset = await Cesium.Cesium3DTileset.fromIonAssetId(parseInt(url), {
+                            maximumScreenSpaceError: kwargs.maximumScreenSpaceError || 16
+                        });
+                    } else {
+                        tileset = await Cesium.Cesium3DTileset.fromUrl(url, {
+                            maximumScreenSpaceError: kwargs.maximumScreenSpaceError || 16
+                        });
+                    }
+
+                    viewer.scene.primitives.add(tileset);
+                    tilesets[name] = tileset;
+
+                    if (kwargs.flyTo !== false) {
+                        viewer.zoomTo(tileset);
+                    }
+                    break;
+                }
+
+                case 'addGeoJSON': {
+                    const data = kwargs.data;
+                    const name = kwargs.name || 'geojson';
+
+                    const dataSource = await Cesium.GeoJsonDataSource.load(data, {
+                        stroke: Cesium.Color.fromCssColorString(kwargs.stroke || '#3388ff'),
+                        strokeWidth: kwargs.strokeWidth || 2,
+                        fill: Cesium.Color.fromCssColorString(kwargs.fill || 'rgba(51, 136, 255, 0.5)'),
+                        clampToGround: kwargs.clampToGround !== false
+                    });
+
+                    await viewer.dataSources.add(dataSource);
+                    dataSources[name] = dataSource;
+
+                    if (kwargs.flyTo !== false) {
+                        viewer.zoomTo(dataSource);
+                    }
+                    break;
+                }
+
+                case 'flyTo': {
+                    const [lng, lat] = args;
+                    const height = kwargs.height || zoomToHeight(kwargs.zoom || 10);
+                    viewer.camera.flyTo({
+                        destination: Cesium.Cartesian3.fromDegrees(lng, lat, height),
+                        orientation: {
+                            heading: Cesium.Math.toRadians(kwargs.heading || 0),
+                            pitch: Cesium.Math.toRadians(kwargs.pitch || -90),
+                            roll: Cesium.Math.toRadians(kwargs.roll || 0)
+                        },
+                        duration: kwargs.duration || 2
+                    });
+                    break;
+                }
+
+                case 'setCamera': {
+                    viewer.camera.setView({
+                        destination: Cesium.Cartesian3.fromDegrees(
+                            kwargs.longitude || 0,
+                            kwargs.latitude || 0,
+                            kwargs.height || 10000000
+                        ),
+                        orientation: {
+                            heading: Cesium.Math.toRadians(kwargs.heading || 0),
+                            pitch: Cesium.Math.toRadians(kwargs.pitch || -90),
+                            roll: Cesium.Math.toRadians(kwargs.roll || 0)
+                        }
+                    });
+                    break;
+                }
+
+                case 'resetView': {
+                    viewer.camera.flyHome(kwargs.duration || 2);
+                    break;
+                }
+
+                case 'setVisibility': {
+                    const [name, visible] = args;
+                    if (imageryLayers[name]) {
+                        imageryLayers[name].show = visible;
+                    } else if (tilesets[name]) {
+                        tilesets[name].show = visible;
+                    } else if (dataSources[name]) {
+                        dataSources[name].show = visible;
+                    }
+                    break;
+                }
+
+                case 'setOpacity': {
+                    const [name, opacity] = args;
+                    if (imageryLayers[name]) {
+                        imageryLayers[name].alpha = opacity;
+                    }
+                    break;
+                }
+
+                case 'removeImageryLayer': {
+                    const [name] = args;
+                    if (imageryLayers[name]) {
+                        viewer.imageryLayers.remove(imageryLayers[name]);
+                        delete imageryLayers[name];
+                    }
+                    break;
+                }
+
+                case 'remove3DTileset': {
+                    const [name] = args;
+                    if (tilesets[name]) {
+                        viewer.scene.primitives.remove(tilesets[name]);
+                        delete tilesets[name];
+                    }
+                    break;
+                }
+
+                case 'removeDataSource': {
+                    const [name] = args;
+                    if (dataSources[name]) {
+                        viewer.dataSources.remove(dataSources[name]);
+                        delete dataSources[name];
+                    }
+                    break;
+                }
+
+                default:
+                    console.log('Unknown method:', method);
+            }
+        }
+    </script>
+</body>
+</html>

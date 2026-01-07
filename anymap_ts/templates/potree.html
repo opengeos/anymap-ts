@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Potree -->
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/jquery/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/spectrum/spectrum.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/jquery-ui/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/three.js/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/other/BinaryHeap.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/tween/tween.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/d3/d3.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/proj4/proj4.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/openlayers3/ol.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/i18next/i18next.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/jstree/jstree.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/potree/potree@1.8/build/potree/potree.js"></script>
+    <link href="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/spectrum/spectrum.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/jquery-ui/jquery-ui.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/openlayers3/ol.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/gh/potree/potree@1.8/libs/jstree/themes/mixed/style.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/gh/potree/potree@1.8/build/potree/potree.css" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; background: #000; }
+        #potree_render_area { position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
+    </style>
+</head>
+<body>
+    <div id="potree_render_area"></div>
+    <script>
+        // Viewer state from Python
+        const state = {{state}};
+
+        // Track loaded point clouds
+        const pointClouds = {};
+
+        // Initialize Potree viewer
+        const viewer = new Potree.Viewer(document.getElementById('potree_render_area'));
+
+        // Configure viewer
+        viewer.setEDLEnabled(state.edl_enabled);
+        viewer.setEDLRadius(state.edl_radius);
+        viewer.setEDLStrength(state.edl_strength);
+        viewer.setPointBudget(state.point_budget);
+        viewer.setFOV(state.fov);
+        viewer.setBackground(state.background);
+
+        // Set initial camera
+        if (state.camera_position && state.camera_target) {
+            viewer.scene.view.position.set(
+                state.camera_position[0],
+                state.camera_position[1],
+                state.camera_position[2]
+            );
+            viewer.scene.view.lookAt(
+                new THREE.Vector3(
+                    state.camera_target[0],
+                    state.camera_target[1],
+                    state.camera_target[2]
+                )
+            );
+        }
+
+        // Load point clouds from state
+        Object.entries(state.point_clouds || {}).forEach(([name, config]) => {
+            loadPointCloud(config.url, name, config.material, config.visible);
+        });
+
+        // Replay JS calls
+        for (const call of state.js_calls || []) {
+            try {
+                executeMethod(call.method, call.args, call.kwargs);
+            } catch (e) {
+                console.error('Error executing', call.method, e);
+            }
+        }
+
+        async function loadPointCloud(url, name, material, visible) {
+            try {
+                const pointCloud = await Potree.loadPointCloud(url, name);
+                viewer.scene.addPointCloud(pointCloud);
+                pointClouds[name] = pointCloud;
+
+                // Apply material settings
+                if (material) {
+                    const mat = pointCloud.pointcloud.material;
+                    if (material.size !== undefined) mat.size = material.size;
+                    if (material.pointSizeType) {
+                        const types = { fixed: 0, attenuated: 1, adaptive: 2 };
+                        mat.pointSizeType = types[material.pointSizeType] || 2;
+                    }
+                    if (material.shape) {
+                        const shapes = { square: 0, circle: 1, paraboloid: 2 };
+                        mat.shape = shapes[material.shape] || 1;
+                    }
+                    if (material.color) {
+                        mat.color = new THREE.Color(material.color);
+                    }
+                }
+
+                pointCloud.visible = visible !== false;
+
+                // Fit camera to point cloud
+                viewer.fitToScreen();
+            } catch (error) {
+                console.error('Error loading point cloud:', error);
+            }
+        }
+
+        function executeMethod(method, args, kwargs) {
+            switch (method) {
+                case 'loadPointCloud': {
+                    loadPointCloud(kwargs.url, kwargs.name, kwargs.material, kwargs.visible);
+                    break;
+                }
+
+                case 'removePointCloud': {
+                    const pc = pointClouds[kwargs.name];
+                    if (pc) {
+                        viewer.scene.removePointCloud(pc);
+                        delete pointClouds[kwargs.name];
+                    }
+                    break;
+                }
+
+                case 'setPointCloudVisibility': {
+                    const pc = pointClouds[kwargs.name];
+                    if (pc) {
+                        pc.visible = kwargs.visible;
+                    }
+                    break;
+                }
+
+                case 'setCameraPosition': {
+                    viewer.scene.view.position.set(kwargs.x, kwargs.y, kwargs.z);
+                    break;
+                }
+
+                case 'setCameraTarget': {
+                    viewer.scene.view.lookAt(new THREE.Vector3(kwargs.x, kwargs.y, kwargs.z));
+                    break;
+                }
+
+                case 'flyToPointCloud': {
+                    if (kwargs.name) {
+                        const pc = pointClouds[kwargs.name];
+                        if (pc) {
+                            viewer.zoomTo(pc, 1);
+                        }
+                    } else {
+                        viewer.fitToScreen();
+                    }
+                    break;
+                }
+
+                case 'resetCamera': {
+                    viewer.fitToScreen();
+                    break;
+                }
+
+                case 'setPointBudget': {
+                    viewer.setPointBudget(kwargs.budget);
+                    break;
+                }
+
+                case 'setPointSize': {
+                    Object.values(pointClouds).forEach(pc => {
+                        pc.pointcloud.material.size = kwargs.size;
+                    });
+                    break;
+                }
+
+                case 'setFOV': {
+                    viewer.setFOV(kwargs.fov);
+                    break;
+                }
+
+                case 'setBackground': {
+                    viewer.setBackground(kwargs.color);
+                    break;
+                }
+
+                case 'setEDL': {
+                    viewer.setEDLEnabled(kwargs.enabled);
+                    viewer.setEDLRadius(kwargs.radius);
+                    viewer.setEDLStrength(kwargs.strength);
+                    break;
+                }
+
+                case 'addMeasurementTool': {
+                    const tools = {
+                        point: viewer.measuringTool.startInsertion({ showDistances: false }),
+                        distance: viewer.measuringTool.startInsertion({ showDistances: true }),
+                        area: viewer.measuringTool.startInsertion({ showArea: true, closed: true }),
+                        angle: viewer.measuringTool.startInsertion({ showAngles: true }),
+                        height: viewer.heightTool.startInsertion(),
+                        profile: viewer.profileTool.startInsertion()
+                    };
+                    break;
+                }
+
+                case 'clearMeasurements': {
+                    viewer.scene.measurements.forEach(m => viewer.scene.removeMeasurement(m));
+                    break;
+                }
+
+                case 'addClippingVolume': {
+                    let volume;
+                    if (kwargs.type === 'box') {
+                        volume = new Potree.BoxVolume();
+                    } else if (kwargs.type === 'polygon') {
+                        volume = new Potree.PolygonClipVolume();
+                    }
+                    if (volume) {
+                        if (kwargs.position) {
+                            volume.position.set(kwargs.position[0], kwargs.position[1], kwargs.position[2]);
+                        }
+                        if (kwargs.scale) {
+                            volume.scale.set(kwargs.scale[0], kwargs.scale[1], kwargs.scale[2]);
+                        }
+                        viewer.scene.addVolume(volume);
+                    }
+                    break;
+                }
+
+                case 'clearClippingVolumes': {
+                    viewer.scene.volumes.forEach(v => viewer.scene.removeVolume(v));
+                    break;
+                }
+
+                case 'addAnnotation': {
+                    const annotation = new Potree.Annotation({
+                        position: kwargs.position,
+                        title: kwargs.title,
+                        description: kwargs.description || '',
+                        cameraPosition: kwargs.cameraPosition,
+                        cameraTarget: kwargs.cameraTarget
+                    });
+                    viewer.scene.annotations.add(annotation);
+                    break;
+                }
+
+                case 'clearAnnotations': {
+                    viewer.scene.annotations.children.forEach(a => viewer.scene.annotations.remove(a));
+                    break;
+                }
+
+                default:
+                    console.log('Unknown method:', method);
+            }
+        }
+    </script>
+</body>
+</html>

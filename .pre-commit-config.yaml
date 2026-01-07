@@ -22,7 +22,7 @@ repos:
           - id: codespell
             args:
                 [
-                    "--ignore-words-list=aci,acount,acounts,fallow,ges,hart,hist,nd,ned,ois,wqs,watermask,tre,mape",
+                    "--ignore-words-list=aci,acount,acounts,fallow,ges,hart,hist,nd,ned,ois,wqs,watermask,tre,mape,lod",
                     "--skip=*.csv,*.geojson,*.json,*.yml,*.map,*.mjs,*.cjs, *.js,*.min.js,*.bundle.js,*.html,*cff,*.pdf",
                 ]
 
