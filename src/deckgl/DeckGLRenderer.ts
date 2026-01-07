@@ -411,6 +411,10 @@ export class DeckGLRenderer extends MapLibreRenderer {
       },
     });
 
+    // Ensure the deck.gl overlay is initialized before adding the layer.
+    if (!this.deckOverlay) {
+      this.initializeDeckOverlay();
+    }
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
