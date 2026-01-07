@@ -4,7 +4,6 @@
  */
 
 import * as Cesium from 'cesium';
-import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 import { BaseMapRenderer } from '../core/BaseMapRenderer';
 import type { MapWidgetModel, JsCallMessage } from '../types/anywidget';

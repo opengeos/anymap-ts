@@ -42,6 +42,9 @@ class OpenLayersMap(MapWidget):
     projection = traitlets.Unicode("EPSG:3857").tag(sync=True)
     rotation = traitlets.Float(0.0).tag(sync=True)
 
+    # Layer tracking
+    _layer_dict = traitlets.Dict({}).tag(sync=True)
+
     def __init__(
         self,
         center: Tuple[float, float] = (0.0, 0.0),
@@ -74,6 +77,9 @@ class OpenLayersMap(MapWidget):
             rotation=rotation,
             **kwargs,
         )
+
+        # Initialize layer dictionary
+        self._layer_dict = {"Background": []}
 
         # Add default controls
         if controls is None:
