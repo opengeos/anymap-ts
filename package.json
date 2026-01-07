@@ -24,7 +24,7 @@
     "clean": "rm -rf anymap_ts/static/*.js anymap_ts/static/*.css anymap_ts/static/*.map"
   },
   "dependencies": {
-    "maplibre-gl": "^5.15.0",
+    "maplibre-gl": "5.14.0",
     "mapbox-gl": "^3.9.0",
     "leaflet": "^1.9.4",
     "@deck.gl/core": "^9.0.0",
