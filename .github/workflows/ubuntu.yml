@@ -1,0 +1,56 @@
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+name: Linux build
+jobs:
+    test-ubuntu:
+        runs-on: ubuntu-latest
+
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ["3.10", "3.11", "3.12"]
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18"
+            - name: Install JS dependencies
+              run: npm install --legacy-peer-deps
+
+            # - name: Install GDAL system dependencies
+            #   run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v6
+              with:
+                  version: "0.4.16"
+                  enable-cache: false
+
+            - name: Set up Python ${{ matrix.python-version }}
+              run: uv python install ${{ matrix.python-version }}
+
+            - name: Install dependencies
+              run: |
+                  uv venv --python ${{ matrix.python-version }}
+                  uv pip install .
+
+            # - name: Install optional dependencies
+            #   run: |
+            #       # uv pip install --find-links https://girder.github.io/large_image_wheels gdal pyproj
+            #       uv pip install pytest
+
+            - name: Test import
+              run: |
+                  uv run python -c "from anymap_ts import Map; print('anymap import successful')"
+
+            - name: Running pytest
+              run: |
+                  uv run pytest . --verbose
