@@ -1,9 +1,23 @@
 /**
  * Leaflet renderer implementation.
  * Note: Leaflet uses [lat, lng] order (opposite of MapLibre/Mapbox).
+ *
+ * Note: We import from the explicit ESM path to avoid conflict with the
+ * src/leaflet directory due to tsconfig baseUrl resolution.
  */
 
-import L, { Map as LeafletMap, TileLayer, Marker, Popup, GeoJSON, Control, LatLngBounds } from 'leaflet';
+// Import all Leaflet exports as namespace L
+// @ts-ignore - Import from explicit ESM path to avoid baseUrl conflict
+import * as L from 'leaflet/dist/leaflet-src.esm.js';
+
+// Re-export types for convenience
+type LeafletMap = L.Map;
+type TileLayer = L.TileLayer;
+type Marker = L.Marker;
+type Popup = L.Popup;
+type GeoJSON = L.GeoJSON;
+type Control = L.Control;
+type LatLngBounds = L.LatLngBounds;
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
 import { StateManager } from '../core/StateManager';
 import type { MapWidgetModel } from '../types/anywidget';

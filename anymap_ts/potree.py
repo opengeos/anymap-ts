@@ -34,6 +34,9 @@ class PotreeViewer(MapWidget):
         >>> viewer
     """
 
+    # ESM module for frontend
+    _esm = STATIC_DIR / "potree.js"
+
     # Potree-specific traits
     point_budget = traitlets.Int(1000000).tag(sync=True)
     point_size = traitlets.Float(1.0).tag(sync=True)

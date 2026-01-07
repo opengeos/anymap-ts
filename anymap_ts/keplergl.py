@@ -41,6 +41,9 @@ class KeplerGLMap(MapWidget):
         >>> m
     """
 
+    # ESM module for frontend
+    _esm = STATIC_DIR / "keplergl.js"
+
     # KeplerGL-specific traits
     config = traitlets.Dict({}).tag(sync=True)
     datasets = traitlets.Dict({}).tag(sync=True)

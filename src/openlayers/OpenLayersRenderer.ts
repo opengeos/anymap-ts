@@ -92,10 +92,16 @@ export class OpenLayersRenderer extends BaseMapRenderer {
     const center = this.model.get('center') as [number, number] || [0, 0];
     const zoom = this.model.get('zoom') as number || 2;
 
-    // Create map container
+    // Set up parent element
+    this.el.style.width = '100%';
+    this.el.style.display = 'block';
+
+    // Create map container with explicit dimensions
     const container = document.createElement('div');
-    container.style.width = '100%';
-    container.style.height = '100%';
+    container.style.width = this.model.get('width') as string || '100%';
+    container.style.height = this.model.get('height') as string || '600px';
+    container.style.position = 'relative';
+    container.style.minWidth = '200px';
     this.el.appendChild(container);
 
     // Create map
