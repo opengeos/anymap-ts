@@ -10,6 +10,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // Import Geoman and GeoEditor CSS
 import '@geoman-io/maplibre-geoman-free/dist/maplibre-geoman.css';
 import 'maplibre-gl-geo-editor/style.css';
+// Import Layer Control CSS
+import 'maplibre-gl-layer-control/style.css';
 
 /**
  * Store renderer reference on element for cleanup and multi-cell support.

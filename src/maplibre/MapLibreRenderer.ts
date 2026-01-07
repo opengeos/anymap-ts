@@ -11,6 +11,7 @@ import maplibregl, {
   AttributionControl,
   Marker,
   Popup,
+  GlobeControl,
 } from 'maplibre-gl';
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
 import { StateManager } from '../core/StateManager';
@@ -618,6 +619,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         control = new AttributionControl({
           compact: kwargs.compact !== false,
         });
+        break;
+      case 'globe':
+        control = new GlobeControl();
         break;
     }
 

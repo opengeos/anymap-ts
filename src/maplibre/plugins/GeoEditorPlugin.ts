@@ -54,33 +54,50 @@ export class GeoEditorPlugin {
       fitBoundsOnLoad = true,
     } = options;
 
+    // Helper to create GeoEditor once Geoman is ready
+    const createGeoEditor = () => {
+      if (this.geoEditor) return; // Already created
+
+      try {
+        // Create GeoEditor with valid options
+        this.geoEditor = new GeoEditor({
+          position,
+          drawModes: drawModes as any[],
+          editModes: editModes as any[],
+          fileModes: fileModes as any[],
+          collapsed,
+          showFeatureProperties,
+          fitBoundsOnLoad,
+          onFeatureCreate: () => this.syncFeatures(),
+          onFeatureEdit: () => this.syncFeatures(),
+          onFeatureDelete: () => this.syncFeatures(),
+          onSelectionChange: () => this.syncFeatures(),
+          onGeoJsonLoad: () => this.syncFeatures(),
+        });
+
+        // Connect Geoman to GeoEditor
+        this.geoEditor.setGeoman(this.geoman!);
+
+        // Add control to map
+        this.map.addControl(this.geoEditor, position);
+      } catch (error) {
+        console.error('Failed to create GeoEditor:', error);
+      }
+    };
+
     // Initialize Geoman first
     this.geoman = new Geoman(this.map, {});
 
-    // Wait for Geoman to be ready
-    this.map.on('gm:loaded', () => {
-      // Create GeoEditor with valid options
-      this.geoEditor = new GeoEditor({
-        position,
-        drawModes: drawModes as any[],
-        editModes: editModes as any[],
-        fileModes: fileModes as any[],
-        collapsed,
-        showFeatureProperties,
-        fitBoundsOnLoad,
-        onFeatureCreate: () => this.syncFeatures(),
-        onFeatureEdit: () => this.syncFeatures(),
-        onFeatureDelete: () => this.syncFeatures(),
-        onSelectionChange: () => this.syncFeatures(),
-        onGeoJsonLoad: () => this.syncFeatures(),
-      });
+    // Listen for gm:loaded event
+    this.map.on('gm:loaded', createGeoEditor);
 
-      // Connect Geoman to GeoEditor
-      this.geoEditor.setGeoman(this.geoman!);
-
-      // Add control to map
-      this.map.addControl(this.geoEditor, position);
-    });
+    // Also set a timeout fallback in case gm:loaded doesn't fire
+    setTimeout(() => {
+      if (!this.geoEditor && this.geoman) {
+        console.warn('gm:loaded event not received, initializing GeoEditor with timeout fallback');
+        createGeoEditor();
+      }
+    }, 1000);
   }
 
   /**

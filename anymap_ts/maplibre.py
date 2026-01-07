@@ -47,7 +47,7 @@ class MapLibreMap(MapWidget):
         center: Tuple[float, float] = (0.0, 0.0),
         zoom: float = 2.0,
         width: str = "100%",
-        height: str = "400px",
+        height: str = "600px",
         style: Union[str, Dict] = "https://demotiles.maplibre.org/style.json",
         bearing: float = 0.0,
         pitch: float = 0.0,
@@ -90,7 +90,7 @@ class MapLibreMap(MapWidget):
 
         # Add default controls
         if controls is None:
-            controls = {"navigation": True, "scale": True}
+            controls = {"navigation": True, "fullscreen": True, "globe": True}
 
         for control_name, config in controls.items():
             if config:
@@ -458,7 +458,7 @@ class MapLibreMap(MapWidget):
         self,
         layers: Optional[List[str]] = None,
         position: str = "top-right",
-        collapsed: bool = False,
+        collapsed: bool = True,
     ) -> None:
         """Add a layer visibility control.
 
