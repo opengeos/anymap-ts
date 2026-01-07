@@ -848,7 +848,10 @@ class DeckGLMap(MapLibreMap):
             ...     opacity=0.8
             ... )
         """
-        layer_id = name or f"cog-{len(self._deck_layers)}"
+        # Use a monotonically increasing counter to avoid ID collisions when layers are removed.
+        counter = getattr(self, "_cog_layer_counter", 0)
+        layer_id = name or f"cog-{counter}"
+        self._cog_layer_counter = counter + 1
 
         self.call_js_method(
             "addCOGLayer",
