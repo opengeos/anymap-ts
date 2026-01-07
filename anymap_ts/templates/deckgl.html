@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- MapLibre GL JS -->
+    <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
+    <!-- deck.gl -->
+    <script src="https://unpkg.com/deck.gl@9/dist.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Map state from Python
+        const state = {{state}};
+
+        // Create MapLibre map
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: state.style,
+            center: state.center,
+            zoom: state.zoom,
+            bearing: state.bearing || 0,
+            pitch: state.pitch || 0
+        });
+
+        // Track deck.gl layers
+        const deckLayers = new Map();
+        let deckOverlay = null;
+
+        map.on('load', function() {
+            // Initialize deck.gl overlay
+            deckOverlay = new deck.MapboxOverlay({
+                layers: []
+            });
+            map.addControl(deckOverlay);
+
+            // Replay JS calls
+            for (const call of state.js_calls || []) {
+                try {
+                    executeMethod(call.method, call.args, call.kwargs);
+                } catch (e) {
+                    console.error('Error executing', call.method, e);
+                }
+            }
+        });
+
+        function updateDeckOverlay() {
+            if (deckOverlay) {
+                const layers = Array.from(deckLayers.values());
+                deckOverlay.setProps({ layers });
+            }
+        }
+
+        function executeMethod(method, args, kwargs) {
+            switch (method) {
+                // MapLibre methods
+                case 'addBasemap': {
+                    const url = args[0];
+                    const name = kwargs.name || 'basemap';
+                    const sourceId = 'basemap-' + name;
+                    if (!map.getSource(sourceId)) {
+                        map.addSource(sourceId, {
+                            type: 'raster',
+                            tiles: [url],
+                            tileSize: 256,
+                            attribution: kwargs.attribution || ''
+                        });
+                    }
+                    if (!map.getLayer(sourceId)) {
+                        map.addLayer({
+                            id: sourceId,
+                            type: 'raster',
+                            source: sourceId
+                        });
+                    }
+                    break;
+                }
+
+                case 'addGeoJSON': {
+                    const layerName = kwargs.name;
+                    const sourceIdGeo = layerName + '-source';
+                    if (!map.getSource(sourceIdGeo)) {
+                        map.addSource(sourceIdGeo, {
+                            type: 'geojson',
+                            data: kwargs.data
+                        });
+                    }
+                    if (!map.getLayer(layerName)) {
+                        map.addLayer({
+                            id: layerName,
+                            type: kwargs.layerType || 'circle',
+                            source: sourceIdGeo,
+                            paint: kwargs.paint || {}
+                        });
+                    }
+                    if (kwargs.fitBounds && kwargs.bounds) {
+                        map.fitBounds([
+                            [kwargs.bounds[0], kwargs.bounds[1]],
+                            [kwargs.bounds[2], kwargs.bounds[3]]
+                        ], { padding: 50 });
+                    }
+                    break;
+                }
+
+                case 'addTileLayer': {
+                    const tileUrl = args[0];
+                    const tileName = kwargs.name;
+                    const tileSourceId = tileName + '-source';
+                    if (!map.getSource(tileSourceId)) {
+                        map.addSource(tileSourceId, {
+                            type: 'raster',
+                            tiles: [tileUrl],
+                            tileSize: 256,
+                            attribution: kwargs.attribution || ''
+                        });
+                    }
+                    if (!map.getLayer(tileName)) {
+                        map.addLayer({
+                            id: tileName,
+                            type: 'raster',
+                            source: tileSourceId
+                        });
+                    }
+                    break;
+                }
+
+                case 'addControl': {
+                    const controlType = args[0];
+                    const position = kwargs.position || 'top-right';
+                    let control;
+                    switch (controlType) {
+                        case 'navigation':
+                            control = new maplibregl.NavigationControl();
+                            break;
+                        case 'scale':
+                            control = new maplibregl.ScaleControl();
+                            break;
+                        case 'fullscreen':
+                            control = new maplibregl.FullscreenControl();
+                            break;
+                    }
+                    if (control) {
+                        map.addControl(control, position);
+                    }
+                    break;
+                }
+
+                case 'flyTo': {
+                    map.flyTo({
+                        center: [args[0], args[1]],
+                        zoom: kwargs.zoom,
+                        duration: kwargs.duration || 2000
+                    });
+                    break;
+                }
+
+                case 'fitBounds': {
+                    const bounds = args[0];
+                    map.fitBounds([
+                        [bounds[0], bounds[1]],
+                        [bounds[2], bounds[3]]
+                    ], {
+                        padding: kwargs.padding || 50,
+                        duration: kwargs.duration || 1000
+                    });
+                    break;
+                }
+
+                // DeckGL layers
+                case 'addScatterplotLayer': {
+                    const id = kwargs.id || `scatterplot-${Date.now()}`;
+                    const layer = new deck.ScatterplotLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 0.8,
+                        stroked: kwargs.stroked !== false,
+                        filled: kwargs.filled !== false,
+                        radiusScale: kwargs.radiusScale ?? 1,
+                        radiusMinPixels: kwargs.radiusMinPixels ?? 1,
+                        radiusMaxPixels: kwargs.radiusMaxPixels ?? 100,
+                        lineWidthMinPixels: kwargs.lineWidthMinPixels ?? 1,
+                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        getRadius: kwargs.getRadius ?? kwargs.radius ?? 5,
+                        getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 200],
+                        getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [255, 255, 255, 255]
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addArcLayer': {
+                    const id = kwargs.id || `arc-${Date.now()}`;
+                    const layer = new deck.ArcLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 0.8,
+                        getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
+                        getSourcePosition: d => d.source || d.from || d.sourcePosition,
+                        getTargetPosition: d => d.target || d.to || d.targetPosition,
+                        getSourceColor: kwargs.getSourceColor ?? kwargs.sourceColor ?? [51, 136, 255, 255],
+                        getTargetColor: kwargs.getTargetColor ?? kwargs.targetColor ?? [255, 136, 51, 255]
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addPathLayer': {
+                    const id = kwargs.id || `path-${Date.now()}`;
+                    const layer = new deck.PathLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 0.8,
+                        widthScale: kwargs.widthScale ?? 1,
+                        widthMinPixels: kwargs.widthMinPixels ?? 1,
+                        getPath: d => d.path || d.coordinates,
+                        getColor: kwargs.getColor ?? kwargs.color ?? [51, 136, 255, 200],
+                        getWidth: kwargs.getWidth ?? kwargs.width ?? 1
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addPolygonLayer': {
+                    const id = kwargs.id || `polygon-${Date.now()}`;
+                    const layer = new deck.PolygonLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 0.5,
+                        stroked: kwargs.stroked !== false,
+                        filled: kwargs.filled !== false,
+                        extruded: kwargs.extruded ?? false,
+                        wireframe: kwargs.wireframe ?? false,
+                        lineWidthMinPixels: kwargs.lineWidthMinPixels ?? 1,
+                        getPolygon: d => d.polygon || d.contour || d.coordinates,
+                        getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0,
+                        getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
+                        getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 255, 255],
+                        getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addHexagonLayer': {
+                    const id = kwargs.id || `hexagon-${Date.now()}`;
+                    const layer = new deck.HexagonLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 0.8,
+                        extruded: kwargs.extruded ?? true,
+                        radius: kwargs.radius ?? 1000,
+                        elevationScale: kwargs.elevationScale ?? 4,
+                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        colorRange: kwargs.colorRange ?? [
+                            [1, 152, 189],
+                            [73, 227, 206],
+                            [216, 254, 181],
+                            [254, 237, 177],
+                            [254, 173, 84],
+                            [209, 55, 78]
+                        ]
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addHeatmapLayer': {
+                    const id = kwargs.id || `heatmap-${Date.now()}`;
+                    const layer = new deck.HeatmapLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: false,
+                        opacity: kwargs.opacity ?? 1,
+                        radiusPixels: kwargs.radiusPixels ?? 30,
+                        intensity: kwargs.intensity ?? 1,
+                        threshold: kwargs.threshold ?? 0.05,
+                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+                        colorRange: kwargs.colorRange ?? [
+                            [255, 255, 178, 25],
+                            [254, 217, 118, 85],
+                            [254, 178, 76, 127],
+                            [253, 141, 60, 170],
+                            [240, 59, 32, 212],
+                            [189, 0, 38, 255]
+                        ]
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addGridLayer': {
+                    const id = kwargs.id || `grid-${Date.now()}`;
+                    const layer = new deck.GridLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 0.8,
+                        extruded: kwargs.extruded ?? true,
+                        cellSize: kwargs.cellSize ?? 200,
+                        elevationScale: kwargs.elevationScale ?? 4,
+                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        colorRange: kwargs.colorRange ?? [
+                            [1, 152, 189],
+                            [73, 227, 206],
+                            [216, 254, 181],
+                            [254, 237, 177],
+                            [254, 173, 84],
+                            [209, 55, 78]
+                        ]
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addIconLayer': {
+                    const id = kwargs.id || `icon-${Date.now()}`;
+                    const layer = new deck.IconLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 1,
+                        iconAtlas: kwargs.iconAtlas,
+                        iconMapping: kwargs.iconMapping,
+                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        getIcon: d => d.icon || 'marker',
+                        getSize: kwargs.getSize ?? kwargs.size ?? 20,
+                        getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255]
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addTextLayer': {
+                    const id = kwargs.id || `text-${Date.now()}`;
+                    const layer = new deck.TextLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 1,
+                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        getText: d => d.text || d.label || d.name || '',
+                        getSize: kwargs.getSize ?? kwargs.size ?? 12,
+                        getColor: kwargs.getColor ?? kwargs.color ?? [0, 0, 0, 255],
+                        getAngle: kwargs.getAngle ?? 0,
+                        getTextAnchor: kwargs.getTextAnchor ?? 'middle',
+                        getAlignmentBaseline: kwargs.getAlignmentBaseline ?? 'center'
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addGeoJsonLayer': {
+                    const id = kwargs.id || `geojson-${Date.now()}`;
+                    const layer = new deck.GeoJsonLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 0.8,
+                        stroked: kwargs.stroked !== false,
+                        filled: kwargs.filled !== false,
+                        extruded: kwargs.extruded ?? false,
+                        wireframe: kwargs.wireframe ?? false,
+                        lineWidthMinPixels: kwargs.lineWidthMinPixels ?? 1,
+                        pointRadiusMinPixels: kwargs.pointRadiusMinPixels ?? 2,
+                        getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
+                        getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 0, 255],
+                        getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
+                        getPointRadius: kwargs.getPointRadius ?? kwargs.pointRadius ?? 5,
+                        getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addContourLayer': {
+                    const id = kwargs.id || `contour-${Date.now()}`;
+                    const layer = new deck.ContourLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 1,
+                        cellSize: kwargs.cellSize ?? 200,
+                        contours: kwargs.contours ?? [
+                            { threshold: 1, color: [255, 255, 255], strokeWidth: 1 },
+                            { threshold: 5, color: [51, 136, 255], strokeWidth: 2 },
+                            { threshold: 10, color: [0, 0, 255], strokeWidth: 3 }
+                        ],
+                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        getWeight: kwargs.getWeight ?? kwargs.weight ?? 1
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'addScreenGridLayer': {
+                    const id = kwargs.id || `screengrid-${Date.now()}`;
+                    const layer = new deck.ScreenGridLayer({
+                        id,
+                        data: kwargs.data,
+                        pickable: kwargs.pickable !== false,
+                        opacity: kwargs.opacity ?? 0.8,
+                        cellSizePixels: kwargs.cellSizePixels ?? 50,
+                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+                        colorRange: kwargs.colorRange ?? [
+                            [255, 255, 178, 25],
+                            [254, 217, 118, 85],
+                            [254, 178, 76, 127],
+                            [253, 141, 60, 170],
+                            [240, 59, 32, 212],
+                            [189, 0, 38, 255]
+                        ]
+                    });
+                    deckLayers.set(id, layer);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'removeDeckLayer': {
+                    const [id] = args;
+                    deckLayers.delete(id);
+                    updateDeckOverlay();
+                    break;
+                }
+
+                case 'setDeckLayerVisibility': {
+                    const [id, visible] = args;
+                    const layer = deckLayers.get(id);
+                    if (layer) {
+                        const updatedLayer = layer.clone({ visible });
+                        deckLayers.set(id, updatedLayer);
+                        updateDeckOverlay();
+                    }
+                    break;
+                }
+
+                default:
+                    console.log('Unknown method:', method);
+            }
+        }
+    </script>
+</body>
+</html>

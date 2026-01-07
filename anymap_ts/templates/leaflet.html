@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+        /* Layer control styles */
+        .anymap-layer-control {
+            position: absolute;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        .anymap-layer-control.topright { top: 10px; right: 10px; }
+        .anymap-layer-control.topleft { top: 10px; left: 50px; }
+        .anymap-layer-control.bottomright { bottom: 30px; right: 10px; }
+        .anymap-layer-control.bottomleft { bottom: 30px; left: 10px; }
+        .anymap-layer-control-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .anymap-layer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+        .anymap-layer-item label {
+            flex: 1;
+            cursor: pointer;
+        }
+        .anymap-layer-item input[type="checkbox"] {
+            cursor: pointer;
+        }
+        .anymap-layer-item input[type="range"] {
+            width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Map state from Python
+        const state = {{state}};
+
+        // Track added layers
+        const addedLayers = {};
+        let layerControlConfig = null;
+
+        // Note: Leaflet uses [lat, lng], but we store [lng, lat] from Python
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([state.center[1], state.center[0]], state.zoom);
+
+        // Replay JS calls
+        for (const call of state.js_calls || []) {
+            try {
+                executeMethod(call.method, call.args, call.kwargs);
+            } catch (e) {
+                console.error('Error executing', call.method, e);
+            }
+        }
+
+        // Add layer control if configured
+        if (layerControlConfig || (state.controls && state.controls['layers'])) {
+            const config = layerControlConfig || state.controls['layers'];
+            createLayerControl(config);
+        }
+
+        function executeMethod(method, args, kwargs) {
+            switch (method) {
+                case 'addBasemap': {
+                    const url = args[0];
+                    const name = kwargs.name || 'basemap';
+                    const layer = L.tileLayer(url, {
+                        attribution: kwargs.attribution || '',
+                        maxZoom: 22
+                    });
+                    layer.addTo(map);
+                    addedLayers['basemap-' + name] = { layer, name, type: 'tile' };
+                    break;
+                }
+
+                case 'addTileLayer': {
+                    const url = args[0];
+                    const name = kwargs.name || 'tiles';
+                    const layer = L.tileLayer(url, {
+                        attribution: kwargs.attribution || '',
+                        maxZoom: kwargs.maxZoom || 22,
+                        minZoom: kwargs.minZoom || 0,
+                        opacity: kwargs.opacity || 1
+                    });
+                    layer.addTo(map);
+                    addedLayers[name] = { layer, name, type: 'tile' };
+                    break;
+                }
+
+                case 'addGeoJSON': {
+                    const geojson = kwargs.data;
+                    const name = kwargs.name || 'geojson';
+                    const style = kwargs.style || getDefaultStyle(geojson);
+
+                    const layer = L.geoJSON(geojson, {
+                        style: style,
+                        pointToLayer: (feature, latlng) => L.circleMarker(latlng, style)
+                    });
+                    layer.addTo(map);
+                    addedLayers[name] = { layer, name, type: 'geojson' };
+
+                    if (kwargs.fitBounds) {
+                        const bounds = layer.getBounds();
+                        if (bounds.isValid()) {
+                            map.fitBounds(bounds, { padding: [50, 50] });
+                        }
+                    }
+                    break;
+                }
+
+                case 'addControl': {
+                    const controlType = args[0];
+                    const position = kwargs.position || 'topright';
+
+                    switch (controlType) {
+                        case 'zoom':
+                        case 'navigation':
+                            L.control.zoom({ position }).addTo(map);
+                            break;
+                        case 'scale':
+                            L.control.scale({ position, imperial: false }).addTo(map);
+                            break;
+                        case 'attribution':
+                            L.control.attribution({ position }).addTo(map);
+                            break;
+                        case 'layers':
+                            layerControlConfig = kwargs;
+                            break;
+                    }
+                    break;
+                }
+
+                case 'addMarker': {
+                    const [lng, lat] = args;
+                    const marker = L.marker([lat, lng]).addTo(map);
+                    if (kwargs.popup) {
+                        marker.bindPopup(kwargs.popup);
+                    }
+                    if (kwargs.id) {
+                        addedLayers['marker-' + kwargs.id] = { layer: marker, name: kwargs.id, type: 'marker' };
+                    }
+                    break;
+                }
+
+                case 'flyTo': {
+                    const [lng, lat] = args;
+                    map.flyTo([lat, lng], kwargs.zoom || map.getZoom(), {
+                        duration: (kwargs.duration || 2000) / 1000
+                    });
+                    break;
+                }
+
+                case 'fitBounds': {
+                    const bounds = args[0];
+                    map.fitBounds([
+                        [bounds[1], bounds[0]],
+                        [bounds[3], bounds[2]]
+                    ], {
+                        padding: [kwargs.padding || 50, kwargs.padding || 50],
+                        animate: true,
+                        duration: (kwargs.duration || 1000) / 1000
+                    });
+                    break;
+                }
+
+                case 'setVisibility': {
+                    const [layerId, visible] = args;
+                    const layerInfo = addedLayers[layerId];
+                    if (layerInfo) {
+                        if (visible) {
+                            layerInfo.layer.addTo(map);
+                        } else {
+                            map.removeLayer(layerInfo.layer);
+                        }
+                    }
+                    break;
+                }
+
+                case 'setOpacity': {
+                    const [layerId, opacity] = args;
+                    const layerInfo = addedLayers[layerId];
+                    if (layerInfo && layerInfo.layer.setOpacity) {
+                        layerInfo.layer.setOpacity(opacity);
+                    } else if (layerInfo && layerInfo.layer.setStyle) {
+                        layerInfo.layer.setStyle({ opacity, fillOpacity: opacity * 0.6 });
+                    }
+                    break;
+                }
+
+                case 'removeLayer': {
+                    const [layerId] = args;
+                    const layerInfo = addedLayers[layerId];
+                    if (layerInfo) {
+                        map.removeLayer(layerInfo.layer);
+                        delete addedLayers[layerId];
+                    }
+                    break;
+                }
+
+                default:
+                    console.log('Unknown method:', method);
+            }
+        }
+
+        function getDefaultStyle(geojson) {
+            const type = geojson.type === 'FeatureCollection' && geojson.features.length > 0
+                ? geojson.features[0].geometry.type
+                : geojson.type === 'Feature'
+                    ? geojson.geometry.type
+                    : 'Point';
+
+            const defaults = {
+                Point: { radius: 8, fillColor: '#3388ff', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.8 },
+                MultiPoint: { radius: 8, fillColor: '#3388ff', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.8 },
+                LineString: { color: '#3388ff', weight: 3, opacity: 0.8 },
+                MultiLineString: { color: '#3388ff', weight: 3, opacity: 0.8 },
+                Polygon: { fillColor: '#3388ff', color: '#0000ff', weight: 2, opacity: 1, fillOpacity: 0.5 },
+                MultiPolygon: { fillColor: '#3388ff', color: '#0000ff', weight: 2, opacity: 1, fillOpacity: 0.5 }
+            };
+            return defaults[type] || defaults.Point;
+        }
+
+        function createLayerControl(config) {
+            const position = config.position || 'topright';
+            const layerIds = Object.keys(addedLayers).filter(id => !id.startsWith('basemap-'));
+
+            if (layerIds.length === 0) {
+                console.log('No layers to show in layer control');
+                return;
+            }
+
+            const container = document.createElement('div');
+            container.className = 'anymap-layer-control ' + position;
+
+            const title = document.createElement('div');
+            title.className = 'anymap-layer-control-title';
+            title.textContent = 'Layers';
+            container.appendChild(title);
+
+            for (const layerId of layerIds) {
+                const layerInfo = addedLayers[layerId];
+                if (!layerInfo) continue;
+
+                const item = document.createElement('div');
+                item.className = 'anymap-layer-item';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.id = 'layer-' + layerId;
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        layerInfo.layer.addTo(map);
+                    } else {
+                        map.removeLayer(layerInfo.layer);
+                    }
+                });
+
+                const label = document.createElement('label');
+                label.htmlFor = 'layer-' + layerId;
+                label.textContent = layerInfo.name;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0';
+                slider.max = '1';
+                slider.step = '0.1';
+                slider.value = '1';
+                slider.addEventListener('input', () => {
+                    const opacity = parseFloat(slider.value);
+                    if (layerInfo.layer.setOpacity) {
+                        layerInfo.layer.setOpacity(opacity);
+                    } else if (layerInfo.layer.setStyle) {
+                        layerInfo.layer.setStyle({ opacity, fillOpacity: opacity * 0.6 });
+                    }
+                });
+
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                item.appendChild(slider);
+                container.appendChild(item);
+            }
+
+            document.body.appendChild(container);
+        }
+    </script>
+</body>
+</html>

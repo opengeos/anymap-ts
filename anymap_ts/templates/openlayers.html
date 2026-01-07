@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- OpenLayers CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.0.0/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v10.0.0/dist/ol.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Map state from Python
+        const state = {{state}};
+
+        // Track layers
+        const addedLayers = {};
+
+        // Create map
+        const map = new ol.Map({
+            target: 'map',
+            view: new ol.View({
+                center: ol.proj.fromLonLat(state.center),
+                zoom: state.zoom,
+                rotation: state.rotation || 0
+            }),
+            controls: ol.control.defaults.defaults({ attribution: false })
+        });
+
+        // Replay JS calls
+        for (const call of state.js_calls || []) {
+            try {
+                executeMethod(call.method, call.args, call.kwargs);
+            } catch (e) {
+                console.error('Error executing', call.method, e);
+            }
+        }
+
+        function executeMethod(method, args, kwargs) {
+            switch (method) {
+                case 'addBasemap': {
+                    const url = args[0];
+                    const name = kwargs.name || 'basemap';
+                    const layer = new ol.layer.Tile({
+                        source: new ol.source.XYZ({
+                            url: url,
+                            attributions: kwargs.attribution || ''
+                        }),
+                        zIndex: 0
+                    });
+                    map.getLayers().insertAt(0, layer);
+                    addedLayers['basemap-' + name] = layer;
+                    break;
+                }
+
+                case 'addTileLayer': {
+                    const url = args[0];
+                    const name = kwargs.name || 'tiles';
+                    const layer = new ol.layer.Tile({
+                        source: new ol.source.XYZ({
+                            url: url,
+                            attributions: kwargs.attribution || '',
+                            minZoom: kwargs.minZoom || 0,
+                            maxZoom: kwargs.maxZoom || 22
+                        }),
+                        opacity: kwargs.opacity || 1
+                    });
+                    map.addLayer(layer);
+                    addedLayers[name] = layer;
+                    break;
+                }
+
+                case 'addGeoJSON': {
+                    const data = kwargs.data;
+                    const name = kwargs.name || 'geojson';
+                    const style = kwargs.style || {};
+
+                    const vectorSource = new ol.source.Vector({
+                        features: new ol.format.GeoJSON().readFeatures(data, {
+                            featureProjection: 'EPSG:3857'
+                        })
+                    });
+
+                    const fill = new ol.style.Fill({
+                        color: style.fillColor || 'rgba(51, 136, 255, 0.5)'
+                    });
+                    const stroke = new ol.style.Stroke({
+                        color: style.strokeColor || '#3388ff',
+                        width: style.strokeWidth || 2
+                    });
+                    const circle = new ol.style.Circle({
+                        radius: style.radius || 6,
+                        fill: fill,
+                        stroke: stroke
+                    });
+
+                    const vectorLayer = new ol.layer.Vector({
+                        source: vectorSource,
+                        style: new ol.style.Style({
+                            fill: fill,
+                            stroke: stroke,
+                            image: circle
+                        })
+                    });
+
+                    map.addLayer(vectorLayer);
+                    addedLayers[name] = vectorLayer;
+
+                    if (kwargs.fitBounds) {
+                        const extent = vectorSource.getExtent();
+                        map.getView().fit(extent, {
+                            padding: [50, 50, 50, 50],
+                            duration: 500
+                        });
+                    }
+                    break;
+                }
+
+                case 'addWMSLayer': {
+                    const name = kwargs.name || 'wms';
+                    const layer = new ol.layer.Tile({
+                        source: new ol.source.TileWMS({
+                            url: kwargs.url,
+                            params: {
+                                LAYERS: kwargs.layers,
+                                FORMAT: kwargs.format || 'image/png',
+                                TRANSPARENT: kwargs.transparent !== false
+                            },
+                            serverType: kwargs.serverType,
+                            attributions: kwargs.attribution || ''
+                        })
+                    });
+                    map.addLayer(layer);
+                    addedLayers[name] = layer;
+                    break;
+                }
+
+                case 'addImageWMSLayer': {
+                    const name = kwargs.name || 'imagewms';
+                    const layer = new ol.layer.Image({
+                        source: new ol.source.ImageWMS({
+                            url: kwargs.url,
+                            params: {
+                                LAYERS: kwargs.layers,
+                                FORMAT: kwargs.format || 'image/png',
+                                TRANSPARENT: kwargs.transparent !== false
+                            },
+                            serverType: kwargs.serverType,
+                            attributions: kwargs.attribution || ''
+                        })
+                    });
+                    map.addLayer(layer);
+                    addedLayers[name] = layer;
+                    break;
+                }
+
+                case 'addControl': {
+                    const controlType = args[0];
+                    let control;
+                    switch (controlType) {
+                        case 'zoom':
+                        case 'navigation':
+                            control = new ol.control.Zoom();
+                            break;
+                        case 'scale':
+                            control = new ol.control.ScaleLine({
+                                units: kwargs.units || 'metric'
+                            });
+                            break;
+                        case 'fullscreen':
+                            control = new ol.control.FullScreen();
+                            break;
+                        case 'attribution':
+                            control = new ol.control.Attribution({
+                                collapsible: kwargs.collapsible !== false
+                            });
+                            break;
+                        case 'rotate':
+                            control = new ol.control.Rotate({
+                                autoHide: kwargs.autoHide !== false
+                            });
+                            break;
+                    }
+                    if (control) {
+                        map.addControl(control);
+                    }
+                    break;
+                }
+
+                case 'addMarker': {
+                    const [lng, lat] = args;
+                    const name = kwargs.id || kwargs.name || 'marker';
+                    const color = kwargs.color || '#3388ff';
+
+                    const feature = new ol.Feature({
+                        geometry: new ol.geom.Point(ol.proj.fromLonLat([lng, lat])),
+                        popup: kwargs.popup
+                    });
+
+                    const vectorSource = new ol.source.Vector({
+                        features: [feature]
+                    });
+
+                    const markerStyle = new ol.style.Style({
+                        image: new ol.style.Circle({
+                            radius: 8,
+                            fill: new ol.style.Fill({ color: color }),
+                            stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
+                        })
+                    });
+
+                    const vectorLayer = new ol.layer.Vector({
+                        source: vectorSource,
+                        style: markerStyle
+                    });
+
+                    map.addLayer(vectorLayer);
+                    addedLayers[name] = vectorLayer;
+                    break;
+                }
+
+                case 'flyTo': {
+                    const [lng, lat] = args;
+                    map.getView().animate({
+                        center: ol.proj.fromLonLat([lng, lat]),
+                        zoom: kwargs.zoom,
+                        duration: kwargs.duration || 2000
+                    });
+                    break;
+                }
+
+                case 'fitBounds': {
+                    const bounds = args[0];
+                    const extent = ol.proj.transformExtent(
+                        [bounds[0], bounds[1], bounds[2], bounds[3]],
+                        'EPSG:4326',
+                        'EPSG:3857'
+                    );
+                    map.getView().fit(extent, {
+                        padding: [kwargs.padding || 50, kwargs.padding || 50, kwargs.padding || 50, kwargs.padding || 50],
+                        duration: kwargs.duration || 1000
+                    });
+                    break;
+                }
+
+                case 'setVisibility': {
+                    const [layerId, visible] = args;
+                    const layer = addedLayers[layerId];
+                    if (layer) {
+                        layer.setVisible(visible);
+                    }
+                    break;
+                }
+
+                case 'setOpacity': {
+                    const [layerId, opacity] = args;
+                    const layer = addedLayers[layerId];
+                    if (layer) {
+                        layer.setOpacity(opacity);
+                    }
+                    break;
+                }
+
+                case 'removeLayer': {
+                    const [layerId] = args;
+                    const layer = addedLayers[layerId];
+                    if (layer) {
+                        map.removeLayer(layer);
+                        delete addedLayers[layerId];
+                    }
+                    break;
+                }
+
+                default:
+                    console.log('Unknown method:', method);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+        /* Layer control styles */
+        .anymap-layer-control {
+            position: absolute;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        .anymap-layer-control.top-right { top: 10px; right: 10px; }
+        .anymap-layer-control.top-left { top: 10px; left: 50px; }
+        .anymap-layer-control.bottom-right { bottom: 30px; right: 10px; }
+        .anymap-layer-control.bottom-left { bottom: 30px; left: 10px; }
+        .anymap-layer-control-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .anymap-layer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+        .anymap-layer-item label {
+            flex: 1;
+            cursor: pointer;
+        }
+        .anymap-layer-item input[type="checkbox"] {
+            cursor: pointer;
+        }
+        .anymap-layer-item input[type="range"] {
+            width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Map state from Python
+        const state = {{state}};
+
+        // Set Mapbox access token
+        mapboxgl.accessToken = state.access_token;
+
+        // Track added layers for layer control
+        const addedLayers = [];
+        let layerControlConfig = null;
+
+        // Create map
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: state.style,
+            center: state.center,
+            zoom: state.zoom,
+            bearing: state.bearing || 0,
+            pitch: state.pitch || 0
+        });
+
+        map.on('load', function() {
+            // Replay JS calls
+            for (const call of state.js_calls || []) {
+                try {
+                    executeMethod(call.method, call.args, call.kwargs);
+                } catch (e) {
+                    console.error('Error executing', call.method, e);
+                }
+            }
+
+            // Add layer control if configured
+            if (layerControlConfig || (state.controls && state.controls['layer-control'])) {
+                const config = layerControlConfig || state.controls['layer-control'];
+                createLayerControl(config);
+            }
+        });
+
+        function executeMethod(method, args, kwargs) {
+            switch (method) {
+                case 'addBasemap': {
+                    const url = args[0];
+                    const name = kwargs.name || 'basemap';
+                    const sourceId = 'basemap-' + name;
+                    if (!map.getSource(sourceId)) {
+                        map.addSource(sourceId, {
+                            type: 'raster',
+                            tiles: [url],
+                            tileSize: 256,
+                            attribution: kwargs.attribution || ''
+                        });
+                    }
+                    if (!map.getLayer(sourceId)) {
+                        const layers = map.getStyle().layers || [];
+                        const firstSymbolId = layers.find(l => l.type === 'symbol')?.id;
+                        map.addLayer({
+                            id: sourceId,
+                            type: 'raster',
+                            source: sourceId
+                        }, firstSymbolId);
+                        addedLayers.push({ id: sourceId, name: name, type: 'raster' });
+                    }
+                    break;
+                }
+
+                case 'addGeoJSON': {
+                    const layerName = kwargs.name;
+                    const sourceId = layerName + '-source';
+                    if (!map.getSource(sourceId)) {
+                        map.addSource(sourceId, {
+                            type: 'geojson',
+                            data: kwargs.data
+                        });
+                    }
+                    if (!map.getLayer(layerName)) {
+                        const layerType = kwargs.layerType || 'circle';
+                        map.addLayer({
+                            id: layerName,
+                            type: layerType,
+                            source: sourceId,
+                            paint: kwargs.paint || getDefaultPaint(layerType)
+                        });
+                        addedLayers.push({ id: layerName, name: layerName, type: layerType });
+                    }
+                    if (kwargs.fitBounds && kwargs.bounds) {
+                        map.fitBounds([
+                            [kwargs.bounds[0], kwargs.bounds[1]],
+                            [kwargs.bounds[2], kwargs.bounds[3]]
+                        ], { padding: 50 });
+                    }
+                    break;
+                }
+
+                case 'addTileLayer': {
+                    const tileUrl = args[0];
+                    const tileName = kwargs.name;
+                    const tileSourceId = tileName + '-source';
+                    if (!map.getSource(tileSourceId)) {
+                        map.addSource(tileSourceId, {
+                            type: 'raster',
+                            tiles: [tileUrl],
+                            tileSize: 256,
+                            attribution: kwargs.attribution || ''
+                        });
+                    }
+                    if (!map.getLayer(tileName)) {
+                        map.addLayer({
+                            id: tileName,
+                            type: 'raster',
+                            source: tileSourceId
+                        });
+                        addedLayers.push({ id: tileName, name: tileName, type: 'raster' });
+                    }
+                    break;
+                }
+
+                case 'addControl': {
+                    const controlType = args[0];
+                    const position = kwargs.position || 'top-right';
+                    let control;
+                    switch (controlType) {
+                        case 'navigation':
+                            control = new mapboxgl.NavigationControl();
+                            break;
+                        case 'scale':
+                            control = new mapboxgl.ScaleControl();
+                            break;
+                        case 'fullscreen':
+                            control = new mapboxgl.FullscreenControl();
+                            break;
+                        case 'geolocate':
+                            control = new mapboxgl.GeolocateControl();
+                            break;
+                        case 'attribution':
+                            control = new mapboxgl.AttributionControl({
+                                compact: kwargs.compact !== false
+                            });
+                            break;
+                    }
+                    if (control) {
+                        map.addControl(control, position);
+                    }
+                    break;
+                }
+
+                case 'addLayerControl': {
+                    layerControlConfig = kwargs;
+                    break;
+                }
+
+                case 'addTerrain': {
+                    const terrainSource = kwargs.source || 'mapbox-dem';
+                    if (!map.getSource(terrainSource)) {
+                        map.addSource(terrainSource, {
+                            type: 'raster-dem',
+                            url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                            tileSize: 512,
+                            maxzoom: 14
+                        });
+                    }
+                    map.setTerrain({ source: terrainSource, exaggeration: kwargs.exaggeration || 1 });
+                    break;
+                }
+
+                case 'removeTerrain': {
+                    map.setTerrain(null);
+                    break;
+                }
+
+                case 'addMarker': {
+                    const [lng, lat] = args;
+                    const color = kwargs.color || '#3388ff';
+                    const marker = new mapboxgl.Marker({ color })
+                        .setLngLat([lng, lat]);
+                    if (kwargs.popup) {
+                        marker.setPopup(new mapboxgl.Popup().setHTML(kwargs.popup));
+                    }
+                    marker.addTo(map);
+                    break;
+                }
+
+                case 'flyTo': {
+                    map.flyTo({
+                        center: [args[0], args[1]],
+                        zoom: kwargs.zoom,
+                        duration: kwargs.duration || 2000
+                    });
+                    break;
+                }
+
+                case 'fitBounds': {
+                    const bounds = args[0];
+                    map.fitBounds([
+                        [bounds[0], bounds[1]],
+                        [bounds[2], bounds[3]]
+                    ], {
+                        padding: kwargs.padding || 50,
+                        duration: kwargs.duration || 1000
+                    });
+                    break;
+                }
+
+                case 'setVisibility': {
+                    const [layerId, visible] = args;
+                    if (map.getLayer(layerId)) {
+                        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+                    }
+                    break;
+                }
+
+                case 'setOpacity': {
+                    const [layerId, opacity] = args;
+                    if (map.getLayer(layerId)) {
+                        const layer = map.getLayer(layerId);
+                        const opacityProp = getOpacityProperty(layer.type);
+                        if (opacityProp) {
+                            map.setPaintProperty(layerId, opacityProp, opacity);
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                    console.log('Unknown method:', method);
+            }
+        }
+
+        function getDefaultPaint(layerType) {
+            const defaults = {
+                circle: {
+                    'circle-radius': 5,
+                    'circle-color': '#3388ff',
+                    'circle-opacity': 0.8,
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#ffffff'
+                },
+                line: {
+                    'line-color': '#3388ff',
+                    'line-width': 2,
+                    'line-opacity': 0.8
+                },
+                fill: {
+                    'fill-color': '#3388ff',
+                    'fill-opacity': 0.5,
+                    'fill-outline-color': '#0000ff'
+                },
+                raster: {
+                    'raster-opacity': 1
+                }
+            };
+            return defaults[layerType] || {};
+        }
+
+        function getOpacityProperty(layerType) {
+            const opacityMap = {
+                fill: 'fill-opacity',
+                line: 'line-opacity',
+                circle: 'circle-opacity',
+                symbol: 'icon-opacity',
+                raster: 'raster-opacity',
+                'fill-extrusion': 'fill-extrusion-opacity'
+            };
+            return opacityMap[layerType];
+        }
+
+        function createLayerControl(config) {
+            const position = config.position || 'top-right';
+            const configLayers = config.layers;
+            const layers = configLayers && configLayers.length > 0
+                ? configLayers
+                : addedLayers.map(l => l.id);
+
+            if (layers.length === 0) {
+                console.log('No layers to show in layer control');
+                return;
+            }
+
+            const container = document.createElement('div');
+            container.className = 'anymap-layer-control ' + position;
+
+            const title = document.createElement('div');
+            title.className = 'anymap-layer-control-title';
+            title.textContent = 'Layers';
+            container.appendChild(title);
+
+            for (const layerId of layers) {
+                const layer = map.getLayer(layerId);
+                if (!layer) {
+                    console.warn('Layer not found:', layerId);
+                    continue;
+                }
+
+                const item = document.createElement('div');
+                item.className = 'anymap-layer-item';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.id = 'layer-' + layerId;
+                checkbox.addEventListener('change', () => {
+                    map.setLayoutProperty(layerId, 'visibility',
+                        checkbox.checked ? 'visible' : 'none');
+                });
+
+                const label = document.createElement('label');
+                label.htmlFor = 'layer-' + layerId;
+                const layerInfo = addedLayers.find(l => l.id === layerId);
+                label.textContent = layerInfo ? layerInfo.name : layerId;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0';
+                slider.max = '1';
+                slider.step = '0.1';
+                slider.value = '1';
+                slider.addEventListener('input', () => {
+                    const opacity = parseFloat(slider.value);
+                    const opacityProp = getOpacityProperty(layer.type);
+                    if (opacityProp) {
+                        map.setPaintProperty(layerId, opacityProp, opacity);
+                    }
+                });
+
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                item.appendChild(slider);
+                container.appendChild(item);
+            }
+
+            document.body.appendChild(container);
+        }
+    </script>
+</body>
+</html>
