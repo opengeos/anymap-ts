@@ -4,8 +4,12 @@
     <meta charset="utf-8">
     <title>{{title}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
+    <!-- Geoman for drawing -->
+    <script src="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.umd.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.css" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -23,9 +27,10 @@
             overflow-y: auto;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-size: 12px;
+            z-index: 1000;
         }
         .anymap-layer-control.top-right { top: 10px; right: 10px; }
-        .anymap-layer-control.top-left { top: 10px; left: 10px; }
+        .anymap-layer-control.top-left { top: 10px; left: 50px; }
         .anymap-layer-control.bottom-right { bottom: 30px; right: 10px; }
         .anymap-layer-control.bottom-left { bottom: 30px; left: 10px; }
         .anymap-layer-control-title {
@@ -58,6 +63,11 @@
         // Map state from Python
         const state = {{state}};
 
+        // Track added layers for layer control
+        const addedLayers = [];
+        let layerControlConfig = null;
+        let drawControlConfig = null;
+
         // Create map
         const map = new maplibregl.Map({
             container: 'map',
@@ -67,9 +77,6 @@
             bearing: state.bearing || 0,
             pitch: state.pitch || 0
         });
-
-        // Track added layers for layer control
-        const addedLayers = [];
 
         map.on('load', function() {
             // Replay JS calls
@@ -81,9 +88,15 @@
                 }
             }
 
-            // Add layer control if needed
-            if (state.controls && state.controls['layer-control']) {
-                createLayerControl(state.controls['layer-control']);
+            // Add layer control if configured
+            if (layerControlConfig || (state.controls && state.controls['layer-control'])) {
+                const config = layerControlConfig || state.controls['layer-control'];
+                createLayerControl(config);
+            }
+
+            // Add draw control if configured
+            if (drawControlConfig || (state.controls && state.controls['draw-control'])) {
+                createDrawControl(drawControlConfig || state.controls['draw-control']);
             }
         });
 
@@ -182,10 +195,30 @@
                         case 'geolocate':
                             control = new maplibregl.GeolocateControl();
                             break;
+                        case 'globe':
+                            control = new maplibregl.GlobeControl();
+                            break;
+                        case 'attribution':
+                            control = new maplibregl.AttributionControl({
+                                compact: kwargs.compact !== false
+                            });
+                            break;
                     }
                     if (control) {
                         map.addControl(control, position);
                     }
+                    break;
+                }
+
+                case 'addLayerControl': {
+                    // Store config for later (after all layers are added)
+                    layerControlConfig = kwargs;
+                    break;
+                }
+
+                case 'addDrawControl': {
+                    // Store config for later (after map is fully loaded)
+                    drawControlConfig = kwargs;
                     break;
                 }
 
@@ -274,7 +307,7 @@
         }
 
         function getOpacityProperty(layerType) {
-            const map = {
+            const opacityMap = {
                 fill: 'fill-opacity',
                 line: 'line-opacity',
                 circle: 'circle-opacity',
@@ -282,12 +315,20 @@
                 raster: 'raster-opacity',
                 'fill-extrusion': 'fill-extrusion-opacity'
             };
-            return map[layerType];
+            return opacityMap[layerType];
         }
 
         function createLayerControl(config) {
             const position = config.position || 'top-right';
-            const layers = config.layers || addedLayers.map(l => l.id);
+            const configLayers = config.layers;
+            const layers = configLayers && configLayers.length > 0
+                ? configLayers
+                : addedLayers.map(l => l.id);
+
+            if (layers.length === 0) {
+                console.log('No layers to show in layer control');
+                return;
+            }
 
             const container = document.createElement('div');
             container.className = 'anymap-layer-control ' + position;
@@ -299,7 +340,10 @@
 
             for (const layerId of layers) {
                 const layer = map.getLayer(layerId);
-                if (!layer) continue;
+                if (!layer) {
+                    console.warn('Layer not found:', layerId);
+                    continue;
+                }
 
                 const item = document.createElement('div');
                 item.className = 'anymap-layer-item';
@@ -315,7 +359,9 @@
 
                 const label = document.createElement('label');
                 label.htmlFor = 'layer-' + layerId;
-                label.textContent = layerId;
+                // Use friendly name from addedLayers if available
+                const layerInfo = addedLayers.find(l => l.id === layerId);
+                label.textContent = layerInfo ? layerInfo.name : layerId;
 
                 const slider = document.createElement('input');
                 slider.type = 'range';
@@ -338,6 +384,31 @@
             }
 
             document.body.appendChild(container);
+        }
+
+        function createDrawControl(config) {
+            // Check if Geoman is available (UMD exports to Geoman.Geoman)
+            const GeomanClass = (typeof Geoman !== 'undefined' && Geoman.Geoman)
+                ? Geoman.Geoman
+                : (typeof window !== 'undefined' && window.Geoman && window.Geoman.Geoman)
+                    ? window.Geoman.Geoman
+                    : null;
+
+            if (!GeomanClass) {
+                console.warn('Geoman library not loaded. Draw control not available.');
+                return;
+            }
+
+            const position = config.position || 'top-right';
+
+            // Initialize Geoman
+            const geoman = new GeomanClass(map, {
+                position: position
+            });
+
+            map.on('gm:loaded', () => {
+                console.log('Geoman draw control loaded');
+            });
         }
     </script>
 </body>
