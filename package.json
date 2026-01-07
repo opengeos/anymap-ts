@@ -26,29 +26,31 @@
     "clean": "rm -rf anymap_ts/static/*.js anymap_ts/static/*.css anymap_ts/static/*.map"
   },
   "dependencies": {
-    "maplibre-gl": "5.14.0",
-    "mapbox-gl": "^3.9.0",
-    "leaflet": "^1.9.4",
+    "@deck.gl/aggregation-layers": "^9.0.0",
     "@deck.gl/core": "^9.0.0",
     "@deck.gl/layers": "^9.0.0",
-    "@deck.gl/aggregation-layers": "^9.0.0",
     "@deck.gl/mapbox": "^9.0.0",
-    "ol": "^10.0.0",
+    "@developmentseed/deck.gl-geotiff": "^0.1.0",
+    "@geoman-io/maplibre-geoman-free": "^0.5.5",
     "cesium": "^1.120.0",
-    "maplibre-gl-layer-control": "^0.3.0",
+    "geotiff-geokeys-to-proj4": "^2024.4.13",
+    "leaflet": "^1.9.4",
+    "mapbox-gl": "^3.9.0",
+    "maplibre-gl": ">=5.0.0",
     "maplibre-gl-geo-editor": "^0.3.2",
-    "@geoman-io/maplibre-geoman-free": "^0.5.5"
+    "maplibre-gl-layer-control": "^0.5.0",
+    "ol": "^10.0.0"
   },
   "devDependencies": {
     "@anywidget/types": "^0.2.0",
     "@types/geojson": "^7946.0.14",
     "@types/leaflet": "^1.9.0",
     "@types/node": "^22.10.5",
+    "concurrently": "^9.1.2",
     "esbuild": "^0.24.2",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8",
     "jsdom": "^25.0.1",
-    "concurrently": "^9.1.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
   "peerDependencies": {
     "maplibre-gl": ">=5.0.0"

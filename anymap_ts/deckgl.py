@@ -806,6 +806,78 @@ class DeckGLMap(MapLibreMap):
         }
 
     # -------------------------------------------------------------------------
+    # DeckGL COG Layer
+    # -------------------------------------------------------------------------
+
+    def add_cog_layer(
+        self,
+        url: str,
+        name: Optional[str] = None,
+        opacity: float = 1.0,
+        visible: bool = True,
+        debug: bool = False,
+        debug_opacity: float = 0.25,
+        max_error: float = 0.125,
+        fit_bounds: bool = True,
+        before_id: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Add a Cloud Optimized GeoTIFF (COG) layer using deck.gl-raster.
+
+        This method renders COG files directly in the browser using GPU-accelerated
+        deck.gl rendering with automatic reprojection support.
+
+        Args:
+            url: URL to the Cloud Optimized GeoTIFF file.
+            name: Layer ID. If None, auto-generated.
+            opacity: Layer opacity (0-1).
+            visible: Whether layer is visible.
+            debug: Show reprojection mesh for debugging.
+            debug_opacity: Opacity of debug mesh (0-1).
+            max_error: Maximum reprojection error in pixels. Lower values
+                create denser mesh for better accuracy.
+            fit_bounds: Whether to fit map to COG bounds after loading.
+            before_id: ID of layer to insert before.
+            **kwargs: Additional COGLayer props.
+
+        Example:
+            >>> m = DeckGLMap()
+            >>> m.add_cog_layer(
+            ...     "https://example.com/landcover.tif",
+            ...     name="landcover",
+            ...     opacity=0.8
+            ... )
+        """
+        layer_id = name or f"cog-{len(self._deck_layers)}"
+
+        self.call_js_method(
+            "addCOGLayer",
+            id=layer_id,
+            geotiff=url,
+            opacity=opacity,
+            visible=visible,
+            debug=debug,
+            debugOpacity=debug_opacity,
+            maxError=max_error,
+            fitBounds=fit_bounds,
+            beforeId=before_id,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "COGLayer", "id": layer_id, "url": url},
+        }
+
+    def remove_cog_layer(self, layer_id: str) -> None:
+        """Remove a COG layer.
+
+        Args:
+            layer_id: Layer identifier to remove.
+        """
+        self.remove_deck_layer(layer_id)
+
+    # -------------------------------------------------------------------------
     # DeckGL Layer Management
     # -------------------------------------------------------------------------
 
