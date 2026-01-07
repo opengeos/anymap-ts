@@ -362,10 +362,10 @@ class MapLibreMap(MapWidget):
         before_id: Optional[str] = None,
         **kwargs,
     ) -> None:
-        """Add a Cloud Optimized GeoTIFF (COG) layer using deck.gl-raster.
+        """Add a Cloud Optimized GeoTIFF (COG) layer using @developmentseed/deck.gl-geotiff.
 
         This method renders COG files directly in the browser using GPU-accelerated
-        deck.gl rendering with automatic reprojection support.
+        deck.gl-geotiff rendering with automatic reprojection support.
 
         Args:
             url: URL to the Cloud Optimized GeoTIFF file.
