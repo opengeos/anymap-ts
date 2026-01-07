@@ -1,0 +1,54 @@
+{
+  "name": "anymap-ts",
+  "version": "0.1.0",
+  "description": "TypeScript frontend for anymap-ts interactive maps",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "esbuild src/maplibre/index.ts --bundle --format=esm --outfile=anymap_ts/static/maplibre.js --loader:.css=css",
+    "build:custom-css": "esbuild src/styles/maplibre.css --bundle --outfile=anymap_ts/static/custom.css --loader:.css=css",
+    "build:all": "npm run build",
+    "build:prod": "npm run build -- --minify --sourcemap",
+    "watch": "npm run build -- --watch",
+    "dev": "npm run watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf anymap_ts/static/*.js anymap_ts/static/*.css anymap_ts/static/*.map"
+  },
+  "dependencies": {
+    "maplibre-gl": "^5.15.0",
+    "maplibre-gl-layer-control": "^0.3.0",
+    "maplibre-gl-geo-editor": "^0.3.2",
+    "@geoman-io/maplibre-geoman-free": "^0.5.5"
+  },
+  "devDependencies": {
+    "@anywidget/types": "^0.2.0",
+    "@types/geojson": "^7946.0.14",
+    "@types/node": "^22.10.5",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "jsdom": "^25.0.1",
+    "concurrently": "^9.1.2"
+  },
+  "peerDependencies": {
+    "maplibre-gl": ">=5.0.0"
+  },
+  "files": [
+    "src/**/*",
+    "anymap_ts/static/*"
+  ],
+  "keywords": [
+    "maplibre",
+    "maps",
+    "anywidget",
+    "jupyter",
+    "typescript",
+    "gis",
+    "geospatial"
+  ],
+  "author": "Qiusheng Wu <giswqs@gmail.com>",
+  "license": "MIT"
+}
