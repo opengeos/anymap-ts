@@ -1,0 +1,131 @@
+[build-system]
+requires = ["hatchling", "hatch-jupyter-builder>=0.9.1"]
+build-backend = "hatchling.build"
+
+[project]
+name = "anymap-ts"
+dynamic = ["version"]
+description = "A Python package for creating interactive maps with anywidget and TypeScript"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Qiusheng Wu", email = "giswqs@gmail.com" },
+]
+keywords = ["maps", "maplibre", "anywidget", "jupyter", "gis", "geospatial", "typescript"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Jupyter",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+dependencies = [
+    "anywidget>=0.9.0",
+    "traitlets>=5.0.0",
+    "xyzservices>=2023.10.0",
+]
+
+[project.optional-dependencies]
+vector = [
+    "geopandas>=0.14.0",
+    "shapely>=2.0.0",
+]
+raster = [
+    "localtileserver>=0.10.6",
+]
+all = [
+    "anymap-ts[vector,raster]",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.9",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/opengeos/anymap-ts"
+Documentation = "https://anymap-ts.gishub.org"
+Repository = "https://github.com/opengeos/anymap-ts"
+Issues = "https://github.com/opengeos/anymap-ts/issues"
+
+[tool.hatch.version]
+path = "anymap_ts/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/anymap_ts",
+    "/src",
+    "/package.json",
+    "/tsconfig.json",
+]
+exclude = [
+    "/.github",
+    "/docs",
+    "/tests",
+    "/examples",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["anymap_ts"]
+artifacts = [
+    "anymap_ts/static/*.js",
+    "anymap_ts/static/*.css",
+    "anymap_ts/static/*.js.map",
+]
+
+[tool.hatch.build.hooks.jupyter-builder]
+dependencies = ["hatch-jupyter-builder>=0.9.1"]
+build-function = "hatch_jupyter_builder.npm_builder"
+ensured-targets = [
+    "anymap_ts/static/maplibre.js",
+    "anymap_ts/static/maplibre.css",
+]
+
+[tool.hatch.build.hooks.jupyter-builder.build-kwargs]
+npm = ["npm"]
+build_cmd = "build:prod"
+
+[tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
+npm = ["npm"]
+build_cmd = "build:all"
+source_dir = "src"
+build_dir = "anymap_ts/static"
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=anymap_ts --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["anymap_ts"]
+omit = ["*/tests/*", "*/__pycache__/*"]

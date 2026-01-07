@@ -1,0 +1,133 @@
+/**
+ * anymap-ts MapLibre styles.
+ */
+
+/* Map container */
+.anymap-ts-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Override maplibre-gl default styles if needed */
+.maplibregl-map {
+  font-family: inherit;
+}
+
+/* Control styling */
+.maplibregl-ctrl-group {
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.maplibregl-ctrl-group button {
+  transition: background-color 0.15s ease;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background-color: #f0f0f0;
+}
+
+/* Attribution */
+.maplibregl-ctrl-attrib {
+  font-size: 11px;
+  padding: 2px 5px;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Popup styling */
+.maplibregl-popup-content {
+  padding: 10px 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.maplibregl-popup-close-button {
+  font-size: 18px;
+  color: #666;
+  padding: 4px 8px;
+}
+
+.maplibregl-popup-close-button:hover {
+  background-color: transparent;
+  color: #333;
+}
+
+/* Marker styling */
+.maplibregl-marker {
+  cursor: pointer;
+}
+
+/* Scale control */
+.maplibregl-ctrl-scale {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid #333;
+  border-top: none;
+  padding: 0 5px;
+  font-size: 10px;
+  color: #333;
+}
+
+/* Custom layer control placeholder styles */
+.anymap-layer-control {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.anymap-layer-control-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.anymap-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.anymap-layer-item label {
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.anymap-layer-item input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.anymap-layer-item input[type="range"] {
+  width: 80px;
+}
+
+/* Draw control placeholder styles */
+.anymap-draw-control {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.anymap-draw-control button {
+  display: block;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.anymap-draw-control button:hover {
+  background-color: #f0f0f0;
+}
+
+.anymap-draw-control button.active {
+  background-color: #e0e0e0;
+}
