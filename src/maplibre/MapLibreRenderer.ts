@@ -14,7 +14,8 @@ import maplibregl, {
   GlobeControl,
 } from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
+import { proj } from '@developmentseed/deck.gl-geotiff';
+import { COGLayerWithOpacity as COGLayer } from './layers/COGLayerWithOpacity';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
 import { ZarrLayer } from '@carbonplan/zarr-layer';
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
