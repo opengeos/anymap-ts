@@ -1,0 +1,58 @@
+name: docs-build
+on:
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    docs-build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: ["3.12"]
+
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            # - name: Install GDAL system dependencies
+            #   run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v6
+              with:
+                  version: "0.4.16"
+                  enable-cache: false
+
+            - name: Set up Python ${{ matrix.python-version }}
+              run: uv python install ${{ matrix.python-version }}
+
+            - name: Install dependencies
+              run: |
+                  uv venv --python ${{ matrix.python-version }}
+                  uv pip install .
+
+            - name: Install mkdocs
+              run: |
+                  uv pip install -r requirements_docs.txt
+                  uv run mkdocs build
+
+            - name: Deploy to Netlify
+              uses: nwtgck/actions-netlify@v3.0
+              with:
+                  publish-dir: "./site"
+                  production-branch: main
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  deploy-message: "Deploy from GitHub Actions"
+                  enable-pull-request-comment: true
+                  enable-commit-comment: false
+                  overwrites-pull-request-comment: true
+              env:
+                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+                  NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+            - name: Cleanup
+              if: always()
+              run: |
+                  echo "Cleaning up resources."
