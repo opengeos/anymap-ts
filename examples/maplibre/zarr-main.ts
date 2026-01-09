@@ -2,6 +2,7 @@ import maplibregl from 'maplibre-gl';
 import { ZarrLayer } from '@carbonplan/zarr-layer';
 import { LayerControl } from 'maplibre-gl-layer-control';
 import 'maplibre-gl-layer-control/style.css';
+import { ZarrLayerAdapter } from '../../src/maplibre/adapters/ZarrLayerAdapter';
 
 interface DatasetConfig {
   url: string;
@@ -54,6 +55,7 @@ let currentDataset = 'climate';
 let currentOpacity = 0.8;
 let layerVisible = true;
 let zarrLayer: ZarrLayer | null = null;
+const zarrLayers = new Map<string, ZarrLayer>();
 
 // Create map
 const map = new maplibregl.Map({
@@ -65,6 +67,7 @@ const map = new maplibregl.Map({
 
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
+const zarrAdapter = new ZarrLayerAdapter(map, zarrLayers);
 
 function showStatus(message: string, type: 'loading' | 'success' | 'error'): void {
   const status = document.getElementById('status');
@@ -115,7 +118,13 @@ async function loadZarrLayer(): Promise<void> {
 
     // Remove existing layer
     if (zarrLayer) {
+      const currentState = zarrAdapter.getLayerState(zarrLayer.id);
+      if (currentState) {
+        layerVisible = currentState.visible;
+      }
       map.removeLayer(zarrLayer.id);
+      zarrLayers.delete(zarrLayer.id);
+      zarrAdapter.notifyLayerRemoved(zarrLayer.id);
       zarrLayer = null;
     }
 
@@ -146,12 +155,17 @@ async function loadZarrLayer(): Promise<void> {
       variable: config.variable,
       colormap: config.colormap,
       clim: config.clim,
-      opacity: layerVisible ? currentOpacity : 0,
+      opacity: currentOpacity,
       selector: selector,
     });
 
     // Add layer to map
     map.addLayer(zarrLayer);
+    zarrLayers.set(zarrLayer.id, zarrLayer);
+    zarrAdapter.notifyLayerAdded(zarrLayer.id);
+    if (!layerVisible) {
+      zarrAdapter.setVisibility(zarrLayer.id, false);
+    }
 
     // Update legend
     updateLegend(config.colormap, config.clim);
@@ -180,18 +194,17 @@ function updateOpacity(): void {
     currentOpacity = parseInt(opacityInput.value) / 100;
     opacityValue.textContent = `${Math.round(currentOpacity * 100)}%`;
 
-    if (zarrLayer && layerVisible) {
-      zarrLayer.setOpacity(currentOpacity);
-      map.triggerRepaint();
+    if (zarrLayer) {
+      zarrAdapter.setOpacity(zarrLayer.id, currentOpacity);
     }
   }
 }
 
 function toggleLayer(): void {
-  layerVisible = !layerVisible;
   if (zarrLayer) {
-    zarrLayer.setOpacity(layerVisible ? currentOpacity : 0);
-    map.triggerRepaint();
+    const currentState = zarrAdapter.getLayerState(zarrLayer.id);
+    layerVisible = !(currentState?.visible ?? layerVisible);
+    zarrAdapter.setVisibility(zarrLayer.id, layerVisible);
   }
 }
 
@@ -207,6 +220,8 @@ map.on('load', () => {
   // Add layer control
   const layerControl = new LayerControl({
     collapsed: true,
+    customLayerAdapters: [zarrAdapter],
+    panelWidth: 360,
   });
   map.addControl(layerControl as unknown as maplibregl.IControl, 'top-right');
 
