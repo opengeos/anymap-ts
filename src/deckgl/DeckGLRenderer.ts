@@ -125,16 +125,30 @@ export class DeckGLRenderer extends MapLibreRenderer {
     const id = kwargs.id as string || `arc-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value; // Return arrays/numbers directly
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
     const layer = new ArcLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
-      getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
-      getSourcePosition: kwargs.getSourcePosition ?? ((d: any) => d.source || d.from || d.sourcePosition),
-      getTargetPosition: kwargs.getTargetPosition ?? ((d: any) => d.target || d.to || d.targetPosition),
-      getSourceColor: kwargs.getSourceColor ?? kwargs.sourceColor ?? [51, 136, 255, 255],
-      getTargetColor: kwargs.getTargetColor ?? kwargs.targetColor ?? [255, 136, 51, 255],
+      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
+      getSourceColor: makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
+      getTargetColor: makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
     });
 
     this.deckLayers.set(id, layer);
@@ -390,15 +404,29 @@ export class DeckGLRenderer extends MapLibreRenderer {
     const id = kwargs.id as string || `pointcloud-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value; // Return arrays/numbers directly
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
     const layer = new PointCloudLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       pointSize: kwargs.pointSize as number ?? 2,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
-      getNormal: kwargs.getNormal ?? ((d: any) => d.normal || [0, 0, 1]),
-      getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255],
+      getPosition: makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getNormal: makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
+      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
       sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
       coordinateSystem: kwargs.coordinateSystem as number,
       coordinateOrigin: kwargs.coordinateOrigin as [number, number, number],
