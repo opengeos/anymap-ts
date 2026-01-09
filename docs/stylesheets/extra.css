@@ -1,0 +1,17 @@
+.md-nav--primary .md-nav__list > .md-nav__item {
+  border-bottom: none;
+}
+
+@supports selector(:has(*)) {
+  .md-nav--primary .md-nav__list > .md-nav__item:has(> a[href*="examples/"]) {
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+
+  .md-nav--primary .md-nav__list > .md-nav__item--nested:has(a[href$="notebooks/potree/"]) {
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+}
