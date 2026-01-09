@@ -13,6 +13,7 @@ anymap_ts/static/*.js
 anymap_ts/static/*.css
 anymap_ts/static/*.map
 dist/
+docs/examples/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

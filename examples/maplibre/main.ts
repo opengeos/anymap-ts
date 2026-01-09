@@ -93,6 +93,7 @@ const map = new maplibregl.Map({
 
 // Add navigation control
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
+map.addControl(new maplibregl.FullscreenControl(), 'top-right');
 map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
 
 // Add draw control
