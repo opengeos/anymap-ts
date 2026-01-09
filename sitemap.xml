@@ -65,6 +65,10 @@
          <lastmod>2026-01-09</lastmod>
     </url>
     <url>
+         <loc>https://anymap-ts.gishub.org/notebooks/arc_layer/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
          <loc>https://anymap-ts.gishub.org/notebooks/cesium/</loc>
          <lastmod>2026-01-09</lastmod>
     </url>
@@ -97,6 +101,10 @@
          <lastmod>2026-01-09</lastmod>
     </url>
     <url>
+         <loc>https://anymap-ts.gishub.org/notebooks/pointcloud_layer/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
          <loc>https://anymap-ts.gishub.org/notebooks/potree/</loc>
          <lastmod>2026-01-09</lastmod>
     </url>
@@ -106,6 +114,10 @@
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/arc_layer/</loc>
          <lastmod>2026-01-09</lastmod>
     </url>
     <url>
@@ -138,6 +150,10 @@
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/openlayers/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/pointcloud_layer/</loc>
          <lastmod>2026-01-09</lastmod>
     </url>
     <url>
