@@ -26,6 +26,7 @@
     "clean": "rm -rf anymap_ts/static/*.js anymap_ts/static/*.css anymap_ts/static/*.map"
   },
   "dependencies": {
+    "@carbonplan/zarr-layer": "^0.2.1",
     "@deck.gl/aggregation-layers": "^9.0.0",
     "@deck.gl/core": "^9.0.0",
     "@deck.gl/layers": "^9.0.0",
