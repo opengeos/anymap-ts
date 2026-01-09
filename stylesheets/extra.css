@@ -1,0 +1,42 @@
+.md-nav--primary .md-nav__list > .md-nav__item {
+  border-bottom: none;
+}
+
+.md-nav--primary .md-nav__list > .md-nav__item > .md-nav__link {
+  transition: background-color 0.2s ease, padding-left 0.2s ease;
+  border-radius: 4px;
+  margin-right: 0.5rem;
+}
+
+.md-nav--primary .md-nav__list > .md-nav__item > .md-nav__link:hover {
+  background-color: var(--md-accent-fg-color--transparent);
+  padding-left: 0.5rem;
+}
+
+.md-nav--primary .md-nav__list > .md-nav__item > .md-nav__link--active {
+  background-color: var(--md-accent-fg-color--transparent);
+  font-weight: 600;
+}
+
+@supports selector(:has(*)) {
+  /* Separator after Report Issues (before Live Examples) */
+  .md-nav--primary .md-nav__list > .md-nav__item:has(> a[href*="issues"]) {
+    border-bottom: 2px solid var(--md-default-fg-color--lighter);
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  /* Separator after TypeScript (before API Reference) */
+  .md-nav--primary .md-nav__list > .md-nav__item--nested:has(a[href*="typescript/"]) {
+    border-bottom: 2px solid var(--md-default-fg-color--lighter);
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  /* Separator after API Reference (before Cesium notebooks) */
+  .md-nav--primary .md-nav__list > .md-nav__item--nested:has(a[href*="potree/"]) {
+    border-bottom: 2px solid var(--md-default-fg-color--lighter);
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+}

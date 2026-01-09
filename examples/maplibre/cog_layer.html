@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COG Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <script type="module" crossorigin src="../assets/maplibre-cog-dLMc4-sz.js"></script>
+  <link rel="modulepreload" crossorigin href="../assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="../assets/_commonjsHelpers-Cpj98o6Y.js">
+  <link rel="modulepreload" crossorigin href="../assets/maplibre-gl-BTjYUjN0.js">
+  <link rel="modulepreload" crossorigin href="../assets/maplibre-gl-layer-control-MF2ep52H.js">
+  <link rel="modulepreload" crossorigin href="../assets/polygon-utils-Bl0lNSY2.js">
+  <link rel="modulepreload" crossorigin href="../assets/index-Du0sVlOV.js">
+  <link rel="stylesheet" crossorigin href="../assets/maplibre-gl-layer-control-BSGvcCDv.css">
+  <link rel="stylesheet" crossorigin href="../assets/maplibre-cog-TZ4Ag16Y.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Cloud Optimized GeoTIFF (COG) Layer</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+
+  <div class="controls">
+    <h3>COG Layer Controls</h3>
+    <button id="btn-load">Load NLCD 2024 Land Cover</button>
+    <div class="control-group">
+      <label>Opacity: <span id="opacityValue">80%</span></label>
+      <input type="range" id="opacity" min="0" max="100" value="80">
+    </div>
+    <button id="btn-fit">Fit to COG Bounds</button>
+    <button id="btn-toggle">Toggle Layer Visibility</button>
+    <div class="status-message" id="status" style="display: none;"></div>
+  </div>
+
+  <div class="info-panel">
+    <h3>Dataset Information</h3>
+    <div class="info-row">
+      <span class="info-label">Dataset</span>
+      <span class="info-value">NLCD 2024 Land Cover</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Coverage</span>
+      <span class="info-value">Continental US</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Resolution</span>
+      <span class="info-value">30 meters</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Source</span>
+      <span class="info-value">USGS NLCD</span>
+    </div>
+    <div class="legend">
+      <div class="legend-title">Land Cover Classes</div>
+      <div class="legend-item"><div class="legend-color" style="background: #466b9f;"></div>Open Water</div>
+      <div class="legend-item"><div class="legend-color" style="background: #d1def8;"></div>Ice/Snow</div>
+      <div class="legend-item"><div class="legend-color" style="background: #dec5c5;"></div>Developed, Open</div>
+      <div class="legend-item"><div class="legend-color" style="background: #eb0000;"></div>Developed, Med</div>
+      <div class="legend-item"><div class="legend-color" style="background: #68ab5f;"></div>Deciduous Forest</div>
+      <div class="legend-item"><div class="legend-color" style="background: #1c5f2c;"></div>Evergreen Forest</div>
+      <div class="legend-item"><div class="legend-color" style="background: #dcd939;"></div>Pasture/Hay</div>
+      <div class="legend-item"><div class="legend-color" style="background: #ab6c28;"></div>Cultivated Crops</div>
+    </div>
+  </div>
+
+</body>
+</html>

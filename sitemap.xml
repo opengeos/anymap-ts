@@ -104,4 +104,48 @@
          <loc>https://anymap-ts.gishub.org/notebooks/zarr_layer/</loc>
          <lastmod>2026-01-09</lastmod>
     </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/cesium/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/cog_layer/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/deckgl/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/keplergl/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/leaflet/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/mapbox/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/maplibre/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/openlayers/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/potree/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
+    <url>
+         <loc>https://anymap-ts.gishub.org/typescript/examples/zarr_layer/</loc>
+         <lastmod>2026-01-09</lastmod>
+    </url>
 </urlset>
