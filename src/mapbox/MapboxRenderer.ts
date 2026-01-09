@@ -859,7 +859,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       return fallbackFn || ((d: any) => d[defaultProp]);
     };
 
-    const layer = new PointCloudLayer({
+    const layerProps: Record<string, unknown> = {
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -869,10 +869,17 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       getNormal: makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
       getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
       sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
-      coordinateSystem: kwargs.coordinateSystem as number,
-      coordinateOrigin: kwargs.coordinateOrigin as [number, number, number],
-      material: kwargs.material as boolean ?? true,
-    });
+    };
+
+    // Only add coordinate system props if explicitly provided
+    if (kwargs.coordinateSystem !== undefined && kwargs.coordinateSystem !== null) {
+      layerProps.coordinateSystem = kwargs.coordinateSystem as number;
+    }
+    if (kwargs.coordinateOrigin !== undefined && kwargs.coordinateOrigin !== null) {
+      layerProps.coordinateOrigin = kwargs.coordinateOrigin as [number, number, number];
+    }
+
+    const layer = new PointCloudLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
