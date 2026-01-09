@@ -39,7 +39,7 @@
     "mapbox-gl": "^3.9.0",
     "maplibre-gl": ">=5.0.0",
     "maplibre-gl-geo-editor": "^0.3.2",
-    "maplibre-gl-layer-control": "^0.5.0",
+    "maplibre-gl-layer-control": "^0.6.0",
     "ol": "^10.0.0"
   },
   "devDependencies": {
