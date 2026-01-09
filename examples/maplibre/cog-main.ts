@@ -1,12 +1,58 @@
 import maplibregl from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { COGLayer } from '@developmentseed/deck.gl-geotiff';
+import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
+import { toProj4 } from 'geotiff-geokeys-to-proj4';
+import { LayerControl } from 'maplibre-gl-layer-control';
+import 'maplibre-gl-layer-control/style.css';
 
 // NLCD 2024 Land Cover COG (Continental US)
 const COG_URL = 'https://s3.us-east-1.amazonaws.com/ds-deck.gl-raster-public/cog/Annual_NLCD_LndCov_2024_CU_C1V1.tif';
 
 // US bounds
 const US_BOUNDS: [[number, number], [number, number]] = [[-125, 24], [-66, 50]];
+
+// CONUS Albers Equal Area (EPSG:5070) - commonly used for NLCD
+const CONUS_ALBERS_PROJ4 = '+proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45.5 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
+
+/**
+ * Custom geoKeysParser to handle user-defined projections locally.
+ * The NLCD COG uses CONUS Albers (similar to EPSG:5070).
+ */
+async function geoKeysParser(
+  geoKeys: Record<string, unknown>,
+): Promise<proj.ProjectionInfo> {
+  console.log('geoKeysParser called with:', geoKeys);
+
+  try {
+    const result = toProj4(geoKeys as Parameters<typeof toProj4>[0]);
+    console.log('toProj4 result:', result);
+
+    // Check if we got a valid proj4 string
+    if (result.proj4 && typeof result.proj4 === 'string' && result.proj4.trim()) {
+      // Clean up the proj4 string - remove +axis=ne which can cause issues
+      let cleanProj4 = result.proj4
+        .replace(/\+axis=\w+\s*/g, '')
+        .replace(/\+pm=\d+\s*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      console.log('Using cleaned proj4:', cleanProj4);
+      return {
+        definition: cleanProj4,
+        proj4: cleanProj4,
+      };
+    }
+  } catch (error) {
+    console.warn('toProj4 error:', error);
+  }
+
+  // Fallback to CONUS Albers for NLCD-like data
+  console.log('Using CONUS Albers fallback');
+  return {
+    definition: CONUS_ALBERS_PROJ4,
+    proj4: CONUS_ALBERS_PROJ4,
+  };
+}
 
 // Create map centered on Continental US
 const map = new maplibregl.Map({
@@ -27,6 +73,13 @@ let currentOpacity = 0.8;
 
 map.on('load', () => {
   map.addControl(deckOverlay as unknown as maplibregl.IControl);
+
+  // Add layer control
+  const layerControl = new LayerControl({
+    collapsed: true,
+  });
+  map.addControl(layerControl as unknown as maplibregl.IControl, 'top-left');
+
   // Auto-load on startup
   setTimeout(loadNLCD, 500);
 });
@@ -56,24 +109,30 @@ async function loadNLCD(): Promise<void> {
   showStatus('Loading COG tiles...', 'loading');
 
   try {
-    // Create a COGLayer using @developmentseed/deck.gl-geotiff
+    // Create a COGLayer with custom geoKeysParser
     cogLayer = new COGLayer({
       id: 'cog-nlcd',
-      url: COG_URL,
+      geotiff: COG_URL,
       opacity: currentOpacity,
       visible: cogLayerVisible,
+      geoKeysParser,
+      onGeoTIFFLoad: (_tiff: unknown, options: { geographicBounds: { west: number; south: number; east: number; north: number } }) => {
+        const { west, south, east, north } = options.geographicBounds;
+        map.fitBounds([[west, south], [east, north]], { padding: 50, duration: 1500 });
+        showStatus('COG layer loaded successfully!', 'success');
+        setTimeout(hideStatus, 3000);
+      },
     });
 
     deckOverlay.setProps({ layers: [cogLayer] });
 
-    showStatus('COG layer loaded successfully!', 'success');
     if (btn) {
       btn.textContent = 'Reload NLCD 2024';
     }
-    setTimeout(hideStatus, 3000);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     showStatus(`Error: ${errorMessage}`, 'error');
+    console.error('COG load error:', error);
     if (btn) {
       btn.textContent = 'Load NLCD 2024 Land Cover';
     }
@@ -92,13 +151,13 @@ function updateOpacity(): void {
     currentOpacity = parseInt(opacityInput.value) / 100;
     opacityValue.textContent = `${Math.round(currentOpacity * 100)}%`;
 
-    // Recreate layer with new opacity
     if (cogLayer) {
       cogLayer = new COGLayer({
         id: 'cog-nlcd',
-        url: COG_URL,
+        geotiff: COG_URL,
         opacity: currentOpacity,
         visible: cogLayerVisible,
+        geoKeysParser,
       });
       deckOverlay.setProps({ layers: [cogLayer] });
     }
@@ -114,9 +173,10 @@ function toggleLayer(): void {
   if (cogLayer) {
     cogLayer = new COGLayer({
       id: 'cog-nlcd',
-      url: COG_URL,
+      geotiff: COG_URL,
       opacity: currentOpacity,
       visible: cogLayerVisible,
+      geoKeysParser,
     });
     deckOverlay.setProps({ layers: [cogLayer] });
   }

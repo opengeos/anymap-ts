@@ -32,7 +32,7 @@ export default defineConfig({
         // GPU-accelerated
         deckgl: resolve(__dirname, 'examples/deckgl/index.html'),
         keplergl: resolve(__dirname, 'examples/keplergl/index.html'),
-        zarr: resolve(__dirname, 'examples/zarr/index.html'),
+        'maplibre-zarr': resolve(__dirname, 'examples/maplibre/zarr_layer.html'),
       },
     },
   },

@@ -1,5 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import { ZarrLayer } from '@carbonplan/zarr-layer';
+import { LayerControl } from 'maplibre-gl-layer-control';
+import 'maplibre-gl-layer-control/style.css';
 
 interface DatasetConfig {
   url: string;
@@ -202,6 +204,12 @@ function onDatasetChange(): void {
 
 // Initialize on map load
 map.on('load', () => {
+  // Add layer control
+  const layerControl = new LayerControl({
+    collapsed: true,
+  });
+  map.addControl(layerControl as unknown as maplibregl.IControl, 'top-right');
+
   updateControlVisibility();
   loadZarrLayer();
 });

@@ -1,5 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
+import { LayerControl } from 'maplibre-gl-layer-control';
+import 'maplibre-gl-layer-control/style.css';
 
 // Create map centered on San Francisco Bay Area
 const map = new maplibregl.Map({
@@ -43,6 +45,12 @@ map.on('draw.delete', updateDrawData);
 
 // Add layers when map loads
 map.on('load', () => {
+  // Add layer control
+  const layerControl = new LayerControl({
+    collapsed: true,
+  });
+  map.addControl(layerControl as unknown as maplibregl.IControl, 'bottom-left');
+
   // Add GeoJSON polygon source
   map.addSource('polygon', {
     type: 'geojson',
