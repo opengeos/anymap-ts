@@ -33,6 +33,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 
 import { GeoEditorPlugin } from './plugins/GeoEditorPlugin';
 import { LayerControlPlugin } from './plugins/LayerControlPlugin';
+import { COGLayerAdapter, ZarrLayerAdapter } from './adapters';
 
 /**
  * Parse GeoKeys to proj4 definition for COG reprojection.
@@ -67,6 +68,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
   // Zarr layers
   protected zarrLayers: globalThis.Map<string, ZarrLayer> = new globalThis.Map();
+
+  // Layer control adapters
+  private cogAdapter: COGLayerAdapter | null = null;
+  private zarrAdapter: ZarrLayerAdapter | null = null;
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -686,6 +691,21 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const position = (kwargs.position as ControlPosition) || 'top-right';
     const collapsed = (kwargs.collapsed as boolean) || false;
 
+    // Create custom layer adapters for deck.gl and Zarr layers
+    const customLayerAdapters = [];
+
+    // Create COG adapter if deck overlay exists
+    if (this.deckOverlay) {
+      this.cogAdapter = new COGLayerAdapter(this.deckOverlay, this.deckLayers);
+      customLayerAdapters.push(this.cogAdapter);
+    }
+
+    // Create Zarr adapter if there are Zarr layers or map exists
+    if (this.map) {
+      this.zarrAdapter = new ZarrLayerAdapter(this.map, this.zarrLayers);
+      customLayerAdapters.push(this.zarrAdapter);
+    }
+
     // Initialize plugin if not already
     if (!this.layerControlPlugin) {
       this.layerControlPlugin = new LayerControlPlugin(this.map);
@@ -695,6 +715,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       layers,
       position,
       collapsed,
+      customLayerAdapters: customLayerAdapters.length > 0 ? customLayerAdapters : undefined,
     });
 
     this.stateManager.addControl('layer-control', 'layer-control', position, kwargs);
@@ -855,10 +876,21 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
+
+    // Notify adapter if it exists
+    if (this.cogAdapter) {
+      this.cogAdapter.notifyLayerAdded(id);
+    }
   }
 
   private handleRemoveCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
+
+    // Notify adapter before removal
+    if (this.cogAdapter) {
+      this.cogAdapter.notifyLayerRemoved(id);
+    }
+
     this.deckLayers.delete(id);
     this.updateDeckOverlay();
   }
@@ -896,10 +928,21 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     this.map.addLayer(layer as unknown as maplibregl.CustomLayerInterface);
     this.zarrLayers.set(id, layer);
+
+    // Notify adapter if it exists
+    if (this.zarrAdapter) {
+      this.zarrAdapter.notifyLayerAdded(id);
+    }
   }
 
   private handleRemoveZarrLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
+
+    // Notify adapter before removal
+    if (this.zarrAdapter) {
+      this.zarrAdapter.notifyLayerRemoved(id);
+    }
+
     if (this.map && this.map.getLayer(id)) {
       this.map.removeLayer(id);
     }
