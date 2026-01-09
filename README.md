@@ -2,8 +2,12 @@
 
 A Python package for creating interactive maps with [anywidget](https://anywidget.dev/) using TypeScript. Supports multiple mapping libraries including MapLibre GL JS, Mapbox GL JS, Leaflet, OpenLayers, DeckGL, Cesium, KeplerGL, and Potree.
 
-[![PyPI version](https://badge.fury.io/py/anymap-ts.svg)](https://badge.fury.io/py/anymap-ts)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![image](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/opengeos/anymap-ts/blob/main)
+[![image](https://img.shields.io/pypi/v/anymap-ts.svg)](https://pypi.python.org/pypi/anymap-ts)
+[![image](https://img.shields.io/conda/vn/conda-forge/anymap-ts.svg)](https://anaconda.org/conda-forge/anymap-ts)
+[![image](https://static.pepy.tech/badge/anymap-ts)](https://pepy.tech/project/anymap-ts)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/anymap-ts.svg)](https://anaconda.org/conda-forge/anymap-ts)
+[![image](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Supported Libraries
 
@@ -34,6 +38,12 @@ A Python package for creating interactive maps with [anywidget](https://anywidge
 
 ```bash
 pip install anymap-ts
+```
+
+### From conda-forge
+
+```bash
+conda install -c conda-forge anymap-ts
 ```
 
 ### From source (development)

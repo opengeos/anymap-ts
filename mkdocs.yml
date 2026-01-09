@@ -1,0 +1,111 @@
+site_name: anymap-ts
+site_description: A Python package for creating interactive maps with anywidget and TypeScript
+site_author: giswqs
+site_url: https://anymap-ts.gishub.org
+repo_url: https://github.com/opengeos/anymap-ts
+
+copyright: "Copyright &copy; 2025 Qiusheng Wu"
+
+theme:
+    palette:
+        - scheme: default
+          #   primary: blue
+          #   accent: indigo
+          toggle:
+              icon: material/toggle-switch-off-outline
+              name: Switch to dark mode
+        - scheme: slate
+          primary: indigo
+          accent: indigo
+          toggle:
+              icon: material/toggle-switch
+              name: Switch to light mode
+    name: material
+    icon:
+        repo: fontawesome/brands/github
+    # logo: assets/logo.png
+    # favicon: assets/favicon.png
+    features:
+        - navigation.instant
+        - navigation.tracking
+        - navigation.top
+        - search.highlight
+        - search.share
+    custom_dir: "docs/overrides"
+    font:
+        text: Google Sans
+        code: Regular
+
+plugins:
+    - search
+    - mkdocstrings
+    - git-revision-date
+    - git-revision-date-localized:
+          enable_creation_date: true
+          type: timeago
+    # - pdf-export
+    - mkdocs-jupyter:
+          include_source: True
+          ignore_h1_titles: True
+          execute: false
+          allow_errors: false
+          ignore: ["conf.py"]
+          execute_ignore: ["*ignore.ipynb"]
+
+markdown_extensions:
+    - admonition
+    - abbr
+    - attr_list
+    - def_list
+    - footnotes
+    - meta
+    - md_in_html
+    - pymdownx.superfences
+    - pymdownx.highlight:
+          linenums: true
+    - toc:
+          permalink: true
+
+# extra:
+#     analytics:
+#         provider: google
+#         property: UA-XXXXXXXXX-X
+
+nav:
+    - Home: index.md
+    - Installation: installation.md
+    - Usage: usage.md
+    - Contributing: contributing.md
+    - Changelog: https://github.com/opengeos/anymap-ts/releases
+    - Report Issues: https://github.com/opengeos/anymap-ts/issues
+    - Cesium:
+          - notebooks/cesium.ipynb
+    - DeckGL:
+          - notebooks/deckgl.ipynb
+    - KeplerGL:
+          - notebooks/keplergl.ipynb
+    - Leaflet:
+          - notebooks/leaflet.ipynb
+    - MapLibre:
+          - notebooks/maplibre.ipynb
+          - notebooks/cog_layer.ipynb
+          - notebooks/zarr_layer.ipynb
+    - Mapbox:
+          - notebooks/mapbox.ipynb
+    - OpenLayers:
+          - notebooks/openlayers.ipynb
+    - Potree:
+          - notebooks/potree.ipynb
+    - API Reference:
+          - anymap_ts module: anymap_ts.md
+          - base module: base.md
+          - basemaps module: basemaps.md
+          - maplibre module: maplibre.md
+          - mapbox module: mapbox.md
+          - leaflet module: leaflet.md
+          - openlayers module: openlayers.md
+          - deckgl module: deckgl.md
+          - cesium module: cesium.md
+          - keplergl module: keplergl.md
+          - potree module: potree.md
+          - utils module: utils.md
