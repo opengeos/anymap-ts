@@ -66,6 +66,9 @@ markdown_extensions:
     - toc:
           permalink: true
 
+extra_css:
+    - stylesheets/extra.css
+
 # extra:
 #     analytics:
 #         provider: google
@@ -78,6 +81,20 @@ nav:
     - Contributing: contributing.md
     - Changelog: https://github.com/opengeos/anymap-ts/releases
     - Report Issues: https://github.com/opengeos/anymap-ts/issues
+    - Live Examples: examples/index.html
+    - TypeScript:
+          - Overview: typescript/index.md
+          - Examples:
+                - MapLibre: typescript/examples/maplibre.md
+                - Leaflet: typescript/examples/leaflet.md
+                - Mapbox: typescript/examples/mapbox.md
+                - Cesium: typescript/examples/cesium.md
+                - DeckGL: typescript/examples/deckgl.md
+                - OpenLayers: typescript/examples/openlayers.md
+                - Potree: typescript/examples/potree.md
+                - KeplerGL: typescript/examples/keplergl.md
+                - COG Layer: typescript/examples/cog_layer.md
+                - Zarr Layer: typescript/examples/zarr_layer.md
     - Cesium:
           - notebooks/cesium.ipynb
     - DeckGL:

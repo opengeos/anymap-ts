@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeckGL - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>DeckGL GPU-Accelerated Layers Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Layer Types</h3>
+    <button id="btn-scatter" class="active">Scatterplot</button>
+    <button id="btn-hexagon">Hexagon</button>
+    <button id="btn-heatmap">Heatmap</button>
+    <button id="btn-arcs">Arcs</button>
+    <button id="btn-regenerate">Regenerate Data</button>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

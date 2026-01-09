@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Potree - anymap-ts Example</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Potree Point Cloud Viewer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div class="placeholder" id="placeholder">
+    <h2>Potree Point Cloud Visualization</h2>
+    <p>Potree is a WebGL-based point cloud renderer for large-scale LiDAR datasets.</p>
+    <p>To use Potree, you need to provide a point cloud dataset in Potree format (converted from LAS/LAZ using PotreeConverter).</p>
+    <code>
+viewer = PotreeViewer(point_budget=1000000, edl_enabled=True)<br>
+viewer.load_point_cloud("path/to/cloud.js", name="lidar_data")<br>
+viewer.set_point_size(1.5)
+    </code>
+    <p>Learn more at <a href="https://potree.github.io/" target="_blank">potree.github.io</a></p>
+  </div>
+  <div id="viewer" style="display: none;"></div>
+  <div class="controls">
+    <h3>Viewer Settings</h3>
+    <div class="control-group">
+      <label>Point Budget: <span id="budgetValue">1M</span></label>
+      <input type="range" id="pointBudget" min="100000" max="5000000" step="100000" value="1000000">
+    </div>
+    <div class="control-group">
+      <label>Point Size: <span id="sizeValue">1.0</span></label>
+      <input type="range" id="pointSize" min="0.1" max="3" step="0.1" value="1">
+    </div>
+    <div class="control-group">
+      <label>Point Shape</label>
+      <select id="pointShape">
+        <option value="circle">Circle</option>
+        <option value="square">Square</option>
+        <option value="paraboloid">Paraboloid</option>
+      </select>
+    </div>
+    <button id="btn-edl">Toggle Eye-Dome Lighting</button>
+    <button id="btn-reset">Reset Camera</button>
+  </div>
+  <div class="info-panel">
+    <h3>Viewer Info</h3>
+    <p>Point Budget: <span id="infoBudget">1,000,000</span></p>
+    <p>Point Size: <span id="infoSize">1.0</span></p>
+    <p>EDL Enabled: <span id="infoEDL">Yes</span></p>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

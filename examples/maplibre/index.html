@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MapLibre GL JS - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link href="https://unpkg.com/@mapbox/mapbox-gl-draw@1.4.3/dist/mapbox-gl-draw.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>MapLibre GL JS Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Actions</h3>
+    <button id="btn-sf">Fly to San Francisco</button>
+    <button id="btn-oakland">Fly to Oakland</button>
+    <button id="btn-points">Add Random Points</button>
+    <button id="btn-polygon">Toggle Polygon</button>
+    <button id="btn-draw">Get Draw Data</button>
+  </div>
+  <div class="draw-info">
+    <h3>Draw Data</h3>
+    <p>Use the draw tools (top-left) to draw shapes on the map.</p>
+    <pre id="drawData">No drawn features yet</pre>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
