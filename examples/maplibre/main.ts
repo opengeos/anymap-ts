@@ -3,6 +3,86 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import { LayerControl } from 'maplibre-gl-layer-control';
 import 'maplibre-gl-layer-control/style.css';
 
+const drawBlue = '#3bb2d0';
+const drawOrange = '#fbb03b';
+const drawWhite = '#fff';
+
+const drawStyles = [
+  {
+    id: 'gl-draw-polygon-fill',
+    type: 'fill',
+    filter: ['all', ['==', '$type', 'Polygon']],
+    paint: {
+      'fill-color': ['case', ['==', ['get', 'active'], 'true'], drawOrange, drawBlue],
+      'fill-opacity': 0.1,
+    },
+  },
+  {
+    id: 'gl-draw-lines',
+    type: 'line',
+    filter: ['any', ['==', '$type', 'LineString'], ['==', '$type', 'Polygon']],
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': ['case', ['==', ['get', 'active'], 'true'], drawOrange, drawBlue],
+      'line-dasharray': [
+        'case',
+        ['==', ['get', 'active'], 'true'],
+        ['literal', [0.2, 2]],
+        ['literal', [2, 0]],
+      ],
+      'line-width': 2,
+    },
+  },
+  {
+    id: 'gl-draw-point-outer',
+    type: 'circle',
+    filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']],
+    paint: {
+      'circle-radius': ['case', ['==', ['get', 'active'], 'true'], 7, 5],
+      'circle-color': drawWhite,
+    },
+  },
+  {
+    id: 'gl-draw-point-inner',
+    type: 'circle',
+    filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']],
+    paint: {
+      'circle-radius': ['case', ['==', ['get', 'active'], 'true'], 5, 3],
+      'circle-color': ['case', ['==', ['get', 'active'], 'true'], drawOrange, drawBlue],
+    },
+  },
+  {
+    id: 'gl-draw-vertex-outer',
+    type: 'circle',
+    filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex'], ['!=', 'mode', 'simple_select']],
+    paint: {
+      'circle-radius': ['case', ['==', ['get', 'active'], 'true'], 7, 5],
+      'circle-color': drawWhite,
+    },
+  },
+  {
+    id: 'gl-draw-vertex-inner',
+    type: 'circle',
+    filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex'], ['!=', 'mode', 'simple_select']],
+    paint: {
+      'circle-radius': ['case', ['==', ['get', 'active'], 'true'], 5, 3],
+      'circle-color': drawOrange,
+    },
+  },
+  {
+    id: 'gl-draw-midpoint',
+    type: 'circle',
+    filter: ['all', ['==', 'meta', 'midpoint']],
+    paint: {
+      'circle-radius': 3,
+      'circle-color': drawOrange,
+    },
+  },
+];
+
 // Create map centered on San Francisco Bay Area
 const map = new maplibregl.Map({
   container: 'map',
@@ -24,6 +104,7 @@ const draw = new MapboxDraw({
     point: true,
     trash: true,
   },
+  styles: drawStyles,
 });
 map.addControl(draw as unknown as maplibregl.IControl, 'top-left');
 

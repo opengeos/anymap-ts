@@ -4,6 +4,7 @@ import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
 import { LayerControl } from 'maplibre-gl-layer-control';
 import 'maplibre-gl-layer-control/style.css';
+import { COGLayerAdapter } from '../../src/maplibre/adapters/COGLayerAdapter';
 
 // NLCD 2024 Land Cover COG (Continental US)
 const COG_URL = 'https://s3.us-east-1.amazonaws.com/ds-deck.gl-raster-public/cog/Annual_NLCD_LndCov_2024_CU_C1V1.tif';
@@ -20,12 +21,10 @@ const CONUS_ALBERS_PROJ4 = '+proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45
  */
 async function geoKeysParser(
   geoKeys: Record<string, unknown>,
-): Promise<proj.ProjectionInfo> {
-  console.log('geoKeysParser called with:', geoKeys);
+): Promise<proj.ProjectionInfo | null> {
 
   try {
     const result = toProj4(geoKeys as Parameters<typeof toProj4>[0]);
-    console.log('toProj4 result:', result);
 
     // Check if we got a valid proj4 string
     if (result.proj4 && typeof result.proj4 === 'string' && result.proj4.trim()) {
@@ -36,10 +35,14 @@ async function geoKeysParser(
         .replace(/\s+/g, ' ')
         .trim();
 
-      console.log('Using cleaned proj4:', cleanProj4);
+      const parsed = proj.parseCrs(cleanProj4);
+      const coordinatesUnits = typeof result.coordinatesUnits === 'string'
+        ? result.coordinatesUnits as proj.SupportedCrsUnit
+        : 'metre';
       return {
-        definition: cleanProj4,
-        proj4: cleanProj4,
+        def: cleanProj4,
+        parsed,
+        coordinatesUnits,
       };
     }
   } catch (error) {
@@ -47,10 +50,10 @@ async function geoKeysParser(
   }
 
   // Fallback to CONUS Albers for NLCD-like data
-  console.log('Using CONUS Albers fallback');
   return {
-    definition: CONUS_ALBERS_PROJ4,
-    proj4: CONUS_ALBERS_PROJ4,
+    def: CONUS_ALBERS_PROJ4,
+    parsed: proj.parseCrs(CONUS_ALBERS_PROJ4),
+    coordinatesUnits: 'metre',
   };
 }
 
@@ -70,6 +73,8 @@ const deckOverlay = new MapboxOverlay({ layers: [] });
 let cogLayer: COGLayer | null = null;
 let cogLayerVisible = true;
 let currentOpacity = 0.8;
+const deckLayers = new Map<string, unknown>();
+const cogAdapter = new COGLayerAdapter(map, deckOverlay, deckLayers);
 
 map.on('load', () => {
   map.addControl(deckOverlay as unknown as maplibregl.IControl);
@@ -77,6 +82,7 @@ map.on('load', () => {
   // Add layer control
   const layerControl = new LayerControl({
     collapsed: true,
+    customLayerAdapters: [cogAdapter],
   });
   map.addControl(layerControl as unknown as maplibregl.IControl, 'top-left');
 
@@ -109,6 +115,15 @@ async function loadNLCD(): Promise<void> {
   showStatus('Loading COG tiles...', 'loading');
 
   try {
+    if (cogLayer) {
+      const currentState = cogAdapter.getLayerState(cogLayer.id);
+      if (currentState) {
+        cogLayerVisible = currentState.visible;
+      }
+      deckLayers.delete(cogLayer.id);
+      cogAdapter.notifyLayerRemoved(cogLayer.id);
+    }
+
     // Create a COGLayer with custom geoKeysParser
     cogLayer = new COGLayer({
       id: 'cog-nlcd',
@@ -124,7 +139,13 @@ async function loadNLCD(): Promise<void> {
       },
     });
 
-    deckOverlay.setProps({ layers: [cogLayer] });
+    deckLayers.set(cogLayer.id, cogLayer);
+    deckOverlay.setProps({ layers: Array.from(deckLayers.values()) });
+    cogAdapter.notifyLayerAdded(cogLayer.id);
+    if (!cogLayerVisible) {
+      cogAdapter.setVisibility(cogLayer.id, false);
+      cogLayer = deckLayers.get(cogLayer.id) as COGLayer;
+    }
 
     if (btn) {
       btn.textContent = 'Reload NLCD 2024';
@@ -152,14 +173,8 @@ function updateOpacity(): void {
     opacityValue.textContent = `${Math.round(currentOpacity * 100)}%`;
 
     if (cogLayer) {
-      cogLayer = new COGLayer({
-        id: 'cog-nlcd',
-        geotiff: COG_URL,
-        opacity: currentOpacity,
-        visible: cogLayerVisible,
-        geoKeysParser,
-      });
-      deckOverlay.setProps({ layers: [cogLayer] });
+      cogAdapter.setOpacity(cogLayer.id, currentOpacity);
+      cogLayer = deckLayers.get(cogLayer.id) as COGLayer;
     }
   }
 }
@@ -169,16 +184,11 @@ function fitToBounds(): void {
 }
 
 function toggleLayer(): void {
-  cogLayerVisible = !cogLayerVisible;
   if (cogLayer) {
-    cogLayer = new COGLayer({
-      id: 'cog-nlcd',
-      geotiff: COG_URL,
-      opacity: currentOpacity,
-      visible: cogLayerVisible,
-      geoKeysParser,
-    });
-    deckOverlay.setProps({ layers: [cogLayer] });
+    const currentState = cogAdapter.getLayerState(cogLayer.id);
+    cogLayerVisible = !(currentState?.visible ?? cogLayerVisible);
+    cogAdapter.setVisibility(cogLayer.id, cogLayerVisible);
+    cogLayer = deckLayers.get(cogLayer.id) as COGLayer;
   }
 }
 
