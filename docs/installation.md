@@ -2,15 +2,17 @@
 
 ## Stable release
 
-To install anymap-ts, run this command in your terminal:
+To install anymap-ts from PyPI, run this command in your terminal:
 
 ```bash
 pip install anymap-ts
 ```
 
-This is the preferred method to install anymap-ts, as it will always install the most recent stable release.
+To install anymap-ts from conda-forge, run this command in your terminal:
 
-If you don't have [pip](https://pip.pypa.io) installed, this [Python installation guide](http://docs.python-guide.org/en/latest/starting/installation/) can guide you through the process.
+```bash
+conda install -c conda-forge anymap-ts
+```
 
 ## From sources
 

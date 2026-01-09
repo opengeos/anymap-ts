@@ -40,6 +40,12 @@ A Python package for creating interactive maps with [anywidget](https://anywidge
 pip install anymap-ts
 ```
 
+### From conda-forge
+
+```bash
+conda install -c conda-forge anymap-ts
+```
+
 ### From source (development)
 
 ```bash
