@@ -64,7 +64,9 @@ class MapLibreMap(MapWidget):
             style: MapLibre style URL or style object
             bearing: Map bearing in degrees
             pitch: Map pitch in degrees
-            controls: Dict of controls to add (e.g., {"navigation": True})
+            controls: Dict of controls to add. If None, defaults to
+                {"navigation": True, "fullscreen": True, "globe": True, "layer-control": True}.
+                Use {"layer-control": {"collapsed": True}} for custom options.
             **kwargs: Additional widget arguments
         """
         # Handle style shortcuts
@@ -90,13 +92,24 @@ class MapLibreMap(MapWidget):
 
         # Add default controls
         if controls is None:
-            controls = {"navigation": True, "fullscreen": True, "globe": True}
+            controls = {
+                "navigation": True,
+                "fullscreen": True,
+                "globe": True,
+                "layer-control": True,
+            }
 
         for control_name, config in controls.items():
             if config:
-                self.add_control(
-                    control_name, **(config if isinstance(config, dict) else {})
-                )
+                if control_name == "layer-control":
+                    # Layer control uses a separate method
+                    self.add_layer_control(
+                        **(config if isinstance(config, dict) else {})
+                    )
+                else:
+                    self.add_control(
+                        control_name, **(config if isinstance(config, dict) else {})
+                    )
 
     # -------------------------------------------------------------------------
     # Basemap Methods
