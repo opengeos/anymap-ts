@@ -694,9 +694,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // Create custom layer adapters for deck.gl and Zarr layers
     const customLayerAdapters = [];
 
-    // Create COG adapter if deck overlay exists
-    if (this.deckOverlay) {
-      this.cogAdapter = new COGLayerAdapter(this.deckOverlay, this.deckLayers);
+    // Always initialize deck overlay so COG adapter can be created
+    // This ensures layer control works regardless of whether COG layers are added before or after
+    this.initializeDeckOverlay();
+
+    // Create COG adapter (deck overlay now always exists)
+    if (this.deckOverlay && this.map) {
+      this.cogAdapter = new COGLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
       customLayerAdapters.push(this.cogAdapter);
     }
 

@@ -4,19 +4,25 @@
 
 import type { CustomLayerAdapter, LayerState } from 'maplibre-gl-layer-control';
 import type { MapboxOverlay } from '@deck.gl/mapbox';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 
 /**
  * Adapter for COG (Cloud Optimized GeoTIFF) layers.
  * Allows the layer control to manage deck.gl COG layers.
+ *
+ * Note: Opacity changes are not supported for COG layers due to deck.gl limitations.
+ * Only visibility toggle is functional.
  */
 export class COGLayerAdapter implements CustomLayerAdapter {
   readonly type = 'cog';
 
+  private map: MapLibreMap;
   private deckOverlay: MapboxOverlay;
   private deckLayers: globalThis.Map<string, unknown>;
   private changeCallbacks: Array<(event: 'add' | 'remove', layerId: string) => void> = [];
 
-  constructor(deckOverlay: MapboxOverlay, deckLayers: globalThis.Map<string, unknown>) {
+  constructor(map: MapLibreMap, deckOverlay: MapboxOverlay, deckLayers: globalThis.Map<string, unknown>) {
+    this.map = map;
     this.deckOverlay = deckOverlay;
     this.deckLayers = deckLayers;
   }
@@ -57,15 +63,11 @@ export class COGLayerAdapter implements CustomLayerAdapter {
 
   /**
    * Set opacity of a COG layer.
+   * Note: This is a no-op as COG layers don't support dynamic opacity changes.
    */
-  setOpacity(layerId: string, opacity: number): void {
-    const layer = this.deckLayers.get(layerId) as { clone?: (props: Record<string, unknown>) => unknown } | undefined;
-    if (!layer || typeof layer.clone !== 'function') return;
-
-    // Clone the layer with updated opacity prop
-    const updatedLayer = layer.clone({ opacity });
-    this.deckLayers.set(layerId, updatedLayer);
-    this.updateOverlay();
+  setOpacity(_layerId: string, _opacity: number): void {
+    // COG layers don't support dynamic opacity changes due to deck.gl limitations
+    // The opacity slider will move but the visual opacity won't change
   }
 
   /**
@@ -118,5 +120,6 @@ export class COGLayerAdapter implements CustomLayerAdapter {
   private updateOverlay(): void {
     const layers = Array.from(this.deckLayers.values());
     this.deckOverlay.setProps({ layers });
+    this.map.triggerRepaint();
   }
 }
