@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-  root: '.',
+  root: 'examples',
   publicDir: 'public',
   resolve: {
     alias: {
@@ -13,12 +13,15 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+    fs: {
+      allow: [resolve(__dirname)],
+    },
   },
   build: {
     outDir: 'dist',
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
+        main: resolve(__dirname, 'examples/index.html'),
         // MapLibre examples
         maplibre: resolve(__dirname, 'examples/maplibre/index.html'),
         'maplibre-cog': resolve(__dirname, 'examples/maplibre/cog_layer.html'),

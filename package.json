@@ -17,7 +17,7 @@
     "build": "npm run build:maplibre",
     "build:all": "npm run build:maplibre && npm run build:mapbox && npm run build:leaflet && npm run build:deckgl && npm run build:openlayers && npm run build:cesium && npm run build:keplergl && npm run build:potree",
     "build:prod": "npm run build:all -- --minify --sourcemap",
-    "build:examples": "vite build --outDir docs/examples --emptyOutDir --base=./",
+    "build:examples": "vite build --outDir ../docs/examples --emptyOutDir --base=./",
     "watch": "npm run build:maplibre -- --watch",
     "dev": "vite",
     "dev:watch": "npm run watch",

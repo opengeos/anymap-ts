@@ -98,6 +98,7 @@ nav:
           - notebooks/potree.ipynb
     - TypeScript:
           - Overview: typescript/index.md
+          - Live Examples: examples/index.html
           - Examples:
                 - MapLibre: typescript/examples/maplibre.md
                 - Leaflet: typescript/examples/leaflet.md
