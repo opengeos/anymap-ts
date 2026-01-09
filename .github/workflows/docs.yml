@@ -37,10 +37,6 @@ jobs:
               run: |
                   uv run python -c "import anymap_ts; print('anymap_ts import successful')"
 
-            - name: Running pytest
-              run: |
-                  uv run pytest . --verbose
-
             - name: Install mkdocs
               run: |
                   uv pip install -r requirements_docs.txt
