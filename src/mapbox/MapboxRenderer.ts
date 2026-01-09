@@ -14,6 +14,7 @@ import mapboxgl, {
   Popup,
 } from 'mapbox-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
+import { ArcLayer, PointCloudLayer } from '@deck.gl/layers';
 import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
@@ -241,6 +242,14 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     // COG layers (deck.gl)
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
     this.registerMethod('removeCOGLayer', this.handleRemoveCOGLayer.bind(this));
+
+    // Arc layers (deck.gl)
+    this.registerMethod('addArcLayer', this.handleAddArcLayer.bind(this));
+    this.registerMethod('removeArcLayer', this.handleRemoveArcLayer.bind(this));
+
+    // PointCloud layers (deck.gl)
+    this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
+    this.registerMethod('removePointCloudLayer', this.handleRemovePointCloudLayer.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -767,6 +776,81 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   }
 
   private handleRemoveCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    this.deckLayers.delete(id);
+    this.updateDeckOverlay();
+  }
+
+  // -------------------------------------------------------------------------
+  // Arc layer handlers (deck.gl)
+  // -------------------------------------------------------------------------
+
+  private handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    // Initialize deck.gl overlay if needed
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `arc-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new ArcLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
+      getSourcePosition: kwargs.getSourcePosition ?? ((d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: kwargs.getTargetPosition ?? ((d: any) => d.target || d.to || d.targetPosition),
+      getSourceColor: kwargs.getSourceColor ?? kwargs.sourceColor ?? [51, 136, 255, 255],
+      getTargetColor: kwargs.getTargetColor ?? kwargs.targetColor ?? [255, 136, 51, 255],
+      getHeight: kwargs.getHeight ?? kwargs.height ?? 1,
+      greatCircle: kwargs.greatCircle as boolean ?? false,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleRemoveArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    this.deckLayers.delete(id);
+    this.updateDeckOverlay();
+  }
+
+  // -------------------------------------------------------------------------
+  // PointCloud layer handlers (deck.gl)
+  // -------------------------------------------------------------------------
+
+  private handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    // Initialize deck.gl overlay if needed
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `pointcloud-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new PointCloudLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      pointSize: kwargs.pointSize as number ?? 2,
+      getPosition: kwargs.getPosition ?? ((d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getNormal: kwargs.getNormal ?? ((d: any) => d.normal || [0, 0, 1]),
+      getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255],
+      sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
+      coordinateSystem: kwargs.coordinateSystem as number,
+      coordinateOrigin: kwargs.coordinateOrigin as [number, number, number],
+      material: kwargs.material as boolean ?? true,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleRemovePointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
     this.deckLayers.delete(id);
     this.updateDeckOverlay();

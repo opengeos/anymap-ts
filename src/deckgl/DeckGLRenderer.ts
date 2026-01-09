@@ -4,7 +4,7 @@
  */
 
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer, PointCloudLayer } from '@deck.gl/layers';
 import { HexagonLayer, HeatmapLayer, GridLayer, ContourLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
 import { GeoJsonLayer } from '@deck.gl/layers';
 import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
@@ -73,6 +73,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.registerMethod('addGeoJsonLayer', this.handleAddGeoJsonLayer.bind(this));
     this.registerMethod('addContourLayer', this.handleAddContourLayer.bind(this));
     this.registerMethod('addScreenGridLayer', this.handleAddScreenGridLayer.bind(this));
+    this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
 
     // Layer management
@@ -379,6 +380,29 @@ export class DeckGLRenderer extends MapLibreRenderer {
         [240, 59, 32, 212],
         [189, 0, 38, 255],
       ],
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string || `pointcloud-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new PointCloudLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      pointSize: kwargs.pointSize as number ?? 2,
+      getPosition: kwargs.getPosition ?? ((d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getNormal: kwargs.getNormal ?? ((d: any) => d.normal || [0, 0, 1]),
+      getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255],
+      sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
+      coordinateSystem: kwargs.coordinateSystem as number,
+      coordinateOrigin: kwargs.coordinateOrigin as [number, number, number],
+      material: kwargs.material as boolean ?? true,
     });
 
     this.deckLayers.set(id, layer);
