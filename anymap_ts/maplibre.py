@@ -569,6 +569,221 @@ class MapLibreMap(MapWidget):
         self.call_js_method("updateZarrLayer", **update_kwargs)
 
     # -------------------------------------------------------------------------
+    # Arc Layer (deck.gl)
+    # -------------------------------------------------------------------------
+
+    def add_arc_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_source_position: Union[str, Any] = "source",
+        get_target_position: Union[str, Any] = "target",
+        get_source_color: Optional[List[int]] = None,
+        get_target_color: Optional[List[int]] = None,
+        get_width: Union[float, str] = 1,
+        get_height: float = 1,
+        great_circle: bool = False,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add an arc layer for origin-destination visualization using deck.gl.
+
+        Arc layers are ideal for visualizing connections between locations,
+        such as flight routes, migration patterns, or network flows.
+
+        Args:
+            data: Array of data objects with source/target coordinates.
+                Each object should have source and target positions.
+            name: Layer ID. If None, auto-generated.
+            get_source_position: Accessor for source position [lng, lat].
+                Can be a string (property name) or a value.
+            get_target_position: Accessor for target position [lng, lat].
+                Can be a string (property name) or a value.
+            get_source_color: Source end color as [r, g, b, a].
+                Default: [51, 136, 255, 255] (blue).
+            get_target_color: Target end color as [r, g, b, a].
+                Default: [255, 136, 51, 255] (orange).
+            get_width: Arc width in pixels. Can be a number or accessor.
+            get_height: Arc height multiplier. Higher values create more curved arcs.
+            great_circle: Whether to draw arcs along great circles.
+            pickable: Whether layer responds to hover/click events.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional ArcLayer props.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> m = MapLibreMap()
+            >>> arcs = [
+            ...     {"source": [-122.4, 37.8], "target": [-73.9, 40.7]},
+            ...     {"source": [-122.4, 37.8], "target": [-0.1, 51.5]},
+            ... ]
+            >>> m.add_arc_layer(arcs, name="flights")
+        """
+        layer_id = name or f"arc-{len(self._layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addArcLayer",
+            id=layer_id,
+            data=processed_data,
+            getSourcePosition=get_source_position,
+            getTargetPosition=get_target_position,
+            getSourceColor=get_source_color or [51, 136, 255, 255],
+            getTargetColor=get_target_color or [255, 136, 51, 255],
+            getWidth=get_width,
+            getHeight=get_height,
+            greatCircle=great_circle,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "arc",
+            },
+        }
+
+    def remove_arc_layer(self, layer_id: str) -> None:
+        """Remove an arc layer.
+
+        Args:
+            layer_id: Layer identifier to remove.
+        """
+        if layer_id in self._layers:
+            layers = dict(self._layers)
+            del layers[layer_id]
+            self._layers = layers
+        self.call_js_method("removeArcLayer", layer_id)
+
+    # -------------------------------------------------------------------------
+    # PointCloud Layer (deck.gl)
+    # -------------------------------------------------------------------------
+
+    def add_point_cloud_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_position: Union[str, Any] = "position",
+        get_color: Optional[Union[List[int], str]] = None,
+        get_normal: Optional[Union[str, Any]] = None,
+        point_size: float = 2,
+        size_units: str = "pixels",
+        pickable: bool = True,
+        opacity: float = 1.0,
+        material: bool = True,
+        coordinate_system: Optional[int] = None,
+        coordinate_origin: Optional[List[float]] = None,
+        **kwargs,
+    ) -> None:
+        """Add a point cloud layer for 3D point visualization using deck.gl.
+
+        Point cloud layers render large collections of 3D points, ideal for
+        LiDAR data, photogrammetry outputs, or any 3D point dataset.
+
+        Args:
+            data: Array of point data with positions. Each point should have
+                x, y, z coordinates (or position array).
+            name: Layer ID. If None, auto-generated.
+            get_position: Accessor for point position [x, y, z].
+                Can be a string (property name) or a value.
+            get_color: Accessor or value for point color [r, g, b, a].
+                Default: [255, 255, 255, 255] (white).
+            get_normal: Accessor for point normal [nx, ny, nz] for lighting.
+                Default: [0, 0, 1] (pointing up).
+            point_size: Point size in pixels or meters (depends on size_units).
+            size_units: Size units: 'pixels', 'meters', or 'common'.
+            pickable: Whether layer responds to hover/click events.
+            opacity: Layer opacity (0-1).
+            material: Whether to enable lighting effects.
+            coordinate_system: Coordinate system for positions.
+            coordinate_origin: Origin for coordinate system [x, y, z].
+            **kwargs: Additional PointCloudLayer props.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> import numpy as np
+            >>> m = MapLibreMap(pitch=45)
+            >>> points = [
+            ...     {"position": [-122.4, 37.8, 100], "color": [255, 0, 0, 255]},
+            ...     {"position": [-122.3, 37.7, 200], "color": [0, 255, 0, 255]},
+            ... ]
+            >>> m.add_point_cloud_layer(points, point_size=5)
+        """
+        layer_id = name or f"pointcloud-{len(self._layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addPointCloudLayer",
+            id=layer_id,
+            data=processed_data,
+            getPosition=get_position,
+            getColor=get_color or [255, 255, 255, 255],
+            getNormal=get_normal,
+            pointSize=point_size,
+            sizeUnits=size_units,
+            pickable=pickable,
+            opacity=opacity,
+            material=material,
+            coordinateSystem=coordinate_system,
+            coordinateOrigin=coordinate_origin,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "pointcloud",
+            },
+        }
+
+    def remove_point_cloud_layer(self, layer_id: str) -> None:
+        """Remove a point cloud layer.
+
+        Args:
+            layer_id: Layer identifier to remove.
+        """
+        if layer_id in self._layers:
+            layers = dict(self._layers)
+            del layers[layer_id]
+            self._layers = layers
+        self.call_js_method("removePointCloudLayer", layer_id)
+
+    def _process_deck_data(self, data: Any) -> Any:
+        """Process data for deck.gl layers.
+
+        Handles GeoDataFrame, file paths, GeoJSON, and list of dicts.
+
+        Args:
+            data: Input data in various formats.
+
+        Returns:
+            Processed data suitable for deck.gl layers.
+        """
+        # Handle GeoDataFrame
+        if hasattr(data, "__geo_interface__"):
+            return data.__geo_interface__
+
+        # Handle file paths
+        if isinstance(data, (str, Path)):
+            path = Path(data)
+            if path.exists():
+                try:
+                    import geopandas as gpd
+
+                    gdf = gpd.read_file(path)
+                    return gdf.__geo_interface__
+                except ImportError:
+                    pass
+
+        # Return as-is for lists, dicts, etc.
+        return data
+
+    # -------------------------------------------------------------------------
     # Layer Management
     # -------------------------------------------------------------------------
 

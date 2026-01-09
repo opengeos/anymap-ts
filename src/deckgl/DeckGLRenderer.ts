@@ -4,7 +4,7 @@
  */
 
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer, PointCloudLayer } from '@deck.gl/layers';
 import { HexagonLayer, HeatmapLayer, GridLayer, ContourLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
 import { GeoJsonLayer } from '@deck.gl/layers';
 import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
@@ -73,6 +73,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.registerMethod('addGeoJsonLayer', this.handleAddGeoJsonLayer.bind(this));
     this.registerMethod('addContourLayer', this.handleAddContourLayer.bind(this));
     this.registerMethod('addScreenGridLayer', this.handleAddScreenGridLayer.bind(this));
+    this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
 
     // Layer management
@@ -124,16 +125,30 @@ export class DeckGLRenderer extends MapLibreRenderer {
     const id = kwargs.id as string || `arc-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value; // Return arrays/numbers directly
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
     const layer = new ArcLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
-      getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
-      getSourcePosition: kwargs.getSourcePosition ?? ((d: any) => d.source || d.from || d.sourcePosition),
-      getTargetPosition: kwargs.getTargetPosition ?? ((d: any) => d.target || d.to || d.targetPosition),
-      getSourceColor: kwargs.getSourceColor ?? kwargs.sourceColor ?? [51, 136, 255, 255],
-      getTargetColor: kwargs.getTargetColor ?? kwargs.targetColor ?? [255, 136, 51, 255],
+      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
+      getSourceColor: makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
+      getTargetColor: makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
     });
 
     this.deckLayers.set(id, layer);
@@ -380,6 +395,50 @@ export class DeckGLRenderer extends MapLibreRenderer {
         [189, 0, 38, 255],
       ],
     });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string || `pointcloud-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value; // Return arrays/numbers directly
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
+    const layerProps: Record<string, unknown> = {
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      pointSize: kwargs.pointSize as number ?? 2,
+      getPosition: makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getNormal: makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
+      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
+      sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
+    };
+
+    // Only add coordinate system props if explicitly provided
+    if (kwargs.coordinateSystem !== undefined && kwargs.coordinateSystem !== null) {
+      layerProps.coordinateSystem = kwargs.coordinateSystem as number;
+    }
+    if (kwargs.coordinateOrigin !== undefined && kwargs.coordinateOrigin !== null) {
+      layerProps.coordinateOrigin = kwargs.coordinateOrigin as [number, number, number];
+    }
+
+    const layer = new PointCloudLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();

@@ -198,6 +198,89 @@ class DeckGLMap(MapLibreMap):
         }
 
     # -------------------------------------------------------------------------
+    # DeckGL Point Cloud Layer
+    # -------------------------------------------------------------------------
+
+    def add_point_cloud_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_position: Union[str, Callable] = "position",
+        get_color: Union[List[int], str, Callable] = None,
+        get_normal: Union[str, Callable] = None,
+        point_size: float = 2,
+        size_units: str = "pixels",
+        coordinate_system: Optional[str] = None,
+        coordinate_origin: Optional[List[float]] = None,
+        pickable: bool = True,
+        opacity: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Add a point cloud layer for 3D point visualization.
+
+        Renders large point cloud datasets typically from LiDAR or 3D scanning.
+        Supports both 2D and 3D coordinates with optional normal vectors for
+        lighting effects.
+
+        Args:
+            data: Array of point data with position [x, y, z] coordinates.
+            name: Layer ID. If None, auto-generated.
+            get_position: Accessor for point position [x, y, z].
+            get_color: Accessor for point color [r, g, b, a].
+            get_normal: Accessor for point normal [nx, ny, nz] for lighting.
+            point_size: Point size in size_units.
+            size_units: Units for point_size ('pixels' or 'meters').
+            coordinate_system: Coordinate system ('CARTESIAN', 'METER_OFFSETS',
+                'LNGLAT', 'LNGLAT_OFFSETS').
+            coordinate_origin: Origin for offset coordinate systems [lng, lat, z].
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional PointCloudLayer props.
+
+        Example:
+            >>> m = DeckGLMap()
+            >>> points = [
+            ...     {"position": [-122.4, 37.8, 100], "color": [255, 0, 0]},
+            ...     {"position": [-122.5, 37.7, 200], "color": [0, 255, 0]},
+            ... ]
+            >>> m.add_point_cloud_layer(
+            ...     data=points,
+            ...     point_size=5,
+            ...     get_color="color"
+            ... )
+        """
+        layer_id = name or f"pointcloud-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        layer_kwargs = {
+            "id": layer_id,
+            "data": processed_data,
+            "getPosition": get_position,
+            "getColor": get_color or [255, 255, 255, 255],
+            "pointSize": point_size,
+            "sizeUnits": size_units,
+            "pickable": pickable,
+            "opacity": opacity,
+        }
+
+        if get_normal is not None:
+            layer_kwargs["getNormal"] = get_normal
+
+        if coordinate_system is not None:
+            layer_kwargs["coordinateSystem"] = coordinate_system
+
+        if coordinate_origin is not None:
+            layer_kwargs["coordinateOrigin"] = coordinate_origin
+
+        layer_kwargs.update(kwargs)
+        self.call_js_method("addPointCloudLayer", **layer_kwargs)
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "PointCloudLayer", "id": layer_id},
+        }
+
+    # -------------------------------------------------------------------------
     # DeckGL Path Layer
     # -------------------------------------------------------------------------
 

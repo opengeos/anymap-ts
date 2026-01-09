@@ -25,6 +25,8 @@ export default defineConfig({
         // MapLibre examples
         maplibre: resolve(__dirname, 'examples/maplibre/index.html'),
         'maplibre-cog': resolve(__dirname, 'examples/maplibre/cog_layer.html'),
+        'maplibre-arc': resolve(__dirname, 'examples/maplibre/arc_layer.html'),
+        'maplibre-pointcloud': resolve(__dirname, 'examples/maplibre/pointcloud_layer.html'),
         // Other map libraries
         leaflet: resolve(__dirname, 'examples/leaflet/index.html'),
         mapbox: resolve(__dirname, 'examples/mapbox/index.html'),

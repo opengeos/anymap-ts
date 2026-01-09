@@ -14,6 +14,7 @@ import mapboxgl, {
   Popup,
 } from 'mapbox-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
+import { ArcLayer, PointCloudLayer } from '@deck.gl/layers';
 import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
@@ -241,6 +242,14 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     // COG layers (deck.gl)
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
     this.registerMethod('removeCOGLayer', this.handleRemoveCOGLayer.bind(this));
+
+    // Arc layers (deck.gl)
+    this.registerMethod('addArcLayer', this.handleAddArcLayer.bind(this));
+    this.registerMethod('removeArcLayer', this.handleRemoveArcLayer.bind(this));
+
+    // PointCloud layers (deck.gl)
+    this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
+    this.registerMethod('removePointCloudLayer', this.handleRemovePointCloudLayer.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -767,6 +776,116 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   }
 
   private handleRemoveCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    this.deckLayers.delete(id);
+    this.updateDeckOverlay();
+  }
+
+  // -------------------------------------------------------------------------
+  // Arc layer handlers (deck.gl)
+  // -------------------------------------------------------------------------
+
+  private handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    // Initialize deck.gl overlay if needed
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `arc-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value; // Return arrays/numbers directly
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
+    const layer = new ArcLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
+      getSourceColor: makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
+      getTargetColor: makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
+      getHeight: makeAccessor(kwargs.getHeight ?? kwargs.height, 'height', () => 1),
+      greatCircle: kwargs.greatCircle as boolean ?? false,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleRemoveArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    this.deckLayers.delete(id);
+    this.updateDeckOverlay();
+  }
+
+  // -------------------------------------------------------------------------
+  // PointCloud layer handlers (deck.gl)
+  // -------------------------------------------------------------------------
+
+  private handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    // Initialize deck.gl overlay if needed
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `pointcloud-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value; // Return arrays/numbers directly
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
+    const layerProps: Record<string, unknown> = {
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      pointSize: kwargs.pointSize as number ?? 2,
+      getPosition: makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getNormal: makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
+      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
+      sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
+    };
+
+    // Only add coordinate system props if explicitly provided
+    if (kwargs.coordinateSystem !== undefined && kwargs.coordinateSystem !== null) {
+      layerProps.coordinateSystem = kwargs.coordinateSystem as number;
+    }
+    if (kwargs.coordinateOrigin !== undefined && kwargs.coordinateOrigin !== null) {
+      layerProps.coordinateOrigin = kwargs.coordinateOrigin as [number, number, number];
+    }
+
+    const layer = new PointCloudLayer(layerProps);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleRemovePointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
     this.deckLayers.delete(id);
     this.updateDeckOverlay();

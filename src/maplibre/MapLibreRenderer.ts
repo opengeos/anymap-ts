@@ -14,6 +14,7 @@ import maplibregl, {
   GlobeControl,
 } from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
+import { ArcLayer, PointCloudLayer } from '@deck.gl/layers';
 import { proj } from '@developmentseed/deck.gl-geotiff';
 import { COGLayerWithOpacity as COGLayer } from './layers/COGLayerWithOpacity';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
@@ -34,7 +35,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 
 import { GeoEditorPlugin } from './plugins/GeoEditorPlugin';
 import { LayerControlPlugin } from './plugins/LayerControlPlugin';
-import { COGLayerAdapter, ZarrLayerAdapter } from './adapters';
+import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter } from './adapters';
 
 /**
  * Parse GeoKeys to proj4 definition for COG reprojection.
@@ -73,6 +74,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // Layer control adapters
   private cogAdapter: COGLayerAdapter | null = null;
   private zarrAdapter: ZarrLayerAdapter | null = null;
+  private deckLayerAdapter: DeckLayerAdapter | null = null;
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -266,6 +268,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addZarrLayer', this.handleAddZarrLayer.bind(this));
     this.registerMethod('removeZarrLayer', this.handleRemoveZarrLayer.bind(this));
     this.registerMethod('updateZarrLayer', this.handleUpdateZarrLayer.bind(this));
+
+    // Arc layers (deck.gl)
+    this.registerMethod('addArcLayer', this.handleAddArcLayer.bind(this));
+    this.registerMethod('removeArcLayer', this.handleRemoveArcLayer.bind(this));
+
+    // PointCloud layers (deck.gl)
+    this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
+    this.registerMethod('removePointCloudLayer', this.handleRemovePointCloudLayer.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -711,6 +721,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       customLayerAdapters.push(this.zarrAdapter);
     }
 
+    // Create Deck layer adapter for Arc and PointCloud layers
+    if (this.deckOverlay && this.map) {
+      this.deckLayerAdapter = new DeckLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+      customLayerAdapters.push(this.deckLayerAdapter);
+    }
+
     // Initialize plugin if not already
     if (!this.layerControlPlugin) {
       this.layerControlPlugin = new LayerControlPlugin(this.map);
@@ -964,6 +980,138 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (kwargs.clim) layer.setClim(kwargs.clim as [number, number]);
     if (kwargs.colormap) layer.setColormap(kwargs.colormap as string[]);
     if (kwargs.opacity !== undefined) layer.setOpacity(kwargs.opacity as number);
+  }
+
+  // -------------------------------------------------------------------------
+  // Arc layer handlers (deck.gl)
+  // -------------------------------------------------------------------------
+
+  private handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    // Initialize deck.gl overlay if needed
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `arc-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value; // Return arrays/numbers directly
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
+    const layer = new ArcLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
+      getSourceColor: makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
+      getTargetColor: makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
+      getHeight: makeAccessor(kwargs.getHeight ?? kwargs.height, 'height', () => 1),
+      greatCircle: kwargs.greatCircle as boolean ?? false,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    // Notify adapter if it exists
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  private handleRemoveArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+
+    // Notify adapter before removal
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerRemoved(id);
+    }
+
+    this.deckLayers.delete(id);
+    this.updateDeckOverlay();
+  }
+
+  // -------------------------------------------------------------------------
+  // PointCloud layer handlers (deck.gl)
+  // -------------------------------------------------------------------------
+
+  private handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    // Initialize deck.gl overlay if needed
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `pointcloud-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value; // Return arrays/numbers directly
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
+    const layerProps: Record<string, unknown> = {
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      pointSize: kwargs.pointSize as number ?? 2,
+      getPosition: makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getNormal: makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
+      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
+      sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
+    };
+
+    // Only add coordinate system props if explicitly provided
+    if (kwargs.coordinateSystem !== undefined && kwargs.coordinateSystem !== null) {
+      layerProps.coordinateSystem = kwargs.coordinateSystem as number;
+    }
+    if (kwargs.coordinateOrigin !== undefined && kwargs.coordinateOrigin !== null) {
+      layerProps.coordinateOrigin = kwargs.coordinateOrigin as [number, number, number];
+    }
+
+    const layer = new PointCloudLayer(layerProps);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    // Notify adapter if it exists
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  private handleRemovePointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+
+    // Notify adapter before removal
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerRemoved(id);
+    }
+
+    this.deckLayers.delete(id);
+    this.updateDeckOverlay();
   }
 
   // -------------------------------------------------------------------------
