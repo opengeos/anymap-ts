@@ -16,6 +16,7 @@ import maplibregl, {
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
+import { ZarrLayer } from '@carbonplan/zarr-layer';
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
 import { StateManager } from '../core/StateManager';
 import type { MapWidgetModel } from '../types/anywidget';
@@ -63,6 +64,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // Deck.gl overlay for COG layers
   protected deckOverlay: MapboxOverlay | null = null;
   protected deckLayers: globalThis.Map<string, unknown> = new globalThis.Map();
+
+  // Zarr layers
+  protected zarrLayers: globalThis.Map<string, ZarrLayer> = new globalThis.Map();
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -251,6 +255,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // COG layers (deck.gl)
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
     this.registerMethod('removeCOGLayer', this.handleRemoveCOGLayer.bind(this));
+
+    // Zarr layers (@carbonplan/zarr-layer)
+    this.registerMethod('addZarrLayer', this.handleAddZarrLayer.bind(this));
+    this.registerMethod('removeZarrLayer', this.handleRemoveZarrLayer.bind(this));
+    this.registerMethod('updateZarrLayer', this.handleUpdateZarrLayer.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -855,6 +864,61 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   }
 
   // -------------------------------------------------------------------------
+  // Zarr layer handlers (@carbonplan/zarr-layer)
+  // -------------------------------------------------------------------------
+
+  private handleAddZarrLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const id = kwargs.id as string || `zarr-${Date.now()}`;
+    const source = kwargs.source as string;
+    const variable = kwargs.variable as string;
+    const clim = kwargs.clim as [number, number] || [0, 100];
+    const colormap = kwargs.colormap as string[] || ['#000000', '#ffffff'];
+    const selector = kwargs.selector as Record<string, unknown> || {};
+    const opacity = kwargs.opacity as number ?? 1;
+
+    const layer = new ZarrLayer({
+      id,
+      source,
+      variable,
+      clim,
+      colormap,
+      selector,
+      opacity,
+      minzoom: kwargs.minzoom as number,
+      maxzoom: kwargs.maxzoom as number,
+      fillValue: kwargs.fillValue as number,
+      spatialDimensions: kwargs.spatialDimensions as { lat?: string; lon?: string },
+      zarrVersion: kwargs.zarrVersion as 2 | 3 | undefined,
+      bounds: kwargs.bounds as [number, number, number, number] | undefined,
+    });
+
+    this.map.addLayer(layer as unknown as maplibregl.CustomLayerInterface);
+    this.zarrLayers.set(id, layer);
+  }
+
+  private handleRemoveZarrLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    if (this.map && this.map.getLayer(id)) {
+      this.map.removeLayer(id);
+    }
+    this.zarrLayers.delete(id);
+  }
+
+  private handleUpdateZarrLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string;
+    const layer = this.zarrLayers.get(id);
+    if (!layer) return;
+
+    // Use the actual ZarrLayer methods
+    if (kwargs.selector) layer.setSelector(kwargs.selector as Record<string, number>);
+    if (kwargs.clim) layer.setClim(kwargs.clim as [number, number]);
+    if (kwargs.colormap) layer.setColormap(kwargs.colormap as string[]);
+    if (kwargs.opacity !== undefined) layer.setOpacity(kwargs.opacity as number);
+  }
+
+  // -------------------------------------------------------------------------
   // Trait change handlers
   // -------------------------------------------------------------------------
 
@@ -909,6 +973,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.deckOverlay = null;
     }
     this.deckLayers.clear();
+
+    // Remove zarr layers
+    this.zarrLayers.forEach((layer, id) => {
+      if (this.map && this.map.getLayer(id)) {
+        this.map.removeLayer(id);
+      }
+    });
+    this.zarrLayers.clear();
 
     // Remove markers
     this.markersMap.forEach((marker) => marker.remove());

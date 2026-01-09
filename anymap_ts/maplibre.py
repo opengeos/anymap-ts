@@ -427,6 +427,135 @@ class MapLibreMap(MapWidget):
         self.call_js_method("removeCOGLayer", layer_id)
 
     # -------------------------------------------------------------------------
+    # Zarr Layer (@carbonplan/zarr-layer)
+    # -------------------------------------------------------------------------
+
+    def add_zarr_layer(
+        self,
+        url: str,
+        variable: str,
+        name: Optional[str] = None,
+        colormap: Optional[List[str]] = None,
+        clim: Optional[Tuple[float, float]] = None,
+        opacity: float = 1.0,
+        selector: Optional[Dict[str, Any]] = None,
+        minzoom: int = 0,
+        maxzoom: int = 22,
+        fill_value: Optional[float] = None,
+        spatial_dimensions: Optional[Dict[str, str]] = None,
+        zarr_version: Optional[int] = None,
+        bounds: Optional[List[float]] = None,
+        **kwargs,
+    ) -> None:
+        """Add a Zarr dataset layer for visualizing multidimensional array data.
+
+        This method renders Zarr pyramid datasets directly in the browser using
+        GPU-accelerated WebGL rendering via @carbonplan/zarr-layer.
+
+        Args:
+            url: URL to the Zarr store (pyramid format recommended).
+            variable: Variable name in the Zarr dataset to visualize.
+            name: Layer ID. If None, auto-generated.
+            colormap: List of hex color strings for visualization.
+                Example: ['#0000ff', '#ffff00', '#ff0000'] (blue-yellow-red).
+                Default: ['#000000', '#ffffff'] (black to white).
+            clim: Color range as (min, max) tuple.
+                Default: (0, 100).
+            opacity: Layer opacity (0-1).
+            selector: Dimension selector for multi-dimensional data.
+                Example: {"month": 4} to select 4th month.
+            minzoom: Minimum zoom level for rendering.
+            maxzoom: Maximum zoom level for rendering.
+            fill_value: No-data value (auto-detected from metadata if not set).
+            spatial_dimensions: Custom spatial dimension names.
+                Example: {"lat": "y", "lon": "x"} for non-standard names.
+            zarr_version: Zarr format version (2 or 3). Auto-detected if not set.
+            bounds: Explicit spatial bounds [xMin, yMin, xMax, yMax].
+                Units depend on CRS: degrees for EPSG:4326, meters for EPSG:3857.
+            **kwargs: Additional ZarrLayer props.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> m.add_zarr_layer(
+            ...     "https://example.com/climate.zarr",
+            ...     variable="temperature",
+            ...     clim=(270, 310),
+            ...     colormap=['#0000ff', '#ffff00', '#ff0000'],
+            ...     selector={"month": 7}
+            ... )
+        """
+        layer_id = name or f"zarr-{len(self._layers)}"
+
+        self.call_js_method(
+            "addZarrLayer",
+            id=layer_id,
+            source=url,
+            variable=variable,
+            colormap=colormap or ["#000000", "#ffffff"],
+            clim=list(clim) if clim else [0, 100],
+            opacity=opacity,
+            selector=selector or {},
+            minzoom=minzoom,
+            maxzoom=maxzoom,
+            fillValue=fill_value,
+            spatialDimensions=spatial_dimensions,
+            zarrVersion=zarr_version,
+            bounds=bounds,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "zarr",
+                "url": url,
+                "variable": variable,
+            },
+        }
+
+    def remove_zarr_layer(self, layer_id: str) -> None:
+        """Remove a Zarr layer.
+
+        Args:
+            layer_id: Layer identifier to remove.
+        """
+        if layer_id in self._layers:
+            layers = dict(self._layers)
+            del layers[layer_id]
+            self._layers = layers
+        self.call_js_method("removeZarrLayer", layer_id)
+
+    def update_zarr_layer(
+        self,
+        layer_id: str,
+        selector: Optional[Dict[str, Any]] = None,
+        clim: Optional[Tuple[float, float]] = None,
+        colormap: Optional[List[str]] = None,
+        opacity: Optional[float] = None,
+    ) -> None:
+        """Update a Zarr layer's properties dynamically.
+
+        Args:
+            layer_id: Layer identifier.
+            selector: New dimension selector.
+            clim: New color range.
+            colormap: New colormap.
+            opacity: New opacity value (0-1).
+        """
+        update_kwargs: Dict[str, Any] = {"id": layer_id}
+        if selector is not None:
+            update_kwargs["selector"] = selector
+        if clim is not None:
+            update_kwargs["clim"] = list(clim)
+        if colormap is not None:
+            update_kwargs["colormap"] = colormap
+        if opacity is not None:
+            update_kwargs["opacity"] = opacity
+        self.call_js_method("updateZarrLayer", **update_kwargs)
+
+    # -------------------------------------------------------------------------
     # Layer Management
     # -------------------------------------------------------------------------
 
