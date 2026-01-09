@@ -4,12 +4,14 @@
 
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { LayerControl } from 'maplibre-gl-layer-control';
+import type { CustomLayerAdapter } from 'maplibre-gl-layer-control';
 import type { ControlPosition } from '../../types/maplibre';
 
 export interface LayerControlOptions {
   layers?: string[];
   position?: ControlPosition;
   collapsed?: boolean;
+  customLayerAdapters?: CustomLayerAdapter[];
 }
 
 /**
@@ -31,11 +33,12 @@ export class LayerControlPlugin {
       this.destroy();
     }
 
-    const { layers, position = 'top-right', collapsed = false } = options;
+    const { layers, position = 'top-right', collapsed = false, customLayerAdapters } = options;
 
     this.control = new LayerControl({
       layers,
       collapsed,
+      customLayerAdapters,
     });
 
     this.map.addControl(this.control, position);
