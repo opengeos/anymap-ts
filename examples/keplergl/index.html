@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KeplerGL - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>KeplerGL-Style Data Explorer</h1>
+    <a href="../../">← Back to Examples</a>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Layers</h3>
+      <div class="layer-item" data-layer="points">
+        <div class="layer-icon" style="background: #ff6b6b;"></div>
+        <span class="layer-name">Sample Points</span>
+        <div class="layer-toggle active" id="toggle-points"></div>
+      </div>
+      <div class="layer-item" data-layer="polygon">
+        <div class="layer-icon" style="background: #00d9ff;"></div>
+        <span class="layer-name">Polygon Area</span>
+        <div class="layer-toggle active" id="toggle-polygon"></div>
+      </div>
+      <div class="layer-item" data-layer="hexagon">
+        <div class="layer-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+        <span class="layer-name">Hexbin Aggregation</span>
+        <div class="layer-toggle" id="toggle-hexagon"></div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Filters</h3>
+      <div class="filter-control">
+        <label>Value Range: <span id="valueLabel">0+</span></label>
+        <input type="range" id="valueFilter" min="0" max="100" value="0">
+      </div>
+      <div class="filter-control">
+        <label>Category</label>
+        <select id="categoryFilter">
+          <option value="all">All Categories</option>
+          <option value="A">Category A</option>
+          <option value="B">Category B</option>
+          <option value="C">Category C</option>
+        </select>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Map Style</h3>
+      <div class="filter-control">
+        <label>Base Map</label>
+        <select id="baseMapSelect">
+          <option value="dark">Dark Matter</option>
+          <option value="light">Positron Light</option>
+          <option value="streets">Voyager</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div id="map"></div>
+  <div class="data-panel">
+    <h3>Data Summary</h3>
+    <div class="stat-row">
+      <span class="stat-label">Total Points</span>
+      <span class="stat-value" id="totalPoints">100</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Filtered Points</span>
+      <span class="stat-value" id="filteredPoints">100</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Avg Value</span>
+      <span class="stat-value" id="avgValue">50.0</span>
+    </div>
+  </div>
+  <div class="tooltip" id="tooltip"></div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

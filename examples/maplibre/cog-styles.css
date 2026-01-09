@@ -1,0 +1,120 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.header {
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header h1 { font-size: 1.2rem; font-weight: 500; }
+.header a { color: #00d9ff; text-decoration: none; font-size: 0.9rem; }
+.header a:hover { text-decoration: underline; }
+
+#map { width: 100%; height: calc(100vh - 60px); }
+
+.controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 16px;
+  border-radius: 8px;
+  z-index: 1000;
+  min-width: 280px;
+}
+
+.controls h3 { font-size: 0.9rem; margin-bottom: 12px; color: #00d9ff; }
+
+.controls button {
+  background: #00d9ff;
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin: 4px 0;
+  display: block;
+  width: 100%;
+}
+
+.controls button:hover { background: #00ff88; }
+.controls button.loading { background: #666; cursor: wait; }
+
+.control-group {
+  margin: 12px 0;
+}
+
+.control-group label {
+  font-size: 0.8rem;
+  color: #888;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.control-group input[type="range"] {
+  width: 100%;
+}
+
+.info-panel {
+  position: absolute;
+  top: 80px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 16px;
+  border-radius: 8px;
+  z-index: 1000;
+  min-width: 280px;
+}
+
+.info-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: #00d9ff; }
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin: 6px 0;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-label { color: #888; }
+.info-value { color: #fff; }
+
+.legend { margin-top: 16px; }
+.legend-title { font-size: 0.8rem; color: #888; margin-bottom: 8px; }
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  margin: 4px 0;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border-radius: 2px;
+}
+
+.status-message {
+  font-size: 0.8rem;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.status-loading { background: rgba(0, 217, 255, 0.2); color: #00d9ff; }
+.status-success { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+.status-error { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }

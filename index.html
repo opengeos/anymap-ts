@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>anymap-ts TypeScript Examples</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #00d9ff, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+    .categories {
+      display: grid;
+      gap: 30px;
+    }
+    .category {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .category h2 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      color: #00d9ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .category h2::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: linear-gradient(180deg, #00d9ff, #00ff88);
+      border-radius: 2px;
+    }
+    .examples {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .example-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.3s ease;
+      display: block;
+    }
+    .example-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(0, 217, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 217, 255, 0.15);
+    }
+    .example-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .example-card p {
+      font-size: 0.9rem;
+      color: #888;
+      line-height: 1.5;
+    }
+    .example-card .tag {
+      display: inline-block;
+      background: rgba(0, 217, 255, 0.15);
+      color: #00d9ff;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      margin-top: 12px;
+    }
+    .example-card .tag.sub {
+      background: rgba(0, 255, 136, 0.15);
+      color: #00ff88;
+      margin-left: 4px;
+    }
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      color: #555;
+      font-size: 0.9rem;
+    }
+    footer a {
+      color: #00d9ff;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>anymap-ts</h1>
+    <p class="subtitle">Interactive TypeScript Examples for Web Mapping</p>
+
+    <div class="categories">
+      <div class="category">
+        <h2>MapLibre GL JS</h2>
+        <div class="examples">
+          <a href="./examples/maplibre/" class="example-card">
+            <h3>Basic Example</h3>
+            <p>Vector maps with draw controls, markers, GeoJSON layers, and layer control.</p>
+            <span class="tag">Default Renderer</span>
+          </a>
+          <a href="./examples/maplibre/cog_layer.html" class="example-card">
+            <h3>COG Layer</h3>
+            <p>Cloud Optimized GeoTIFF visualization with NLCD 2024 Land Cover dataset.</p>
+            <span class="tag">Raster</span><span class="tag sub">30m</span>
+          </a>
+          <a href="./examples/zarr/" class="example-card">
+            <h3>Zarr Layer</h3>
+            <p>Multi-dimensional Zarr datasets with climate, ocean, and burn probability data.</p>
+            <span class="tag">Scientific</span><span class="tag sub">4D</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="category">
+        <h2>Other Map Libraries</h2>
+        <div class="examples">
+          <a href="./examples/leaflet/" class="example-card">
+            <h3>Leaflet</h3>
+            <p>Lightweight, mobile-friendly maps with markers, popups, and GeoJSON support.</p>
+            <span class="tag">Lightweight</span>
+          </a>
+          <a href="./examples/mapbox/" class="example-card">
+            <h3>Mapbox GL JS</h3>
+            <p>Commercial vector maps with 3D terrain and building support.</p>
+            <span class="tag">Requires Token</span>
+          </a>
+          <a href="./examples/openlayers/" class="example-card">
+            <h3>OpenLayers</h3>
+            <p>High-performance mapping with WMS/WMTS and projection support.</p>
+            <span class="tag">Enterprise</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="category">
+        <h2>3D Visualization</h2>
+        <div class="examples">
+          <a href="./examples/cesium/" class="example-card">
+            <h3>Cesium</h3>
+            <p>3D globe with terrain, camera control, GeoJSON, and 3D Tiles support.</p>
+            <span class="tag">3D Globe</span>
+          </a>
+          <a href="./examples/potree/" class="example-card">
+            <h3>Potree</h3>
+            <p>WebGL-based point cloud viewer for large LiDAR datasets.</p>
+            <span class="tag">Point Cloud</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="category">
+        <h2>GPU-Accelerated Layers</h2>
+        <div class="examples">
+          <a href="./examples/deckgl/" class="example-card">
+            <h3>DeckGL</h3>
+            <p>GPU-accelerated layers: ScatterplotLayer, HexagonLayer, HeatmapLayer, ArcLayer.</p>
+            <span class="tag">GPU</span>
+          </a>
+          <a href="./examples/keplergl/" class="example-card">
+            <h3>KeplerGL</h3>
+            <p>Interactive data exploration tool with filters, layers, and styling controls.</p>
+            <span class="tag">Data Viz</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>
+        <a href="https://github.com/opengeos/anymap-ts" target="_blank">GitHub</a> ·
+        <a href="https://anymap-ts.gishub.org" target="_blank">Documentation</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

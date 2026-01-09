@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cesium - anymap-ts Example</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Cesium 3D Globe Example</h1>
+    <a href="../../">← Back to Examples</a>
+  </div>
+  <div id="cesiumContainer"></div>
+  <div class="controls">
+    <h3>Camera Actions</h3>
+    <button id="btn-sf">Fly to San Francisco</button>
+    <button id="btn-canyon">Fly to Grand Canyon</button>
+    <button id="btn-reset">Reset View</button>
+    <button id="btn-terrain">Toggle Terrain</button>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

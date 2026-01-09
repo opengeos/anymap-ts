@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapbox GL JS - anymap-ts Example</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Mapbox GL JS Example</h1>
+    <a href="../../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="token-form" id="tokenForm">
+    <h2>Mapbox Access Token Required</h2>
+    <p>Enter your Mapbox access token to view this example. You can get one at <a href="https://mapbox.com" target="_blank">mapbox.com</a></p>
+    <input type="text" id="tokenInput" placeholder="pk.eyJ1...">
+    <button id="btn-load">Load Map</button>
+  </div>
+  <div class="controls" id="controls" style="display: none;">
+    <h3>Actions</h3>
+    <button id="btn-sf">Fly to San Francisco</button>
+    <button id="btn-oakland">Fly to Oakland</button>
+    <button id="btn-3d">Toggle 3D</button>
+  </div>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
