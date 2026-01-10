@@ -11,7 +11,11 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
  * Allows the layer control to manage deck.gl layers including:
  * ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, HexagonLayer,
  * HeatmapLayer, GridLayer, IconLayer, TextLayer, GeoJsonLayer,
- * ContourLayer, ScreenGridLayer, PointCloudLayer, TripsLayer, LineLayer.
+ * ContourLayer, ScreenGridLayer, PointCloudLayer, TripsLayer, LineLayer,
+ * BitmapLayer, ColumnLayer, GridCellLayer, SolidPolygonLayer, TileLayer,
+ * MVTLayer, Tile3DLayer, TerrainLayer, GreatCircleLayer, H3HexagonLayer,
+ * H3ClusterLayer, S2Layer, QuadkeyLayer, GeohashLayer, WMSLayer,
+ * SimpleMeshLayer, ScenegraphLayer.
  */
 export class DeckLayerAdapter implements CustomLayerAdapter {
   readonly type = 'deck';
@@ -20,6 +24,7 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
    * All supported deck.gl layer prefixes for layer control integration.
    */
   private static readonly LAYER_PREFIXES = [
+    // Core layers
     'scatterplot-',
     'arc-',
     'path-',
@@ -36,6 +41,24 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
     'trips-',
     'line-',
     'cog-',
+    // New layers
+    'bitmap-',
+    'column-',
+    'gridcell-',
+    'solidpolygon-',
+    'tile-',
+    'mvt-',
+    'tile3d-',
+    'terrain-',
+    'greatcircle-',
+    'h3hexagon-',
+    'h3cluster-',
+    's2-',
+    'quadkey-',
+    'geohash-',
+    'wms-',
+    'simplemesh-',
+    'scenegraph-',
   ];
 
   private map: MapLibreMap;
@@ -131,12 +154,17 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
     }
     // Line-based layers
     if (layerId.startsWith('arc-') || layerId.startsWith('line-') ||
-        layerId.startsWith('path-') || layerId.startsWith('trips-')) {
+        layerId.startsWith('path-') || layerId.startsWith('trips-') ||
+        layerId.startsWith('greatcircle-')) {
       return 'line';
     }
     // Fill-based layers
     if (layerId.startsWith('polygon-') || layerId.startsWith('hexagon-') ||
-        layerId.startsWith('grid-') || layerId.startsWith('geojson-')) {
+        layerId.startsWith('grid-') || layerId.startsWith('geojson-') ||
+        layerId.startsWith('solidpolygon-') || layerId.startsWith('gridcell-') ||
+        layerId.startsWith('h3hexagon-') || layerId.startsWith('h3cluster-') ||
+        layerId.startsWith('s2-') || layerId.startsWith('quadkey-') ||
+        layerId.startsWith('geohash-')) {
       return 'fill';
     }
     // Heatmap/density layers
@@ -149,8 +177,19 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
       return 'symbol';
     }
     // Raster layers
-    if (layerId.startsWith('cog-')) {
+    if (layerId.startsWith('cog-') || layerId.startsWith('bitmap-') ||
+        layerId.startsWith('tile-') || layerId.startsWith('wms-') ||
+        layerId.startsWith('terrain-')) {
       return 'raster';
+    }
+    // Vector tile layers
+    if (layerId.startsWith('mvt-')) {
+      return 'fill';
+    }
+    // 3D layers
+    if (layerId.startsWith('column-') || layerId.startsWith('tile3d-') ||
+        layerId.startsWith('simplemesh-') || layerId.startsWith('scenegraph-')) {
+      return 'fill-extrusion';
     }
     return 'deck';
   }

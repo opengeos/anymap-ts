@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoJSON Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>GeoJSON Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>GeoJSON Layer</h3>
+    <p>Mixed geometry types: Points (landmarks), LineStrings (routes), and Polygons (neighborhoods) in a single GeoJSON layer.</p>
+    <p>Features are colored by type and extruded based on their value property. Rendered using deck.gl GeoJsonLayer with GPU acceleration.</p>
+  </div>
+  <script type="module" src="./geojson-main.ts"></script>
+</body>
+</html>

@@ -1169,6 +1169,999 @@ class DeckGLMap(MapLibreMap):
             layer_id: {"type": "COGLayer", "id": layer_id, "url": url},
         }
 
+    # -------------------------------------------------------------------------
+    # New DeckGL Layer Types
+    # -------------------------------------------------------------------------
+
+    def add_bitmap_layer(
+        self,
+        image: str,
+        bounds: List[float],
+        name: Optional[str] = None,
+        opacity: float = 1.0,
+        visible: bool = True,
+        pickable: bool = False,
+        desaturate: float = 0,
+        transparent_color: Optional[List[int]] = None,
+        tint_color: Optional[List[int]] = None,
+        **kwargs,
+    ) -> None:
+        """Add a bitmap layer for raster image overlay.
+
+        Args:
+            image: URL or data URI of the image.
+            bounds: Bounding box [west, south, east, north].
+            name: Layer ID.
+            opacity: Layer opacity (0-1).
+            visible: Whether layer is visible.
+            pickable: Whether layer responds to hover/click.
+            desaturate: Desaturation amount (0-1).
+            transparent_color: Color to make transparent [r, g, b, a].
+            tint_color: Color to tint the image [r, g, b].
+            **kwargs: Additional BitmapLayer props.
+        """
+        layer_id = name or f"bitmap-{len(self._deck_layers)}"
+
+        self.call_js_method(
+            "addBitmapLayer",
+            id=layer_id,
+            image=image,
+            bounds=bounds,
+            opacity=opacity,
+            visible=visible,
+            pickable=pickable,
+            desaturate=desaturate,
+            transparentColor=transparent_color or [0, 0, 0, 0],
+            tintColor=tint_color or [255, 255, 255],
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "BitmapLayer", "id": layer_id},
+        }
+
+    def add_column_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_position: Union[str, Callable] = "coordinates",
+        get_fill_color: Union[List[int], str, Callable] = None,
+        get_line_color: Union[List[int], str, Callable] = None,
+        get_elevation: Union[float, str, Callable] = 1000,
+        radius: float = 1000,
+        disk_resolution: int = 20,
+        elevation_scale: float = 1,
+        coverage: float = 1,
+        extruded: bool = True,
+        filled: bool = True,
+        stroked: bool = False,
+        wireframe: bool = False,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add a column layer for 3D column/bar visualization.
+
+        Args:
+            data: Array of data objects with position coordinates.
+            name: Layer ID.
+            get_position: Accessor for column position [lng, lat].
+            get_fill_color: Accessor for fill color [r, g, b, a].
+            get_line_color: Accessor for stroke color [r, g, b, a].
+            get_elevation: Accessor for column height.
+            radius: Column radius in meters.
+            disk_resolution: Number of sides for column polygon.
+            elevation_scale: Elevation multiplier.
+            coverage: Column coverage (0-1).
+            extruded: Whether to extrude columns.
+            filled: Whether to fill columns.
+            stroked: Whether to stroke columns.
+            wireframe: Whether to render as wireframe.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional ColumnLayer props.
+        """
+        layer_id = name or f"column-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addColumnLayer",
+            id=layer_id,
+            data=processed_data,
+            getPosition=get_position,
+            getFillColor=get_fill_color or [255, 140, 0, 200],
+            getLineColor=get_line_color or [0, 0, 0, 255],
+            getElevation=get_elevation,
+            radius=radius,
+            diskResolution=disk_resolution,
+            elevationScale=elevation_scale,
+            coverage=coverage,
+            extruded=extruded,
+            filled=filled,
+            stroked=stroked,
+            wireframe=wireframe,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "ColumnLayer", "id": layer_id},
+        }
+
+    def add_grid_cell_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_position: Union[str, Callable] = "coordinates",
+        get_color: Union[List[int], str, Callable] = None,
+        get_elevation: Union[float, str, Callable] = 1000,
+        cell_size: float = 200,
+        coverage: float = 1,
+        elevation_scale: float = 1,
+        extruded: bool = True,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add a grid cell layer for pre-aggregated grid visualization.
+
+        Args:
+            data: Array of data objects with position coordinates.
+            name: Layer ID.
+            get_position: Accessor for cell position [lng, lat].
+            get_color: Accessor for cell color [r, g, b, a].
+            get_elevation: Accessor for cell height.
+            cell_size: Cell size in meters.
+            coverage: Cell coverage (0-1).
+            elevation_scale: Elevation multiplier.
+            extruded: Whether to extrude cells.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional GridCellLayer props.
+        """
+        layer_id = name or f"gridcell-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addGridCellLayer",
+            id=layer_id,
+            data=processed_data,
+            getPosition=get_position,
+            getColor=get_color or [255, 140, 0, 200],
+            getElevation=get_elevation,
+            cellSize=cell_size,
+            coverage=coverage,
+            elevationScale=elevation_scale,
+            extruded=extruded,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "GridCellLayer", "id": layer_id},
+        }
+
+    def add_solid_polygon_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_polygon: Union[str, Callable] = "polygon",
+        get_fill_color: Union[List[int], str, Callable] = None,
+        get_line_color: Union[List[int], str, Callable] = None,
+        get_elevation: Union[float, str, Callable] = 0,
+        filled: bool = True,
+        extruded: bool = False,
+        wireframe: bool = False,
+        elevation_scale: float = 1,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add a solid polygon layer for filled polygon visualization.
+
+        Args:
+            data: Array of data objects with polygon coordinates.
+            name: Layer ID.
+            get_polygon: Accessor for polygon coordinates.
+            get_fill_color: Accessor for fill color [r, g, b, a].
+            get_line_color: Accessor for stroke color [r, g, b, a].
+            get_elevation: Accessor for 3D extrusion height.
+            filled: Whether to fill polygons.
+            extruded: Whether to render as 3D polygons.
+            wireframe: Whether to render wireframe.
+            elevation_scale: Elevation multiplier.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional SolidPolygonLayer props.
+        """
+        layer_id = name or f"solidpolygon-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addSolidPolygonLayer",
+            id=layer_id,
+            data=processed_data,
+            getPolygon=get_polygon,
+            getFillColor=get_fill_color or [51, 136, 255, 128],
+            getLineColor=get_line_color or [0, 0, 0, 255],
+            getElevation=get_elevation,
+            filled=filled,
+            extruded=extruded,
+            wireframe=wireframe,
+            elevationScale=elevation_scale,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "SolidPolygonLayer", "id": layer_id},
+        }
+
+    def add_tile_layer(
+        self,
+        data: Union[str, List[str]],
+        name: Optional[str] = None,
+        min_zoom: int = 0,
+        max_zoom: int = 19,
+        tile_size: int = 256,
+        pickable: bool = False,
+        visible: bool = True,
+        opacity: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Add a tile layer for raster tile visualization.
+
+        Args:
+            data: Tile URL template with {z}/{x}/{y} placeholders.
+            name: Layer ID.
+            min_zoom: Minimum zoom level.
+            max_zoom: Maximum zoom level.
+            tile_size: Tile size in pixels.
+            pickable: Whether layer responds to hover/click.
+            visible: Whether layer is visible.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional TileLayer props.
+        """
+        layer_id = name or f"tile-{len(self._deck_layers)}"
+
+        self.call_js_method(
+            "addTileLayer",
+            id=layer_id,
+            data=data,
+            minZoom=min_zoom,
+            maxZoom=max_zoom,
+            tileSize=tile_size,
+            pickable=pickable,
+            visible=visible,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "TileLayer", "id": layer_id},
+        }
+
+    def add_mvt_layer(
+        self,
+        data: Union[str, List[str]],
+        name: Optional[str] = None,
+        min_zoom: int = 0,
+        max_zoom: int = 14,
+        binary: bool = True,
+        get_fill_color: Union[List[int], str, Callable] = None,
+        get_line_color: Union[List[int], str, Callable] = None,
+        get_line_width: Union[float, str, Callable] = 1,
+        get_point_radius: Union[float, str, Callable] = 5,
+        line_width_min_pixels: float = 1,
+        point_radius_min_pixels: float = 2,
+        pickable: bool = True,
+        visible: bool = True,
+        opacity: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Add a Mapbox Vector Tile (MVT) layer.
+
+        Args:
+            data: MVT tile URL template with {z}/{x}/{y} placeholders.
+            name: Layer ID.
+            min_zoom: Minimum zoom level.
+            max_zoom: Maximum zoom level.
+            binary: Whether to use binary format.
+            get_fill_color: Accessor for fill color [r, g, b, a].
+            get_line_color: Accessor for stroke color [r, g, b, a].
+            get_line_width: Accessor for line width.
+            get_point_radius: Accessor for point radius.
+            line_width_min_pixels: Minimum line width in pixels.
+            point_radius_min_pixels: Minimum point radius in pixels.
+            pickable: Whether layer responds to hover/click.
+            visible: Whether layer is visible.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional MVTLayer props.
+        """
+        layer_id = name or f"mvt-{len(self._deck_layers)}"
+
+        self.call_js_method(
+            "addMVTLayer",
+            id=layer_id,
+            data=data,
+            minZoom=min_zoom,
+            maxZoom=max_zoom,
+            binary=binary,
+            getFillColor=get_fill_color or [51, 136, 255, 128],
+            getLineColor=get_line_color or [0, 0, 0, 255],
+            getLineWidth=get_line_width,
+            getPointRadius=get_point_radius,
+            lineWidthMinPixels=line_width_min_pixels,
+            pointRadiusMinPixels=point_radius_min_pixels,
+            pickable=pickable,
+            visible=visible,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "MVTLayer", "id": layer_id},
+        }
+
+    def add_tile3d_layer(
+        self,
+        data: str,
+        name: Optional[str] = None,
+        point_size: float = 1,
+        pickable: bool = True,
+        visible: bool = True,
+        opacity: float = 1.0,
+        load_options: Optional[Dict] = None,
+        **kwargs,
+    ) -> None:
+        """Add a 3D Tiles layer for 3D building/terrain visualization.
+
+        Args:
+            data: URL to tileset.json.
+            name: Layer ID.
+            point_size: Point size for point cloud tiles.
+            pickable: Whether layer responds to hover/click.
+            visible: Whether layer is visible.
+            opacity: Layer opacity (0-1).
+            load_options: Loader options for tile loading.
+            **kwargs: Additional Tile3DLayer props.
+        """
+        layer_id = name or f"tile3d-{len(self._deck_layers)}"
+
+        self.call_js_method(
+            "addTile3DLayer",
+            id=layer_id,
+            data=data,
+            pointSize=point_size,
+            pickable=pickable,
+            visible=visible,
+            opacity=opacity,
+            loadOptions=load_options or {},
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "Tile3DLayer", "id": layer_id},
+        }
+
+    def add_terrain_layer(
+        self,
+        elevation_data: Union[str, List[str]],
+        name: Optional[str] = None,
+        texture: Optional[str] = None,
+        mesh_max_error: float = 4.0,
+        bounds: Optional[List[float]] = None,
+        elevation_decoder: Optional[Dict] = None,
+        pickable: bool = False,
+        visible: bool = True,
+        opacity: float = 1.0,
+        wireframe: bool = False,
+        **kwargs,
+    ) -> None:
+        """Add a terrain layer for 3D terrain visualization.
+
+        Args:
+            elevation_data: URL to elevation tiles (e.g., Mapbox terrain).
+            name: Layer ID.
+            texture: URL to texture tiles for terrain surface.
+            mesh_max_error: Maximum mesh error in meters.
+            bounds: Bounding box [west, south, east, north].
+            elevation_decoder: Decoder for elevation data format.
+            pickable: Whether layer responds to hover/click.
+            visible: Whether layer is visible.
+            opacity: Layer opacity (0-1).
+            wireframe: Whether to render as wireframe.
+            **kwargs: Additional TerrainLayer props.
+        """
+        layer_id = name or f"terrain-{len(self._deck_layers)}"
+
+        default_decoder = {
+            "rScaler": 256,
+            "gScaler": 1,
+            "bScaler": 1 / 256,
+            "offset": -32768,
+        }
+
+        self.call_js_method(
+            "addTerrainLayer",
+            id=layer_id,
+            elevationData=elevation_data,
+            texture=texture,
+            meshMaxError=mesh_max_error,
+            bounds=bounds,
+            elevationDecoder=elevation_decoder or default_decoder,
+            pickable=pickable,
+            visible=visible,
+            opacity=opacity,
+            wireframe=wireframe,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "TerrainLayer", "id": layer_id},
+        }
+
+    def add_great_circle_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_source_position: Union[str, Callable] = "source",
+        get_target_position: Union[str, Callable] = "target",
+        get_source_color: Union[List[int], str, Callable] = None,
+        get_target_color: Union[List[int], str, Callable] = None,
+        get_width: Union[float, str, Callable] = 1,
+        width_min_pixels: float = 1,
+        width_max_pixels: float = 100,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add a great circle layer for geodesic arc visualization.
+
+        Args:
+            data: Array of data objects with source/target coordinates.
+            name: Layer ID.
+            get_source_position: Accessor for source position [lng, lat].
+            get_target_position: Accessor for target position [lng, lat].
+            get_source_color: Accessor for source color [r, g, b, a].
+            get_target_color: Accessor for target color [r, g, b, a].
+            get_width: Accessor for line width.
+            width_min_pixels: Minimum line width in pixels.
+            width_max_pixels: Maximum line width in pixels.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional GreatCircleLayer props.
+        """
+        layer_id = name or f"greatcircle-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addGreatCircleLayer",
+            id=layer_id,
+            data=processed_data,
+            getSourcePosition=get_source_position,
+            getTargetPosition=get_target_position,
+            getSourceColor=get_source_color or [51, 136, 255, 255],
+            getTargetColor=get_target_color or [255, 136, 51, 255],
+            getWidth=get_width,
+            widthMinPixels=width_min_pixels,
+            widthMaxPixels=width_max_pixels,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "GreatCircleLayer", "id": layer_id},
+        }
+
+    def add_h3_hexagon_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_hexagon: Union[str, Callable] = "hexagon",
+        get_fill_color: Union[List[int], str, Callable] = None,
+        get_line_color: Union[List[int], str, Callable] = None,
+        get_elevation: Union[float, str, Callable] = 0,
+        filled: bool = True,
+        stroked: bool = True,
+        extruded: bool = False,
+        wireframe: bool = False,
+        elevation_scale: float = 1,
+        coverage: float = 1,
+        high_precision: bool = False,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add an H3 hexagon layer for H3 spatial index visualization.
+
+        Args:
+            data: Array of data objects with H3 index.
+            name: Layer ID.
+            get_hexagon: Accessor for H3 index string.
+            get_fill_color: Accessor for fill color [r, g, b, a].
+            get_line_color: Accessor for stroke color [r, g, b, a].
+            get_elevation: Accessor for 3D extrusion height.
+            filled: Whether to fill hexagons.
+            stroked: Whether to stroke hexagons.
+            extruded: Whether to render as 3D hexagons.
+            wireframe: Whether to render wireframe.
+            elevation_scale: Elevation multiplier.
+            coverage: Hexagon coverage (0-1).
+            high_precision: Use high precision rendering.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional H3HexagonLayer props.
+        """
+        layer_id = name or f"h3hexagon-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addH3HexagonLayer",
+            id=layer_id,
+            data=processed_data,
+            getHexagon=get_hexagon,
+            getFillColor=get_fill_color or [51, 136, 255, 128],
+            getLineColor=get_line_color or [0, 0, 0, 255],
+            getElevation=get_elevation,
+            filled=filled,
+            stroked=stroked,
+            extruded=extruded,
+            wireframe=wireframe,
+            elevationScale=elevation_scale,
+            coverage=coverage,
+            highPrecision=high_precision,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "H3HexagonLayer", "id": layer_id},
+        }
+
+    def add_h3_cluster_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_hexagons: Union[str, Callable] = "hexagons",
+        get_fill_color: Union[List[int], str, Callable] = None,
+        get_line_color: Union[List[int], str, Callable] = None,
+        get_line_width: Union[float, str, Callable] = 1,
+        filled: bool = True,
+        stroked: bool = True,
+        extruded: bool = False,
+        elevation_scale: float = 1,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add an H3 cluster layer for grouped H3 cell visualization.
+
+        Args:
+            data: Array of data objects with H3 index arrays.
+            name: Layer ID.
+            get_hexagons: Accessor for array of H3 index strings.
+            get_fill_color: Accessor for fill color [r, g, b, a].
+            get_line_color: Accessor for stroke color [r, g, b, a].
+            get_line_width: Accessor for line width.
+            filled: Whether to fill clusters.
+            stroked: Whether to stroke clusters.
+            extruded: Whether to render as 3D.
+            elevation_scale: Elevation multiplier.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional H3ClusterLayer props.
+        """
+        layer_id = name or f"h3cluster-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addH3ClusterLayer",
+            id=layer_id,
+            data=processed_data,
+            getHexagons=get_hexagons,
+            getFillColor=get_fill_color or [51, 136, 255, 128],
+            getLineColor=get_line_color or [0, 0, 0, 255],
+            getLineWidth=get_line_width,
+            filled=filled,
+            stroked=stroked,
+            extruded=extruded,
+            elevationScale=elevation_scale,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "H3ClusterLayer", "id": layer_id},
+        }
+
+    def add_s2_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_s2_token: Union[str, Callable] = "s2Token",
+        get_fill_color: Union[List[int], str, Callable] = None,
+        get_line_color: Union[List[int], str, Callable] = None,
+        get_line_width: Union[float, str, Callable] = 1,
+        get_elevation: Union[float, str, Callable] = 0,
+        filled: bool = True,
+        stroked: bool = True,
+        extruded: bool = False,
+        wireframe: bool = False,
+        elevation_scale: float = 1,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add an S2 layer for S2 geometry cell visualization.
+
+        Args:
+            data: Array of data objects with S2 token.
+            name: Layer ID.
+            get_s2_token: Accessor for S2 token string.
+            get_fill_color: Accessor for fill color [r, g, b, a].
+            get_line_color: Accessor for stroke color [r, g, b, a].
+            get_line_width: Accessor for line width.
+            get_elevation: Accessor for 3D extrusion height.
+            filled: Whether to fill cells.
+            stroked: Whether to stroke cells.
+            extruded: Whether to render as 3D.
+            wireframe: Whether to render wireframe.
+            elevation_scale: Elevation multiplier.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional S2Layer props.
+        """
+        layer_id = name or f"s2-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addS2Layer",
+            id=layer_id,
+            data=processed_data,
+            getS2Token=get_s2_token,
+            getFillColor=get_fill_color or [51, 136, 255, 128],
+            getLineColor=get_line_color or [0, 0, 0, 255],
+            getLineWidth=get_line_width,
+            getElevation=get_elevation,
+            filled=filled,
+            stroked=stroked,
+            extruded=extruded,
+            wireframe=wireframe,
+            elevationScale=elevation_scale,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "S2Layer", "id": layer_id},
+        }
+
+    def add_quadkey_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_quadkey: Union[str, Callable] = "quadkey",
+        get_fill_color: Union[List[int], str, Callable] = None,
+        get_line_color: Union[List[int], str, Callable] = None,
+        get_line_width: Union[float, str, Callable] = 1,
+        get_elevation: Union[float, str, Callable] = 0,
+        filled: bool = True,
+        stroked: bool = True,
+        extruded: bool = False,
+        wireframe: bool = False,
+        elevation_scale: float = 1,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add a Quadkey layer for Bing Maps tile index visualization.
+
+        Args:
+            data: Array of data objects with quadkey.
+            name: Layer ID.
+            get_quadkey: Accessor for quadkey string.
+            get_fill_color: Accessor for fill color [r, g, b, a].
+            get_line_color: Accessor for stroke color [r, g, b, a].
+            get_line_width: Accessor for line width.
+            get_elevation: Accessor for 3D extrusion height.
+            filled: Whether to fill cells.
+            stroked: Whether to stroke cells.
+            extruded: Whether to render as 3D.
+            wireframe: Whether to render wireframe.
+            elevation_scale: Elevation multiplier.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional QuadkeyLayer props.
+        """
+        layer_id = name or f"quadkey-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addQuadkeyLayer",
+            id=layer_id,
+            data=processed_data,
+            getQuadkey=get_quadkey,
+            getFillColor=get_fill_color or [51, 136, 255, 128],
+            getLineColor=get_line_color or [0, 0, 0, 255],
+            getLineWidth=get_line_width,
+            getElevation=get_elevation,
+            filled=filled,
+            stroked=stroked,
+            extruded=extruded,
+            wireframe=wireframe,
+            elevationScale=elevation_scale,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "QuadkeyLayer", "id": layer_id},
+        }
+
+    def add_geohash_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_geohash: Union[str, Callable] = "geohash",
+        get_fill_color: Union[List[int], str, Callable] = None,
+        get_line_color: Union[List[int], str, Callable] = None,
+        get_line_width: Union[float, str, Callable] = 1,
+        get_elevation: Union[float, str, Callable] = 0,
+        filled: bool = True,
+        stroked: bool = True,
+        extruded: bool = False,
+        wireframe: bool = False,
+        elevation_scale: float = 1,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add a Geohash layer for geohash cell visualization.
+
+        Args:
+            data: Array of data objects with geohash.
+            name: Layer ID.
+            get_geohash: Accessor for geohash string.
+            get_fill_color: Accessor for fill color [r, g, b, a].
+            get_line_color: Accessor for stroke color [r, g, b, a].
+            get_line_width: Accessor for line width.
+            get_elevation: Accessor for 3D extrusion height.
+            filled: Whether to fill cells.
+            stroked: Whether to stroke cells.
+            extruded: Whether to render as 3D.
+            wireframe: Whether to render wireframe.
+            elevation_scale: Elevation multiplier.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity.
+            **kwargs: Additional GeohashLayer props.
+        """
+        layer_id = name or f"geohash-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addGeohashLayer",
+            id=layer_id,
+            data=processed_data,
+            getGeohash=get_geohash,
+            getFillColor=get_fill_color or [51, 136, 255, 128],
+            getLineColor=get_line_color or [0, 0, 0, 255],
+            getLineWidth=get_line_width,
+            getElevation=get_elevation,
+            filled=filled,
+            stroked=stroked,
+            extruded=extruded,
+            wireframe=wireframe,
+            elevationScale=elevation_scale,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "GeohashLayer", "id": layer_id},
+        }
+
+    def add_wms_layer(
+        self,
+        data: str,
+        name: Optional[str] = None,
+        service_type: str = "wms",
+        layers: Optional[List[str]] = None,
+        srs: Optional[str] = None,
+        pickable: bool = False,
+        visible: bool = True,
+        opacity: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Add a WMS layer for OGC Web Map Service visualization.
+
+        Args:
+            data: WMS base URL.
+            name: Layer ID.
+            service_type: Service type ('wms' or 'template').
+            layers: WMS layer names to request.
+            srs: Spatial reference system (e.g., 'EPSG:4326').
+            pickable: Whether layer responds to hover/click.
+            visible: Whether layer is visible.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional WMSLayer props.
+        """
+        layer_id = name or f"wms-{len(self._deck_layers)}"
+
+        self.call_js_method(
+            "addWMSLayer",
+            id=layer_id,
+            data=data,
+            serviceType=service_type,
+            layers=layers,
+            srs=srs,
+            pickable=pickable,
+            visible=visible,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "WMSLayer", "id": layer_id},
+        }
+
+    def add_simple_mesh_layer(
+        self,
+        data: Any,
+        mesh: str,
+        name: Optional[str] = None,
+        texture: Optional[str] = None,
+        get_position: Union[str, Callable] = "coordinates",
+        get_color: Union[List[int], str, Callable] = None,
+        get_orientation: Union[str, Callable] = None,
+        get_scale: Union[str, Callable] = None,
+        get_translation: Union[str, Callable] = None,
+        size_scale: float = 1,
+        wireframe: bool = False,
+        pickable: bool = True,
+        opacity: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Add a simple mesh layer for 3D mesh visualization.
+
+        Args:
+            data: Array of data objects with position coordinates.
+            mesh: URL to OBJ/glTF mesh file.
+            name: Layer ID.
+            texture: URL to texture image.
+            get_position: Accessor for mesh position [lng, lat, z].
+            get_color: Accessor for mesh color [r, g, b, a].
+            get_orientation: Accessor for mesh orientation [pitch, yaw, roll].
+            get_scale: Accessor for mesh scale [x, y, z].
+            get_translation: Accessor for mesh translation [x, y, z].
+            size_scale: Global size multiplier.
+            wireframe: Whether to render as wireframe.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional SimpleMeshLayer props.
+        """
+        layer_id = name or f"simplemesh-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        layer_kwargs = {
+            "id": layer_id,
+            "data": processed_data,
+            "mesh": mesh,
+            "getPosition": get_position,
+            "getColor": get_color or [255, 255, 255, 255],
+            "sizeScale": size_scale,
+            "wireframe": wireframe,
+            "pickable": pickable,
+            "opacity": opacity,
+        }
+
+        if texture:
+            layer_kwargs["texture"] = texture
+        if get_orientation:
+            layer_kwargs["getOrientation"] = get_orientation
+        if get_scale:
+            layer_kwargs["getScale"] = get_scale
+        if get_translation:
+            layer_kwargs["getTranslation"] = get_translation
+
+        layer_kwargs.update(kwargs)
+        self.call_js_method("addSimpleMeshLayer", **layer_kwargs)
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "SimpleMeshLayer", "id": layer_id},
+        }
+
+    def add_scenegraph_layer(
+        self,
+        data: Any,
+        scenegraph: str,
+        name: Optional[str] = None,
+        get_position: Union[str, Callable] = "coordinates",
+        get_color: Union[List[int], str, Callable] = None,
+        get_orientation: Union[str, Callable] = None,
+        get_scale: Union[str, Callable] = None,
+        get_translation: Union[str, Callable] = None,
+        size_scale: float = 1,
+        size_min_pixels: float = 0,
+        size_max_pixels: float = 10000,
+        pickable: bool = True,
+        opacity: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Add a scenegraph layer for glTF model visualization.
+
+        Args:
+            data: Array of data objects with position coordinates.
+            scenegraph: URL to glTF/GLB model file.
+            name: Layer ID.
+            get_position: Accessor for model position [lng, lat, z].
+            get_color: Accessor for model tint color [r, g, b, a].
+            get_orientation: Accessor for model orientation [pitch, yaw, roll].
+            get_scale: Accessor for model scale [x, y, z].
+            get_translation: Accessor for model translation [x, y, z].
+            size_scale: Global size multiplier.
+            size_min_pixels: Minimum model size in pixels.
+            size_max_pixels: Maximum model size in pixels.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional ScenegraphLayer props.
+        """
+        layer_id = name or f"scenegraph-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        layer_kwargs = {
+            "id": layer_id,
+            "data": processed_data,
+            "scenegraph": scenegraph,
+            "getPosition": get_position,
+            "getColor": get_color or [255, 255, 255, 255],
+            "sizeScale": size_scale,
+            "sizeMinPixels": size_min_pixels,
+            "sizeMaxPixels": size_max_pixels,
+            "pickable": pickable,
+            "opacity": opacity,
+        }
+
+        if get_orientation:
+            layer_kwargs["getOrientation"] = get_orientation
+        if get_scale:
+            layer_kwargs["getScale"] = get_scale
+        if get_translation:
+            layer_kwargs["getTranslation"] = get_translation
+
+        layer_kwargs.update(kwargs)
+        self.call_js_method("addScenegraphLayer", **layer_kwargs)
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "ScenegraphLayer", "id": layer_id},
+        }
+
     def remove_cog_layer(self, layer_id: str) -> None:
         """Remove a COG layer.
 

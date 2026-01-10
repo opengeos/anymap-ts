@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Text Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Text Layer</h3>
+    <p>Dynamic text labels for Bay Area cities and landmarks. Labels are rendered using deck.gl TextLayer with GPU acceleration.</p>
+    <p>Text size varies based on city importance. Labels include outline for better visibility.</p>
+  </div>
+  <script type="module" src="./text-main.ts"></script>
+</body>
+</html>

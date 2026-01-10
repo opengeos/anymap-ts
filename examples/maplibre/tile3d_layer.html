@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Tiles Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+  <div class="header">
+    <h1>3D Tiles Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>3D Tiles</h3>
+    <p>OGC 3D Tiles visualization with deck.gl Tile3DLayer.</p>
+    <div class="control-group">
+      <label>Opacity: <span id="opacityValue">100%</span></label>
+      <input type="range" id="opacity" min="0" max="100" value="100">
+    </div>
+  </div>
+  <script type="module" src="./tile3d-main.ts"></script>
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WMS Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+  <div class="header">
+    <h1>WMS Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>WMS Layer</h3>
+    <p>Web Map Service integration with deck.gl WMSLayer.</p>
+    <div class="control-group">
+      <label>Opacity: <span id="opacityValue">80%</span></label>
+      <input type="range" id="opacity" min="0" max="100" value="80">
+    </div>
+  </div>
+  <script type="module" src="./wms-main.ts"></script>
+</body>
+
+</html>

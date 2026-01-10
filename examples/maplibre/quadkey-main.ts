@@ -1,0 +1,81 @@
+import maplibregl from 'maplibre-gl';
+import { MapboxOverlay } from '@deck.gl/mapbox';
+import { QuadkeyLayer } from '@deck.gl/geo-layers';
+import { LayerControl } from 'maplibre-gl-layer-control';
+import 'maplibre-gl-layer-control/style.css';
+import { DeckLayerAdapter } from '../../src/maplibre/adapters/DeckLayerAdapter';
+
+// Sample quadkey data (around San Francisco area)
+const quadkeyData = [
+  { quadkey: '0230102', value: 150 },
+  { quadkey: '0230103', value: 200 },
+  { quadkey: '0230110', value: 180 },
+  { quadkey: '0230111', value: 250 },
+  { quadkey: '0230120', value: 300 },
+  { quadkey: '0230121', value: 220 },
+  { quadkey: '0230122', value: 190 },
+  { quadkey: '0230123', value: 280 },
+];
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  center: [-122.4, 37.75],
+  zoom: 6,
+  pitch: 45,
+});
+
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
+
+const deckOverlay = new MapboxOverlay({ layers: [] });
+const deckLayers = new Map<string, unknown>();
+const deckAdapter = new DeckLayerAdapter(map, deckOverlay, deckLayers);
+
+let elevationScale = 50;
+
+function updateOverlay(): void {
+  deckOverlay.setProps({ layers: Array.from(deckLayers.values()) });
+}
+
+function addQuadkeyLayer(): void {
+  const layerId = 'quadkey-layer';
+
+  const layer = new QuadkeyLayer({
+    id: layerId,
+    data: quadkeyData,
+    getQuadkey: (d: { quadkey: string }) => d.quadkey,
+    getFillColor: [255, 140, 0, 180],
+    getElevation: (d: { value: number }) => d.value,
+    extruded: true,
+    elevationScale,
+    pickable: true,
+  });
+
+  deckLayers.set(layerId, layer);
+  updateOverlay();
+  deckAdapter.notifyLayerAdded(layerId);
+}
+
+// Setup elevation scale slider
+const elevationSlider = document.getElementById('elevation') as HTMLInputElement;
+const elevationValue = document.getElementById('elevationValue') as HTMLSpanElement;
+
+elevationSlider?.addEventListener('input', () => {
+  elevationScale = parseInt(elevationSlider.value, 10);
+  elevationValue.textContent = elevationSlider.value;
+  addQuadkeyLayer();
+});
+
+map.on('load', () => {
+  map.addControl(deckOverlay as unknown as maplibregl.IControl);
+
+  const layerControl = new LayerControl({
+    collapsed: true,
+    customLayerAdapters: [deckAdapter],
+    panelWidth: 360,
+  });
+  map.addControl(layerControl as unknown as maplibregl.IControl, 'top-right');
+
+  addQuadkeyLayer();
+});
