@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>H3 Cluster Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+  <div class="header">
+    <h1>H3 Cluster Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>H3 Cluster Layer</h3>
+    <p>H3 hexagon clustering with deck.gl H3ClusterLayer.</p>
+    <div class="control-group">
+      <label>Elevation Scale: <span id="elevationValue">20</span></label>
+      <input type="range" id="elevation" min="5" max="100" value="20">
+    </div>
+  </div>
+  <script type="module" src="./h3cluster-main.ts"></script>
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solid Polygon Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+  <div class="header">
+    <h1>Solid Polygon Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Solid Polygon Layer</h3>
+    <p>Filled polygon rendering with deck.gl SolidPolygonLayer.</p>
+    <div class="control-group">
+      <label>Elevation Scale: <span id="elevationValue">10</span></label>
+      <input type="range" id="elevation" min="1" max="50" value="10">
+    </div>
+  </div>
+  <script type="module" src="./solidpolygon-main.ts"></script>
+</body>
+
+</html>

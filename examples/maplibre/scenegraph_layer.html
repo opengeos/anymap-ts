@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scenegraph Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+  <div class="header">
+    <h1>Scenegraph Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Scenegraph Layer</h3>
+    <p>glTF 3D model rendering with deck.gl ScenegraphLayer.</p>
+    <div class="control-group">
+      <label>Scale: <span id="scaleValue">500</span></label>
+      <input type="range" id="scale" min="100" max="2000" value="500">
+    </div>
+  </div>
+  <script type="module" src="./scenegraph-main.ts"></script>
+</body>
+
+</html>
