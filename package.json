@@ -34,7 +34,7 @@
     "@mapbox/mapbox-gl-draw": "^1.5.1",
     "@types/mapbox__mapbox-gl-draw": "^1.4.9",
     "cesium": "^1.120.0",
-    "deck.gl": "^9.2.5",
+    "deck.gl": "^9.0.0",
     "geotiff-geokeys-to-proj4": "^2024.4.13",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.9.0",
