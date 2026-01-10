@@ -5,10 +5,13 @@ import { LayerControl } from 'maplibre-gl-layer-control';
 import 'maplibre-gl-layer-control/style.css';
 import { DeckLayerAdapter } from '../../src/maplibre/adapters/DeckLayerAdapter';
 
+// Public 3D Tiles dataset - San Francisco buildings from loaders.gl
+const TILESET_URL = 'https://raw.githubusercontent.com/visgl/loaders.gl/master/modules/3d-tiles/test/data/CesiumJS/Batched/BatchedColors/tileset.json';
+
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-  center: [-75.152408, 39.946975],
+  center: [0, 0],
   zoom: 16,
   pitch: 60,
   bearing: -17,
@@ -28,13 +31,24 @@ function updateOverlay(): void {
 }
 
 function addTile3DLayer(): void {
-  const layerId = 'tile3d-layer';
+  const layerId = 'tile3d-buildings';
 
   const layer = new Tile3DLayer({
     id: layerId,
-    data: 'https://assets.ion.cesium.com/43978/tileset.json',
+    data: TILESET_URL,
     opacity: currentOpacity,
     pointSize: 2,
+    onTilesetLoad: (tileset) => {
+      // Fly to the tileset when loaded
+      const { cartographicCenter, zoom } = tileset;
+      if (cartographicCenter && zoom) {
+        map.flyTo({
+          center: [cartographicCenter[0], cartographicCenter[1]],
+          zoom: zoom + 2,
+          pitch: 60,
+        });
+      }
+    },
   });
 
   deckLayers.set(layerId, layer);

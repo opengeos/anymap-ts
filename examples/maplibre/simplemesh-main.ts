@@ -1,6 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { SimpleMeshLayer } from '@deck.gl/mesh-layers';
+import { SphereGeometry } from '@luma.gl/engine';
 import { LayerControl } from 'maplibre-gl-layer-control';
 import 'maplibre-gl-layer-control/style.css';
 import { DeckLayerAdapter } from '../../src/maplibre/adapters/DeckLayerAdapter';
@@ -32,17 +33,20 @@ const deckAdapter = new DeckLayerAdapter(map, deckOverlay, deckLayers);
 
 let sizeScale = 1000;
 
+// Create a simple sphere geometry
+const sphereMesh = new SphereGeometry({ radius: 1, nlat: 16, nlong: 16 });
+
 function updateOverlay(): void {
   deckOverlay.setProps({ layers: Array.from(deckLayers.values()) });
 }
 
 function addSimpleMeshLayer(): void {
-  const layerId = 'simplemesh-layer';
+  const layerId = 'simplemesh-spheres';
 
   const layer = new SimpleMeshLayer({
     id: layerId,
     data: meshData,
-    mesh: 'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/bart.obj',
+    mesh: sphereMesh,
     getPosition: (d: { position: number[] }) => d.position as [number, number],
     getColor: (d: { color: number[] }) => d.color as [number, number, number, number],
     sizeScale,

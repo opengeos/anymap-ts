@@ -27,7 +27,7 @@ function updateOverlay(): void {
 }
 
 function addTileLayer(): void {
-  const layerId = 'osm-tiles';
+  const layerId = 'tile-osm';
 
   const layer = new TileLayer({
     id: layerId,

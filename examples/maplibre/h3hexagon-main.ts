@@ -46,7 +46,7 @@ function updateOverlay(): void {
 }
 
 function addH3HexagonLayer(): void {
-  const layerId = 'h3-hexagons';
+  const layerId = 'h3hexagon-sf-data';
   const layer = new H3HexagonLayer<H3Data>({
     id: layerId,
     data: h3Data,

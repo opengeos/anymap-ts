@@ -42,7 +42,7 @@ function updateOverlay(): void {
 }
 
 function addGreatCircleLayer(): void {
-  const layerId = 'flight-routes';
+  const layerId = 'greatcircle-flight-routes';
   const layer = new GreatCircleLayer<FlightRoute>({
     id: layerId,
     data: flightRoutes,
