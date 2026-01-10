@@ -4,9 +4,9 @@
  */
 
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer, PointCloudLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer, PointCloudLayer, GeoJsonLayer, LineLayer } from '@deck.gl/layers';
 import { HexagonLayer, HeatmapLayer, GridLayer, ContourLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
-import { GeoJsonLayer } from '@deck.gl/layers';
+import { TripsLayer } from '@deck.gl/geo-layers';
 import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
 
@@ -74,7 +74,10 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.registerMethod('addContourLayer', this.handleAddContourLayer.bind(this));
     this.registerMethod('addScreenGridLayer', this.handleAddScreenGridLayer.bind(this));
     this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
+    this.registerMethod('addTripsLayer', this.handleAddTripsLayer.bind(this));
+    this.registerMethod('addLineLayer', this.handleAddLineLayer.bind(this));
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
+    this.registerMethod('addDeckGLLayer', this.handleAddDeckGLLayer.bind(this));
 
     // Layer management
     this.registerMethod('removeDeckLayer', this.handleRemoveDeckLayer.bind(this));
@@ -442,6 +445,113 @@ export class DeckGLRenderer extends MapLibreRenderer {
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
+  }
+
+  private handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string || `trips-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value;
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
+    const layer = new TripsLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      widthMinPixels: kwargs.widthMinPixels as number ?? 2,
+      trailLength: kwargs.trailLength as number ?? 180,
+      currentTime: kwargs.currentTime as number ?? 0,
+      getPath: makeAccessor(kwargs.getPath, 'waypoints', (d: any) => d.waypoints || d.path || d.coordinates),
+      getTimestamps: makeAccessor(kwargs.getTimestamps, 'timestamps', (d: any) => d.timestamps),
+      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [253, 128, 93]),
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  private handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string || `line-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    // Helper to create accessor from string or use value directly
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+      if (typeof value === 'string') {
+        return (d: any) => d[value];
+      }
+      if (typeof value === 'function') {
+        return value;
+      }
+      if (value !== undefined && value !== null) {
+        return value;
+      }
+      return fallbackFn || ((d: any) => d[defaultProp]);
+    };
+
+    const layer = new LineLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      widthMinPixels: kwargs.widthMinPixels as number ?? 1,
+      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'sourcePosition', (d: any) => d.sourcePosition || d.source || d.from),
+      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'targetPosition', (d: any) => d.targetPosition || d.target || d.to),
+      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
+      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  /**
+   * Generic handler for adding any deck.gl layer type.
+   * Routes to specific handlers based on layerType.
+   */
+  private handleAddDeckGLLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const layerType = kwargs.layerType as string;
+    if (!layerType) {
+      console.warn('addDeckGLLayer called without layerType');
+      return;
+    }
+
+    // Map layer types to handler methods
+    const handlerMap: Record<string, (args: unknown[], kwargs: Record<string, unknown>) => void> = {
+      'ScatterplotLayer': this.handleAddScatterplotLayer.bind(this),
+      'ArcLayer': this.handleAddArcLayer.bind(this),
+      'PathLayer': this.handleAddPathLayer.bind(this),
+      'PolygonLayer': this.handleAddPolygonLayer.bind(this),
+      'HexagonLayer': this.handleAddHexagonLayer.bind(this),
+      'HeatmapLayer': this.handleAddHeatmapLayer.bind(this),
+      'GridLayer': this.handleAddGridLayer.bind(this),
+      'IconLayer': this.handleAddIconLayer.bind(this),
+      'TextLayer': this.handleAddTextLayer.bind(this),
+      'GeoJsonLayer': this.handleAddGeoJsonLayer.bind(this),
+      'ContourLayer': this.handleAddContourLayer.bind(this),
+      'ScreenGridLayer': this.handleAddScreenGridLayer.bind(this),
+      'PointCloudLayer': this.handleAddPointCloudLayer.bind(this),
+      'TripsLayer': this.handleAddTripsLayer.bind(this),
+      'LineLayer': this.handleAddLineLayer.bind(this),
+    };
+
+    const handler = handlerMap[layerType];
+    if (handler) {
+      handler(args, kwargs);
+    } else {
+      console.warn(`Unknown deck.gl layer type: ${layerType}`);
+    }
   }
 
   private handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {

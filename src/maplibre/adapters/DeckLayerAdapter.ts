@@ -1,5 +1,5 @@
 /**
- * Deck.gl Layer Adapter for integrating Arc and PointCloud layers with the layer control.
+ * Deck.gl Layer Adapter for integrating all deck.gl layers with the layer control.
  */
 
 import type { CustomLayerAdapter, LayerState } from 'maplibre-gl-layer-control';
@@ -7,11 +7,36 @@ import type { MapboxOverlay } from '@deck.gl/mapbox';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
 /**
- * Adapter for deck.gl Arc and PointCloud layers.
- * Allows the layer control to manage these deck.gl layer types.
+ * Adapter for all deck.gl layer types.
+ * Allows the layer control to manage deck.gl layers including:
+ * ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, HexagonLayer,
+ * HeatmapLayer, GridLayer, IconLayer, TextLayer, GeoJsonLayer,
+ * ContourLayer, ScreenGridLayer, PointCloudLayer, TripsLayer, LineLayer.
  */
 export class DeckLayerAdapter implements CustomLayerAdapter {
   readonly type = 'deck';
+
+  /**
+   * All supported deck.gl layer prefixes for layer control integration.
+   */
+  private static readonly LAYER_PREFIXES = [
+    'scatterplot-',
+    'arc-',
+    'path-',
+    'polygon-',
+    'hexagon-',
+    'heatmap-',
+    'grid-',
+    'icon-',
+    'text-',
+    'geojson-',
+    'contour-',
+    'screengrid-',
+    'pointcloud-',
+    'trips-',
+    'line-',
+    'cog-',
+  ];
 
   private map: MapLibreMap;
   private deckOverlay: MapboxOverlay;
@@ -25,11 +50,11 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
   }
 
   /**
-   * Get all deck.gl layer IDs managed by this adapter (arc and pointcloud).
+   * Get all deck.gl layer IDs managed by this adapter.
    */
   getLayerIds(): string[] {
     return Array.from(this.deckLayers.keys()).filter(id =>
-      id.startsWith('arc-') || id.startsWith('pointcloud-')
+      DeckLayerAdapter.LAYER_PREFIXES.some(prefix => id.startsWith(prefix))
     );
   }
 
@@ -77,17 +102,56 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
    * Get the display name for a deck.gl layer.
    */
   getName(layerId: string): string {
-    // Convert layer ID to a friendly name
-    return layerId
-      .replace(/^(arc|pointcloud)[-_]/, '')
-      .replace(/[-_]/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase()) || layerId;
+    // Try to extract a meaningful name from the layer ID
+    for (const prefix of DeckLayerAdapter.LAYER_PREFIXES) {
+      if (layerId.startsWith(prefix)) {
+        const remainder = layerId.slice(prefix.length);
+        // If remainder is just a number, use the layer type as name
+        if (!remainder || /^\d+$/.test(remainder)) {
+          const layerType = prefix.slice(0, -1); // Remove trailing dash
+          return layerType.charAt(0).toUpperCase() + layerType.slice(1) + ' Layer';
+        }
+        // Otherwise, format the remainder as a name
+        return remainder
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+      }
+    }
+    return layerId;
   }
 
   /**
-   * Get the symbol type for deck.gl layers.
+   * Get the symbol type for deck.gl layers based on layer type.
    */
-  getSymbolType(): string {
+  getSymbolType(layerId: string): string {
+    // Point-based layers
+    if (layerId.startsWith('scatterplot-') || layerId.startsWith('pointcloud-') ||
+        layerId.startsWith('icon-')) {
+      return 'circle';
+    }
+    // Line-based layers
+    if (layerId.startsWith('arc-') || layerId.startsWith('line-') ||
+        layerId.startsWith('path-') || layerId.startsWith('trips-')) {
+      return 'line';
+    }
+    // Fill-based layers
+    if (layerId.startsWith('polygon-') || layerId.startsWith('hexagon-') ||
+        layerId.startsWith('grid-') || layerId.startsWith('geojson-')) {
+      return 'fill';
+    }
+    // Heatmap/density layers
+    if (layerId.startsWith('heatmap-') || layerId.startsWith('screengrid-') ||
+        layerId.startsWith('contour-')) {
+      return 'heatmap';
+    }
+    // Text layers
+    if (layerId.startsWith('text-')) {
+      return 'symbol';
+    }
+    // Raster layers
+    if (layerId.startsWith('cog-')) {
+      return 'raster';
+    }
     return 'deck';
   }
 

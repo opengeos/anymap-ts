@@ -889,6 +889,220 @@ class DeckGLMap(MapLibreMap):
         }
 
     # -------------------------------------------------------------------------
+    # Generic DeckGL Layer
+    # -------------------------------------------------------------------------
+
+    def add_deckgl_layer(
+        self,
+        layer_type: str,
+        data: Any,
+        name: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Add a generic deck.gl layer to the map.
+
+        This method provides a flexible way to add any supported deck.gl layer
+        type using a single interface. For commonly used layers, prefer the
+        specific methods (e.g., add_scatterplot_layer) for better IDE support.
+
+        Args:
+            layer_type: The deck.gl layer type. Supported types include:
+                'ScatterplotLayer', 'ArcLayer', 'PathLayer', 'PolygonLayer',
+                'HexagonLayer', 'HeatmapLayer', 'GridLayer', 'IconLayer',
+                'TextLayer', 'GeoJsonLayer', 'ContourLayer', 'ScreenGridLayer',
+                'PointCloudLayer', 'TripsLayer', 'LineLayer'.
+            data: Array of data objects or GeoJSON.
+            name: Layer ID. If None, auto-generated from layer_type.
+            **kwargs: Layer-specific properties passed directly to deck.gl.
+                Common properties include:
+                - opacity: Layer opacity (0-1)
+                - pickable: Whether layer responds to hover/click
+                - getPosition: Accessor for position coordinates
+                - getColor/getFillColor/getLineColor: Color accessors
+
+        Example:
+            >>> m = DeckGLMap()
+            >>> # Add a TripsLayer with animation
+            >>> m.add_deckgl_layer(
+            ...     'TripsLayer',
+            ...     data=trips_data,
+            ...     getPath='waypoints',
+            ...     getTimestamps='timestamps',
+            ...     getColor=[253, 128, 93],
+            ...     trailLength=180,
+            ... )
+            >>> # Add a LineLayer
+            >>> m.add_deckgl_layer(
+            ...     'LineLayer',
+            ...     data=lines_data,
+            ...     getSourcePosition='source',
+            ...     getTargetPosition='target',
+            ...     getColor=[0, 128, 255],
+            ... )
+        """
+        # Normalize layer type and create prefix
+        layer_type_clean = layer_type.replace("Layer", "")
+        prefix = layer_type_clean.lower()
+        layer_id = name or f"{prefix}-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addDeckGLLayer",
+            layerType=layer_type,
+            id=layer_id,
+            data=processed_data,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": layer_type, "id": layer_id},
+        }
+
+    # -------------------------------------------------------------------------
+    # DeckGL Trips Layer
+    # -------------------------------------------------------------------------
+
+    def add_trips_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_path: Union[str, Callable] = "waypoints",
+        get_timestamps: Union[str, Callable] = "timestamps",
+        get_color: Union[List[int], str, Callable] = None,
+        width_min_pixels: float = 2,
+        trail_length: float = 180,
+        current_time: float = 0,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add a trips layer for animated path visualization.
+
+        The TripsLayer renders animated paths showing movement over time,
+        ideal for visualizing vehicle routes, migration patterns, or any
+        time-based trajectory data.
+
+        Args:
+            data: Array of trip objects with waypoints and timestamps.
+            name: Layer ID. If None, auto-generated.
+            get_path: Accessor for waypoint coordinates [[lng, lat], ...].
+            get_timestamps: Accessor for timestamps at each waypoint.
+            get_color: Accessor for trip color [r, g, b] or [r, g, b, a].
+            width_min_pixels: Minimum trail width in pixels.
+            trail_length: Trail length in timestamp units.
+            current_time: Current animation time.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional TripsLayer props.
+
+        Example:
+            >>> m = DeckGLMap()
+            >>> trips = [
+            ...     {
+            ...         "waypoints": [[-122.4, 37.8], [-122.5, 37.7], [-122.6, 37.8]],
+            ...         "timestamps": [0, 50, 100]
+            ...     }
+            ... ]
+            >>> m.add_trips_layer(
+            ...     data=trips,
+            ...     trail_length=180,
+            ...     current_time=50,
+            ... )
+        """
+        layer_id = name or f"trips-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addTripsLayer",
+            id=layer_id,
+            data=processed_data,
+            getPath=get_path,
+            getTimestamps=get_timestamps,
+            getColor=get_color or [253, 128, 93],
+            widthMinPixels=width_min_pixels,
+            trailLength=trail_length,
+            currentTime=current_time,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "TripsLayer", "id": layer_id},
+        }
+
+    # -------------------------------------------------------------------------
+    # DeckGL Line Layer
+    # -------------------------------------------------------------------------
+
+    def add_line_layer(
+        self,
+        data: Any,
+        name: Optional[str] = None,
+        get_source_position: Union[str, Callable] = "sourcePosition",
+        get_target_position: Union[str, Callable] = "targetPosition",
+        get_color: Union[List[int], str, Callable] = None,
+        get_width: Union[float, str, Callable] = 1,
+        width_min_pixels: float = 1,
+        pickable: bool = True,
+        opacity: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Add a line layer for simple line segment visualization.
+
+        The LineLayer renders straight line segments between source and
+        target positions. Unlike ArcLayer, lines are drawn directly
+        without curvature.
+
+        Args:
+            data: Array of line objects with source/target positions.
+            name: Layer ID. If None, auto-generated.
+            get_source_position: Accessor for source position [lng, lat].
+            get_target_position: Accessor for target position [lng, lat].
+            get_color: Accessor for line color [r, g, b] or [r, g, b, a].
+            get_width: Accessor for line width.
+            width_min_pixels: Minimum line width in pixels.
+            pickable: Whether layer responds to hover/click.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional LineLayer props.
+
+        Example:
+            >>> m = DeckGLMap()
+            >>> lines = [
+            ...     {"sourcePosition": [-122.4, 37.8], "targetPosition": [-122.5, 37.7]},
+            ...     {"sourcePosition": [-122.5, 37.7], "targetPosition": [-122.6, 37.8]},
+            ... ]
+            >>> m.add_line_layer(
+            ...     data=lines,
+            ...     get_color=[0, 128, 255],
+            ...     get_width=2,
+            ... )
+        """
+        layer_id = name or f"line-{len(self._deck_layers)}"
+        processed_data = self._process_deck_data(data)
+
+        self.call_js_method(
+            "addLineLayer",
+            id=layer_id,
+            data=processed_data,
+            getSourcePosition=get_source_position,
+            getTargetPosition=get_target_position,
+            getColor=get_color or [51, 136, 255, 200],
+            getWidth=get_width,
+            widthMinPixels=width_min_pixels,
+            pickable=pickable,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._deck_layers = {
+            **self._deck_layers,
+            layer_id: {"type": "LineLayer", "id": layer_id},
+        }
+
+    # -------------------------------------------------------------------------
     # DeckGL COG Layer
     # -------------------------------------------------------------------------
 
