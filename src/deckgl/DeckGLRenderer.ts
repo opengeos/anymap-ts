@@ -8,7 +8,13 @@ import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLay
 import { HexagonLayer, HeatmapLayer, GridLayer, ContourLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
 import { TripsLayer, TileLayer, MVTLayer, Tile3DLayer, TerrainLayer, GreatCircleLayer, H3HexagonLayer, H3ClusterLayer, S2Layer, QuadkeyLayer, GeohashLayer, _WMSLayer as WMSLayer } from '@deck.gl/geo-layers';
 import { SimpleMeshLayer, ScenegraphLayer } from '@deck.gl/mesh-layers';
+import { registerLoaders } from '@loaders.gl/core';
+import { GLTFLoader } from '@loaders.gl/gltf';
+import { OBJLoader } from '@loaders.gl/obj';
 import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
+
+// Register loaders for mesh files (GLB, glTF, OBJ)
+registerLoaders([GLTFLoader, OBJLoader]);
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
 
 import { MapLibreRenderer } from '../maplibre/MapLibreRenderer';
@@ -854,7 +860,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     const id = kwargs.id as string || `tile3d-${Date.now()}`;
     const data = kwargs.data as string;
 
-    const layer = new Tile3DLayer({
+    const layerProps: Record<string, unknown> = {
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -862,11 +868,23 @@ export class DeckGLRenderer extends MapLibreRenderer {
       opacity: kwargs.opacity as number ?? 1,
       pointSize: kwargs.pointSize as number ?? 1,
       loadOptions: kwargs.loadOptions as Record<string, unknown> ?? {},
-      onTilesetLoad: kwargs.onTilesetLoad as any,
-      onTileLoad: kwargs.onTileLoad as any,
-      onTileUnload: kwargs.onTileUnload as any,
-      onTileError: kwargs.onTileError as any,
-    });
+    };
+
+    // Only add callback functions if they are actually provided
+    if (typeof kwargs.onTilesetLoad === 'function') {
+      layerProps.onTilesetLoad = kwargs.onTilesetLoad;
+    }
+    if (typeof kwargs.onTileLoad === 'function') {
+      layerProps.onTileLoad = kwargs.onTileLoad;
+    }
+    if (typeof kwargs.onTileUnload === 'function') {
+      layerProps.onTileUnload = kwargs.onTileUnload;
+    }
+    if (typeof kwargs.onTileError === 'function') {
+      layerProps.onTileError = kwargs.onTileError;
+    }
+
+    const layer = new Tile3DLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1065,18 +1083,17 @@ export class DeckGLRenderer extends MapLibreRenderer {
   private handleAddSimpleMeshLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `simplemesh-${Date.now()}`;
     const data = kwargs.data as unknown[];
-    const mesh = kwargs.mesh as string | unknown;
+    const mesh = kwargs.mesh;
 
-    const layer = new SimpleMeshLayer({
+    // Build layer props object
+    const layerProps: Record<string, unknown> = {
       id,
       data,
-      mesh,
-      texture: kwargs.texture as string,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       sizeScale: kwargs.sizeScale as number ?? 1,
       wireframe: kwargs.wireframe as boolean ?? false,
-      material: kwargs.material as any ?? true,
+      material: kwargs.material ?? true,
       getPosition: this.makeAccessor(
         kwargs.getPosition,
         'coordinates',
@@ -1086,7 +1103,21 @@ export class DeckGLRenderer extends MapLibreRenderer {
       getOrientation: this.makeAccessor(kwargs.getOrientation, 'orientation', () => [0, 0, 0]),
       getScale: this.makeAccessor(kwargs.getScale, 'scale', () => [1, 1, 1]),
       getTranslation: this.makeAccessor(kwargs.getTranslation, 'translation', () => [0, 0, 0]),
-    });
+      // Specify loaders explicitly for mesh files
+      loaders: [GLTFLoader, OBJLoader],
+    };
+
+    // Only add mesh if it's provided and not undefined
+    if (mesh !== undefined && mesh !== null) {
+      layerProps.mesh = mesh;
+    }
+
+    // Only add texture if provided
+    if (kwargs.texture) {
+      layerProps.texture = kwargs.texture as string;
+    }
+
+    const layer = new SimpleMeshLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1095,18 +1126,16 @@ export class DeckGLRenderer extends MapLibreRenderer {
   private handleAddScenegraphLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `scenegraph-${Date.now()}`;
     const data = kwargs.data as unknown[];
-    const scenegraph = kwargs.scenegraph as string | unknown;
+    const scenegraph = kwargs.scenegraph;
 
-    const layer = new ScenegraphLayer({
+    const layerProps: Record<string, unknown> = {
       id,
       data,
-      scenegraph,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       sizeScale: kwargs.sizeScale as number ?? 1,
       sizeMinPixels: kwargs.sizeMinPixels as number ?? 0,
       sizeMaxPixels: kwargs.sizeMaxPixels as number ?? Number.MAX_SAFE_INTEGER,
-      _animations: kwargs._animations as any,
       _lighting: kwargs._lighting as string ?? 'pbr',
       getPosition: this.makeAccessor(
         kwargs.getPosition,
@@ -1117,7 +1146,21 @@ export class DeckGLRenderer extends MapLibreRenderer {
       getOrientation: this.makeAccessor(kwargs.getOrientation, 'orientation', () => [0, 0, 0]),
       getScale: this.makeAccessor(kwargs.getScale, 'scale', () => [1, 1, 1]),
       getTranslation: this.makeAccessor(kwargs.getTranslation, 'translation', () => [0, 0, 0]),
-    });
+      // Specify loaders explicitly for glTF/GLB files
+      loaders: [GLTFLoader],
+    };
+
+    // Only add scenegraph if it's provided
+    if (scenegraph !== undefined && scenegraph !== null) {
+      layerProps.scenegraph = scenegraph;
+    }
+
+    // Only add animations if provided
+    if (kwargs._animations !== undefined) {
+      layerProps._animations = kwargs._animations;
+    }
+
+    const layer = new ScenegraphLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
