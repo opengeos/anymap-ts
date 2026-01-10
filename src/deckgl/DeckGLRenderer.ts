@@ -4,9 +4,9 @@
  */
 
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer, PointCloudLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer, PointCloudLayer, GeoJsonLayer, LineLayer } from '@deck.gl/layers';
 import { HexagonLayer, HeatmapLayer, GridLayer, ContourLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
-import { GeoJsonLayer } from '@deck.gl/layers';
+import { TripsLayer } from '@deck.gl/geo-layers';
 import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
 
@@ -32,9 +32,32 @@ async function geoKeysParser(
 /**
  * DeckGL map renderer extending MapLibre.
  */
+interface TripsLayerConfig {
+  id: string;
+  data: unknown[];
+  pickable: boolean;
+  opacity: number;
+  widthMinPixels: number;
+  trailLength: number;
+  fadeTrail: boolean;
+  jointRounded: boolean;
+  capRounded: boolean;
+  getPath: unknown;
+  getTimestamps: unknown;
+  getColor: unknown;
+}
+
 export class DeckGLRenderer extends MapLibreRenderer {
   private deckOverlay: MapboxOverlay | null = null;
   private deckLayers: Map<string, unknown> = new Map();
+  private tripsLayerConfigs: Map<string, TripsLayerConfig> = new Map();
+  private tripsAnimations: Map<string, {
+    frameId: number;
+    lastTime: number;
+    speed: number;
+    loopLength: number;
+    currentTime: number;
+  }> = new Map();
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -74,7 +97,10 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.registerMethod('addContourLayer', this.handleAddContourLayer.bind(this));
     this.registerMethod('addScreenGridLayer', this.handleAddScreenGridLayer.bind(this));
     this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
+    this.registerMethod('addTripsLayer', this.handleAddTripsLayer.bind(this));
+    this.registerMethod('addLineLayer', this.handleAddLineLayer.bind(this));
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
+    this.registerMethod('addDeckGLLayer', this.handleAddDeckGLLayer.bind(this));
 
     // Layer management
     this.registerMethod('removeDeckLayer', this.handleRemoveDeckLayer.bind(this));
@@ -90,6 +116,120 @@ export class DeckGLRenderer extends MapLibreRenderer {
       const layers = Array.from(this.deckLayers.values());
       this.deckOverlay.setProps({ layers });
     }
+  }
+
+  private makeAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): unknown {
+    if (typeof value === 'string') {
+      return (d: any) => d[value];
+    }
+    if (typeof value === 'function') {
+      return value;
+    }
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+    return fallbackFn || ((d: any) => d[defaultProp]);
+  }
+
+  private normalizeTimestampValues(value: unknown): number[] {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return [value];
+    }
+    if (Array.isArray(value)) {
+      return value.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    }
+    if (value && typeof value === 'object' && typeof (value as ArrayLike<number>).length === 'number') {
+      return Array.from(value as ArrayLike<number>).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    }
+    return [];
+  }
+
+  private getMaxTimestamp(data: unknown[], accessor: unknown): number {
+    let maxTimestamp = 0;
+    for (const row of data) {
+      const value = typeof accessor === 'function' ? (accessor as (d: unknown) => unknown)(row) : accessor;
+      for (const timestamp of this.normalizeTimestampValues(value)) {
+        if (timestamp > maxTimestamp) {
+          maxTimestamp = timestamp;
+        }
+      }
+    }
+    return maxTimestamp;
+  }
+
+  private startTripsAnimation(
+    layerId: string,
+    trailLength: number,
+    startTime: number,
+    speed: number,
+  ): void {
+    this.stopTripsAnimation(layerId);
+
+    const config = this.tripsLayerConfigs.get(layerId);
+    if (!config) return;
+
+    const maxTimestamp = this.getMaxTimestamp(config.data, config.getTimestamps);
+    const loopLength = Math.max(maxTimestamp + trailLength, trailLength * 2);
+    const state = {
+      frameId: 0,
+      lastTime: 0,
+      speed,
+      loopLength,
+      currentTime: startTime,
+    };
+
+    const animate = (now: number) => {
+      const current = this.tripsAnimations.get(layerId);
+      if (!current) return;
+
+      const cfg = this.tripsLayerConfigs.get(layerId);
+      if (!cfg) return;
+
+      if (!current.lastTime) {
+        current.lastTime = now;
+      }
+      const deltaSeconds = (now - current.lastTime) / 1000;
+      current.lastTime = now;
+      current.currentTime = (current.currentTime + deltaSeconds * current.speed) % current.loopLength;
+
+      // Get current visibility/opacity from existing layer
+      const existing = this.deckLayers.get(layerId) as { props?: { visible?: boolean; opacity?: number } } | undefined;
+      const visible = existing?.props?.visible ?? true;
+      const opacity = existing?.props?.opacity ?? cfg.opacity;
+
+      // Create a new TripsLayer with updated currentTime (don't use clone)
+      const updatedLayer = new TripsLayer({
+        id: cfg.id,
+        data: cfg.data,
+        pickable: cfg.pickable,
+        opacity,
+        visible,
+        widthMinPixels: cfg.widthMinPixels,
+        trailLength: cfg.trailLength,
+        currentTime: current.currentTime,
+        fadeTrail: cfg.fadeTrail,
+        jointRounded: cfg.jointRounded,
+        capRounded: cfg.capRounded,
+        getPath: cfg.getPath,
+        getTimestamps: cfg.getTimestamps,
+        getColor: cfg.getColor,
+      });
+
+      this.deckLayers.set(layerId, updatedLayer);
+      this.updateDeckOverlay();
+
+      current.frameId = requestAnimationFrame(animate);
+    };
+
+    state.frameId = requestAnimationFrame(animate);
+    this.tripsAnimations.set(layerId, state);
+  }
+
+  private stopTripsAnimation(layerId: string): void {
+    const animation = this.tripsAnimations.get(layerId);
+    if (!animation) return;
+    cancelAnimationFrame(animation.frameId);
+    this.tripsAnimations.delete(layerId);
   }
 
   // -------------------------------------------------------------------------
@@ -111,10 +251,14 @@ export class DeckGLRenderer extends MapLibreRenderer {
       radiusMinPixels: kwargs.radiusMinPixels as number ?? 1,
       radiusMaxPixels: kwargs.radiusMaxPixels as number ?? 100,
       lineWidthMinPixels: kwargs.lineWidthMinPixels as number ?? 1,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getRadius: kwargs.getRadius ?? kwargs.radius ?? 5,
-      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 200],
-      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [255, 255, 255, 255],
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getRadius: this.makeAccessor(kwargs.getRadius ?? kwargs.radius, 'radius', () => 5),
+      getFillColor: this.makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 200]),
+      getLineColor: this.makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [255, 255, 255, 255]),
     });
 
     this.deckLayers.set(id, layer);
@@ -125,30 +269,16 @@ export class DeckGLRenderer extends MapLibreRenderer {
     const id = kwargs.id as string || `arc-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value; // Return arrays/numbers directly
-      }
-      return fallbackFn || ((d: any) => d[defaultProp]);
-    };
-
     const layer = new ArcLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
-      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
-      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
-      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
-      getSourceColor: makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
-      getTargetColor: makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
+      getWidth: this.makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      getSourcePosition: this.makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: this.makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
+      getSourceColor: this.makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
+      getTargetColor: this.makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
     });
 
     this.deckLayers.set(id, layer);
@@ -166,9 +296,9 @@ export class DeckGLRenderer extends MapLibreRenderer {
       opacity: kwargs.opacity as number ?? 0.8,
       widthScale: kwargs.widthScale as number ?? 1,
       widthMinPixels: kwargs.widthMinPixels as number ?? 1,
-      getPath: kwargs.getPath ?? ((d: any) => d.path || d.coordinates),
-      getColor: kwargs.getColor ?? kwargs.color ?? [51, 136, 255, 200],
-      getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
+      getPath: this.makeAccessor(kwargs.getPath, 'path', (d: any) => d.path || d.coordinates),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
+      getWidth: this.makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
     });
 
     this.deckLayers.set(id, layer);
@@ -189,11 +319,11 @@ export class DeckGLRenderer extends MapLibreRenderer {
       extruded: kwargs.extruded as boolean ?? false,
       wireframe: kwargs.wireframe as boolean ?? false,
       lineWidthMinPixels: kwargs.lineWidthMinPixels as number ?? 1,
-      getPolygon: kwargs.getPolygon ?? ((d: any) => d.polygon || d.contour || d.coordinates),
-      getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0,
-      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
-      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 255, 255],
-      getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
+      getPolygon: this.makeAccessor(kwargs.getPolygon, 'polygon', (d: any) => d.polygon || d.contour || d.coordinates),
+      getElevation: this.makeAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+      getFillColor: this.makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 255, 255]),
+      getLineWidth: this.makeAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
     });
 
     this.deckLayers.set(id, layer);
@@ -212,7 +342,11 @@ export class DeckGLRenderer extends MapLibreRenderer {
       extruded: kwargs.extruded as boolean ?? true,
       radius: kwargs.radius as number ?? 1000,
       elevationScale: kwargs.elevationScale as number ?? 4,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
       colorRange: kwargs.colorRange as number[][] ?? [
         [1, 152, 189],
         [73, 227, 206],
@@ -239,8 +373,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
       radiusPixels: kwargs.radiusPixels as number ?? 30,
       intensity: kwargs.intensity as number ?? 1,
       threshold: kwargs.threshold as number ?? 0.05,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getWeight: this.makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
       colorRange: kwargs.colorRange as number[][] ?? [
         [255, 255, 178, 25],
         [254, 217, 118, 85],
@@ -267,7 +405,11 @@ export class DeckGLRenderer extends MapLibreRenderer {
       extruded: kwargs.extruded as boolean ?? true,
       cellSize: kwargs.cellSize as number ?? 200,
       elevationScale: kwargs.elevationScale as number ?? 4,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
       colorRange: kwargs.colorRange as number[][] ?? [
         [1, 152, 189],
         [73, 227, 206],
@@ -293,10 +435,14 @@ export class DeckGLRenderer extends MapLibreRenderer {
       opacity: kwargs.opacity as number ?? 1,
       iconAtlas: kwargs.iconAtlas as string,
       iconMapping: kwargs.iconMapping as Record<string, unknown>,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getIcon: kwargs.getIcon ?? ((d: any) => d.icon || 'marker'),
-      getSize: kwargs.getSize ?? kwargs.size ?? 20,
-      getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255],
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getIcon: this.makeAccessor(kwargs.getIcon, 'icon', (d: any) => d.icon || 'marker'),
+      getSize: this.makeAccessor(kwargs.getSize ?? kwargs.size, 'size', () => 20),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
     });
 
     this.deckLayers.set(id, layer);
@@ -312,11 +458,15 @@ export class DeckGLRenderer extends MapLibreRenderer {
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getText: kwargs.getText ?? ((d: any) => d.text || d.label || d.name || ''),
-      getSize: kwargs.getSize ?? kwargs.size ?? 12,
-      getColor: kwargs.getColor ?? kwargs.color ?? [0, 0, 0, 255],
-      getAngle: kwargs.getAngle ?? 0,
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getText: this.makeAccessor(kwargs.getText, 'text', (d: any) => d.text || d.label || d.name || ''),
+      getSize: this.makeAccessor(kwargs.getSize ?? kwargs.size, 'size', () => 12),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [0, 0, 0, 255]),
+      getAngle: this.makeAccessor(kwargs.getAngle, 'angle', () => 0),
       getTextAnchor: kwargs.getTextAnchor ?? 'middle',
       getAlignmentBaseline: kwargs.getAlignmentBaseline ?? 'center',
     });
@@ -340,11 +490,11 @@ export class DeckGLRenderer extends MapLibreRenderer {
       wireframe: kwargs.wireframe as boolean ?? false,
       lineWidthMinPixels: kwargs.lineWidthMinPixels as number ?? 1,
       pointRadiusMinPixels: kwargs.pointRadiusMinPixels as number ?? 2,
-      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
-      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 0, 255],
-      getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
-      getPointRadius: kwargs.getPointRadius ?? kwargs.pointRadius ?? 5,
-      getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0,
+      getFillColor: this.makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getLineWidth: this.makeAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
+      getPointRadius: this.makeAccessor(kwargs.getPointRadius ?? kwargs.pointRadius, 'pointRadius', () => 5),
+      getElevation: this.makeAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
     });
 
     this.deckLayers.set(id, layer);
@@ -366,8 +516,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
         { threshold: 5, color: [51, 136, 255], strokeWidth: 2 },
         { threshold: 10, color: [0, 0, 255], strokeWidth: 3 },
       ],
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getWeight: this.makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
     });
 
     this.deckLayers.set(id, layer);
@@ -384,8 +538,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       cellSizePixels: kwargs.cellSizePixels as number ?? 50,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getWeight: this.makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
       colorRange: kwargs.colorRange as number[][] ?? [
         [255, 255, 178, 25],
         [254, 217, 118, 85],
@@ -404,29 +562,15 @@ export class DeckGLRenderer extends MapLibreRenderer {
     const id = kwargs.id as string || `pointcloud-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value; // Return arrays/numbers directly
-      }
-      return fallbackFn || ((d: any) => d[defaultProp]);
-    };
-
     const layerProps: Record<string, unknown> = {
       id,
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       pointSize: kwargs.pointSize as number ?? 2,
-      getPosition: makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
-      getNormal: makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
-      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
+      getPosition: this.makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getNormal: this.makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
       sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
     };
 
@@ -442,6 +586,129 @@ export class DeckGLRenderer extends MapLibreRenderer {
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
+  }
+
+  private handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string || `trips-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const getTimestamps = this.makeAccessor(kwargs.getTimestamps, 'timestamps', (d: any) => d.timestamps);
+    const getPath = this.makeAccessor(kwargs.getPath, 'waypoints', (d: any) => d.waypoints || d.path || d.coordinates);
+    const getColor = this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [253, 128, 93]);
+    const fadeTrail = kwargs.fadeTrail as boolean ?? true;
+    const jointRounded = kwargs.jointRounded as boolean ?? true;
+    const capRounded = kwargs.capRounded as boolean ?? true;
+    const pickable = kwargs.pickable !== false;
+    const opacity = kwargs.opacity as number ?? 0.8;
+    const widthMinPixels = kwargs.widthMinPixels as number ?? 2;
+    const trailLength = kwargs.trailLength as number ?? 180;
+    const currentTime = kwargs.currentTime as number ?? 0;
+    const shouldAnimate = kwargs.animate !== false;
+
+    // Store the layer config for animation rebuilding
+    const config: TripsLayerConfig = {
+      id,
+      data,
+      pickable,
+      opacity,
+      widthMinPixels,
+      trailLength,
+      fadeTrail,
+      jointRounded,
+      capRounded,
+      getPath,
+      getTimestamps,
+      getColor,
+    };
+    this.tripsLayerConfigs.set(id, config);
+
+    // When animating, start with currentTime=0 to avoid showing a static initial segment
+    const initialTime = shouldAnimate ? 0 : currentTime;
+
+    const layer = new TripsLayer({
+      id,
+      data,
+      pickable,
+      opacity,
+      widthMinPixels,
+      trailLength,
+      currentTime: initialTime,
+      fadeTrail,
+      jointRounded,
+      capRounded,
+      getPath,
+      getTimestamps,
+      getColor,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (shouldAnimate) {
+      const speed = kwargs.animationSpeed as number ?? kwargs.speed as number ?? 30;
+      // Start animation from time 0 to properly show the trail building up
+      this.startTripsAnimation(id, trailLength, 0, speed);
+    } else {
+      this.stopTripsAnimation(id);
+    }
+  }
+
+  private handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string || `line-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new LineLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      widthMinPixels: kwargs.widthMinPixels as number ?? 1,
+      getSourcePosition: this.makeAccessor(kwargs.getSourcePosition, 'sourcePosition', (d: any) => d.sourcePosition || d.source || d.from),
+      getTargetPosition: this.makeAccessor(kwargs.getTargetPosition, 'targetPosition', (d: any) => d.targetPosition || d.target || d.to),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
+      getWidth: this.makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+  }
+
+  /**
+   * Generic handler for adding any deck.gl layer type.
+   * Routes to specific handlers based on layerType.
+   */
+  private handleAddDeckGLLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const layerType = kwargs.layerType as string;
+    if (!layerType) {
+      console.warn('addDeckGLLayer called without layerType');
+      return;
+    }
+
+    // Map layer types to handler methods
+    const handlerMap: Record<string, (args: unknown[], kwargs: Record<string, unknown>) => void> = {
+      'ScatterplotLayer': this.handleAddScatterplotLayer.bind(this),
+      'ArcLayer': this.handleAddArcLayer.bind(this),
+      'PathLayer': this.handleAddPathLayer.bind(this),
+      'PolygonLayer': this.handleAddPolygonLayer.bind(this),
+      'HexagonLayer': this.handleAddHexagonLayer.bind(this),
+      'HeatmapLayer': this.handleAddHeatmapLayer.bind(this),
+      'GridLayer': this.handleAddGridLayer.bind(this),
+      'IconLayer': this.handleAddIconLayer.bind(this),
+      'TextLayer': this.handleAddTextLayer.bind(this),
+      'GeoJsonLayer': this.handleAddGeoJsonLayer.bind(this),
+      'ContourLayer': this.handleAddContourLayer.bind(this),
+      'ScreenGridLayer': this.handleAddScreenGridLayer.bind(this),
+      'PointCloudLayer': this.handleAddPointCloudLayer.bind(this),
+      'TripsLayer': this.handleAddTripsLayer.bind(this),
+      'LineLayer': this.handleAddLineLayer.bind(this),
+    };
+
+    const handler = handlerMap[layerType];
+    if (handler) {
+      handler(args, kwargs);
+    } else {
+      console.warn(`Unknown deck.gl layer type: ${layerType}`);
+    }
   }
 
   private handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
@@ -484,6 +751,8 @@ export class DeckGLRenderer extends MapLibreRenderer {
 
   private handleRemoveDeckLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
+    this.stopTripsAnimation(id);
+    this.tripsLayerConfigs.delete(id);
     this.deckLayers.delete(id);
     this.updateDeckOverlay();
   }
@@ -517,10 +786,14 @@ export class DeckGLRenderer extends MapLibreRenderer {
   // -------------------------------------------------------------------------
 
   destroy(): void {
+    for (const layerId of this.tripsAnimations.keys()) {
+      this.stopTripsAnimation(layerId);
+    }
     if (this.deckOverlay && this.map) {
       this.map.removeControl(this.deckOverlay as any);
       this.deckOverlay = null;
     }
+    this.tripsLayerConfigs.clear();
     this.deckLayers.clear();
     super.destroy();
   }

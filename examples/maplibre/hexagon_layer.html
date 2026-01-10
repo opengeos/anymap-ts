@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hexagon Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Hexagon Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Hexagon Layer</h3>
+    <p>3D hexagonal binning aggregation for density visualization. 2000 random points are binned into hexagons with height based on point count.</p>
+    <p>Rotate the map to see the 3D effect. Use the layer control to adjust visibility and opacity.</p>
+  </div>
+  <script type="module" src="./hexagon-main.ts"></script>
+</body>
+</html>
