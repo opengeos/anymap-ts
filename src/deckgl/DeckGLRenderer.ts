@@ -35,6 +35,13 @@ async function geoKeysParser(
 export class DeckGLRenderer extends MapLibreRenderer {
   private deckOverlay: MapboxOverlay | null = null;
   private deckLayers: Map<string, unknown> = new Map();
+  private tripsAnimations: Map<string, {
+    frameId: number;
+    lastTime: number;
+    speed: number;
+    loopLength: number;
+    currentTime: number;
+  }> = new Map();
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -92,6 +99,9 @@ export class DeckGLRenderer extends MapLibreRenderer {
     if (this.deckOverlay) {
       const layers = Array.from(this.deckLayers.values());
       this.deckOverlay.setProps({ layers });
+      if (this.map) {
+        this.map.triggerRepaint();
+      }
     }
   }
 
@@ -106,6 +116,84 @@ export class DeckGLRenderer extends MapLibreRenderer {
       return value;
     }
     return fallbackFn || ((d: any) => d[defaultProp]);
+  }
+
+  private normalizeTimestampValues(value: unknown): number[] {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return [value];
+    }
+    if (Array.isArray(value)) {
+      return value.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    }
+    if (value && typeof value === 'object' && typeof (value as ArrayLike<number>).length === 'number') {
+      return Array.from(value as ArrayLike<number>).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    }
+    return [];
+  }
+
+  private getMaxTimestamp(data: unknown[], accessor: unknown): number {
+    let maxTimestamp = 0;
+    for (const row of data) {
+      const value = typeof accessor === 'function' ? (accessor as (d: unknown) => unknown)(row) : accessor;
+      for (const timestamp of this.normalizeTimestampValues(value)) {
+        if (timestamp > maxTimestamp) {
+          maxTimestamp = timestamp;
+        }
+      }
+    }
+    return maxTimestamp;
+  }
+
+  private startTripsAnimation(
+    layerId: string,
+    data: unknown[],
+    getTimestamps: unknown,
+    trailLength: number,
+    startTime: number,
+    speed: number,
+  ): void {
+    this.stopTripsAnimation(layerId);
+
+    const maxTimestamp = this.getMaxTimestamp(data, getTimestamps);
+    const loopLength = Math.max(maxTimestamp + trailLength, trailLength * 2);
+    const state = {
+      frameId: 0,
+      lastTime: 0,
+      speed,
+      loopLength,
+      currentTime: startTime,
+    };
+
+    const animate = (now: number) => {
+      const current = this.tripsAnimations.get(layerId);
+      if (!current) return;
+
+      if (!current.lastTime) {
+        current.lastTime = now;
+      }
+      const deltaSeconds = (now - current.lastTime) / 1000;
+      current.lastTime = now;
+      current.currentTime = (current.currentTime + deltaSeconds * current.speed) % current.loopLength;
+
+      const layer = this.deckLayers.get(layerId) as { clone?: (props: Record<string, unknown>) => unknown } | undefined;
+      if (layer && typeof layer.clone === 'function') {
+        const updatedLayer = layer.clone({ currentTime: current.currentTime });
+        this.deckLayers.set(layerId, updatedLayer);
+        this.updateDeckOverlay();
+      }
+
+      current.frameId = requestAnimationFrame(animate);
+    };
+
+    state.frameId = requestAnimationFrame(animate);
+    this.tripsAnimations.set(layerId, state);
+  }
+
+  private stopTripsAnimation(layerId: string): void {
+    const animation = this.tripsAnimations.get(layerId);
+    if (!animation) return;
+    cancelAnimationFrame(animation.frameId);
+    this.tripsAnimations.delete(layerId);
   }
 
   // -------------------------------------------------------------------------
@@ -468,6 +556,8 @@ export class DeckGLRenderer extends MapLibreRenderer {
     const id = kwargs.id as string || `trips-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
+    const getTimestamps = this.makeAccessor(kwargs.getTimestamps, 'timestamps', (d: any) => d.timestamps);
+    const fadeTrail = kwargs.fadeTrail as boolean ?? true;
     const layer = new TripsLayer({
       id,
       data,
@@ -476,13 +566,23 @@ export class DeckGLRenderer extends MapLibreRenderer {
       widthMinPixels: kwargs.widthMinPixels as number ?? 2,
       trailLength: kwargs.trailLength as number ?? 180,
       currentTime: kwargs.currentTime as number ?? 0,
+      fadeTrail,
       getPath: this.makeAccessor(kwargs.getPath, 'waypoints', (d: any) => d.waypoints || d.path || d.coordinates),
-      getTimestamps: this.makeAccessor(kwargs.getTimestamps, 'timestamps', (d: any) => d.timestamps),
+      getTimestamps,
       getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [253, 128, 93]),
     });
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
+
+    if (kwargs.animate !== false) {
+      const trailLength = kwargs.trailLength as number ?? 180;
+      const startTime = kwargs.currentTime as number ?? 0;
+      const speed = kwargs.animationSpeed as number ?? kwargs.speed as number ?? 30;
+      this.startTripsAnimation(id, data, getTimestamps, trailLength, startTime, speed);
+    } else {
+      this.stopTripsAnimation(id);
+    }
   }
 
   private handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
@@ -583,6 +683,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
 
   private handleRemoveDeckLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
+    this.stopTripsAnimation(id);
     this.deckLayers.delete(id);
     this.updateDeckOverlay();
   }
@@ -616,6 +717,9 @@ export class DeckGLRenderer extends MapLibreRenderer {
   // -------------------------------------------------------------------------
 
   destroy(): void {
+    for (const layerId of this.tripsAnimations.keys()) {
+      this.stopTripsAnimation(layerId);
+    }
     if (this.deckOverlay && this.map) {
       this.map.removeControl(this.deckOverlay as any);
       this.deckOverlay = null;

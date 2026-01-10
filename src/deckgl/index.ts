@@ -9,7 +9,7 @@ import type { MapWidgetModel, RenderContext } from '../types/anywidget';
 
 let renderer: DeckGLRenderer | null = null;
 
-export function render({ model, el }: RenderContext): () => void {
+function render({ model, el }: RenderContext): () => void {
   renderer = new DeckGLRenderer(model, el);
 
   // Initialize the map
