@@ -1,4 +1,4 @@
-var u=Object.defineProperty;var d=(i,t,e)=>t in i?u(i,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):i[t]=e;var a=(i,t,e)=>d(i,typeof t!="symbol"?t+"":t,e);import{ab as p,a3 as L}from"./mapbox-overlay-CcF19Pc8.js";const f=`precision highp int;
+import{a8 as s}from"./mapbox-overlay-DuGg2Dfa.js";const h=`precision highp int;
 
 // #if (defined(SHADER_TYPE_FRAGMENT) && defined(LIGHTING_FRAGMENT)) || (defined(SHADER_TYPE_VERTEX) && defined(LIGHTING_VERTEX))
 struct AmbientLight {
@@ -72,7 +72,7 @@ float getPointLightAttenuation(PointLight pointLight, float distance) {
 }
 
 // #endif
-`,_=`// #if (defined(SHADER_TYPE_FRAGMENT) && defined(LIGHTING_FRAGMENT)) || (defined(SHADER_TYPE_VERTEX) && defined(LIGHTING_VERTEX))
+`,f=`// #if (defined(SHADER_TYPE_FRAGMENT) && defined(LIGHTING_FRAGMENT)) || (defined(SHADER_TYPE_VERTEX) && defined(LIGHTING_VERTEX))
 struct AmbientLight {
   color: vec3<f32>,
 };
@@ -123,13 +123,13 @@ fn getPointLightAttenuation(pointLight: PointLight, distance: f32) -> f32 {
        + pointLight.attenuation.y * distance
        + pointLight.attenuation.z * distance * distance;
 }
-`,m=5,v=255;var c;(function(i){i[i.POINT=0]="POINT",i[i.DIRECTIONAL=1]="DIRECTIONAL"})(c||(c={}));const h={props:{},uniforms:{},name:"lighting",defines:{},uniformTypes:{enabled:"i32",lightType:"i32",directionalLightCount:"i32",pointLightCount:"i32",ambientColor:"vec3<f32>",lightColor0:"vec3<f32>",lightPosition0:"vec3<f32>",lightDirection0:"vec3<f32>",lightAttenuation0:"vec3<f32>",lightColor1:"vec3<f32>",lightPosition1:"vec3<f32>",lightDirection1:"vec3<f32>",lightAttenuation1:"vec3<f32>",lightColor2:"vec3<f32>",lightPosition2:"vec3<f32>",lightDirection2:"vec3<f32>",lightAttenuation2:"vec3<f32>"},defaultUniforms:{enabled:1,lightType:c.POINT,directionalLightCount:0,pointLightCount:0,ambientColor:[.1,.1,.1],lightColor0:[1,1,1],lightPosition0:[1,1,2],lightDirection0:[1,1,1],lightAttenuation0:[1,0,0],lightColor1:[1,1,1],lightPosition1:[1,1,2],lightDirection1:[1,1,1],lightAttenuation1:[1,0,0],lightColor2:[1,1,1],lightPosition2:[1,1,2],lightDirection2:[1,1,1],lightAttenuation2:[1,0,0]},source:_,vs:f,fs:f,getUniforms:C};function C(i,t={}){if(i=i&&{...i},!i)return{...h.defaultUniforms};i.lights&&(i={...i,...w(i.lights),lights:void 0});const{ambientLight:e,pointLights:o,directionalLights:n}=i||{};if(!(e||o&&o.length>0||n&&n.length>0))return{...h.defaultUniforms,enabled:0};const r={...h.defaultUniforms,...t,...b({ambientLight:e,pointLights:o,directionalLights:n})};return i.enabled!==void 0&&(r.enabled=i.enabled?1:0),r}function b({ambientLight:i,pointLights:t=[],directionalLights:e=[]}){const o={};o.ambientColor=s(i);let n=0;for(const l of t){o.lightType=c.POINT;const r=n;o[`lightColor${r}`]=s(l),o[`lightPosition${r}`]=l.position,o[`lightAttenuation${r}`]=l.attenuation||[1,0,0],n++}for(const l of e){o.lightType=c.DIRECTIONAL;const r=n;o[`lightColor${r}`]=s(l),o[`lightDirection${r}`]=l.direction,n++}return n>m&&p.warn("MAX_LIGHTS exceeded")(),o.directionalLightCount=e.length,o.pointLightCount=t.length,o}function w(i){var e,o;const t={pointLights:[],directionalLights:[]};for(const n of i||[])switch(n.type){case"ambient":t.ambientLight=n;break;case"directional":(e=t.directionalLights)==null||e.push(n);break;case"point":(o=t.pointLights)==null||o.push(n);break}return t}function s(i={}){const{color:t=[0,0,0],intensity:e=1}=i;return t.map(o=>o*e/v)}const P=`uniform phongMaterialUniforms {
+`,d=5,u=255;var g;(function(i){i[i.POINT=0]="POINT",i[i.DIRECTIONAL=1]="DIRECTIONAL"})(g||(g={}));const a={props:{},uniforms:{},name:"lighting",defines:{},uniformTypes:{enabled:"i32",lightType:"i32",directionalLightCount:"i32",pointLightCount:"i32",ambientColor:"vec3<f32>",lightColor0:"vec3<f32>",lightPosition0:"vec3<f32>",lightDirection0:"vec3<f32>",lightAttenuation0:"vec3<f32>",lightColor1:"vec3<f32>",lightPosition1:"vec3<f32>",lightDirection1:"vec3<f32>",lightAttenuation1:"vec3<f32>",lightColor2:"vec3<f32>",lightPosition2:"vec3<f32>",lightDirection2:"vec3<f32>",lightAttenuation2:"vec3<f32>"},defaultUniforms:{enabled:1,lightType:g.POINT,directionalLightCount:0,pointLightCount:0,ambientColor:[.1,.1,.1],lightColor0:[1,1,1],lightPosition0:[1,1,2],lightDirection0:[1,1,1],lightAttenuation0:[1,0,0],lightColor1:[1,1,1],lightPosition1:[1,1,2],lightDirection1:[1,1,1],lightAttenuation1:[1,0,0],lightColor2:[1,1,1],lightPosition2:[1,1,2],lightDirection2:[1,1,1],lightAttenuation2:[1,0,0]},source:f,vs:h,fs:h,getUniforms:p};function p(i,o={}){if(i=i&&{...i},!i)return{...a.defaultUniforms};i.lights&&(i={...i,..._(i.lights),lights:void 0});const{ambientLight:e,pointLights:t,directionalLights:n}=i||{};if(!(e||t&&t.length>0||n&&n.length>0))return{...a.defaultUniforms,enabled:0};const l={...a.defaultUniforms,...o,...L({ambientLight:e,pointLights:t,directionalLights:n})};return i.enabled!==void 0&&(l.enabled=i.enabled?1:0),l}function L({ambientLight:i,pointLights:o=[],directionalLights:e=[]}){const t={};t.ambientColor=c(i);let n=0;for(const r of o){t.lightType=g.POINT;const l=n;t[`lightColor${l}`]=c(r),t[`lightPosition${l}`]=r.position,t[`lightAttenuation${l}`]=r.attenuation||[1,0,0],n++}for(const r of e){t.lightType=g.DIRECTIONAL;const l=n;t[`lightColor${l}`]=c(r),t[`lightDirection${l}`]=r.direction,n++}return n>d&&s.warn("MAX_LIGHTS exceeded")(),t.directionalLightCount=e.length,t.pointLightCount=o.length,t}function _(i){var e,t;const o={pointLights:[],directionalLights:[]};for(const n of i||[])switch(n.type){case"ambient":o.ambientLight=n;break;case"directional":(e=o.directionalLights)==null||e.push(n);break;case"point":(t=o.pointLights)==null||t.push(n);break}return o}function c(i={}){const{color:o=[0,0,0],intensity:e=1}=i;return o.map(t=>t*e/u)}const m=`uniform phongMaterialUniforms {
   uniform float ambient;
   uniform float diffuse;
   uniform float shininess;
   uniform vec3  specularColor;
 } material;
-`,A=`#define MAX_LIGHTS 3
+`,v=`#define MAX_LIGHTS 3
 
 uniform phongMaterialUniforms {
   uniform float ambient;
@@ -176,7 +176,7 @@ vec3 lighting_getLightColor(vec3 surfaceColor, vec3 cameraPosition, vec3 positio
   
   return lightColor;
 }
-`,T=`struct phongMaterialUniforms {
+`,C=`struct phongMaterialUniforms {
   ambient: f32,
   diffuse: f32,
   shininess: f32,
@@ -261,19 +261,4 @@ fn lighting_getSpecularLightColor(cameraPosition: vec3<f32>, position_worldspace
   }
   return lightColor;
 }
-`,y={props:{},name:"gouraudMaterial",vs:A.replace("phongMaterial","gouraudMaterial"),fs:P.replace("phongMaterial","gouraudMaterial"),source:T.replaceAll("phongMaterial","gouraudMaterial"),defines:{LIGHTING_VERTEX:!0},dependencies:[h],uniformTypes:{ambient:"f32",diffuse:"f32",shininess:"f32",specularColor:"vec3<f32>"},defaultUniforms:{ambient:.35,diffuse:.6,shininess:32,specularColor:[.15,.15,.15]},getUniforms(i){const t={...i};return t.specularColor&&(t.specularColor=t.specularColor.map(e=>e/255)),{...y.defaultUniforms,...t}}},D=`
-
-struct ColorUniforms {
-  opacity: f32,
-};
-
-var<private> color: ColorUniforms = ColorUniforms(1.0);
-// TODO (kaapp) avoiding binding index collisions to handle layer opacity 
-// requires some thought.
-// @group(0) @binding(0) var<uniform> color: ColorUniforms;
-
-@must_use
-fn deckgl_premultiplied_alpha(fragColor: vec4<f32>) -> vec4<f32> {
-    return vec4(fragColor.rgb * fragColor.a, fragColor.a); 
-};
-`,x={name:"color",dependencies:[],source:D,getUniforms:i=>({}),uniformTypes:{opacity:"f32"}};class G{constructor(t){a(this,"id");a(this,"topology");a(this,"vertexCount");a(this,"indices");a(this,"attributes");a(this,"userData",{});const{attributes:e={},indices:o=null,vertexCount:n=null}=t;this.id=t.id||L("geometry"),this.topology=t.topology,o&&(this.indices=ArrayBuffer.isView(o)?{value:o,size:1}:o),this.attributes={};for(const[l,r]of Object.entries(e)){const g=ArrayBuffer.isView(r)?{value:r}:r;if(!ArrayBuffer.isView(g.value))throw new Error(`${this._print(l)}: must be typed array or object with value as typed array`);if((l==="POSITION"||l==="positions")&&!g.size&&(g.size=3),l==="indices"){if(this.indices)throw new Error("Multiple indices detected");this.indices=g}else this.attributes[l]=g}this.indices&&this.indices.isIndexed!==void 0&&(this.indices=Object.assign({},this.indices),delete this.indices.isIndexed),this.vertexCount=n||this._calculateVertexCount(this.attributes,this.indices)}getVertexCount(){return this.vertexCount}getAttributes(){return this.indices?{indices:this.indices,...this.attributes}:this.attributes}_print(t){return`Geometry ${this.id} attribute ${t}`}_setAttributes(t,e){return this}_calculateVertexCount(t,e){if(e)return e.value.length;let o=1/0;for(const n of Object.values(t)){const{value:l,size:r,constant:g}=n;!g&&l&&r!==void 0&&r>=1&&(o=Math.min(o,l.length/r))}return o}}export{G,A as P,P as a,T as b,x as c,y as g,h as l};
+`,w={props:{},name:"gouraudMaterial",vs:v.replace("phongMaterial","gouraudMaterial"),fs:m.replace("phongMaterial","gouraudMaterial"),source:C.replaceAll("phongMaterial","gouraudMaterial"),defines:{LIGHTING_VERTEX:!0},dependencies:[a],uniformTypes:{ambient:"f32",diffuse:"f32",shininess:"f32",specularColor:"vec3<f32>"},defaultUniforms:{ambient:.35,diffuse:.6,shininess:32,specularColor:[.15,.15,.15]},getUniforms(i){const o={...i};return o.specularColor&&(o.specularColor=o.specularColor.map(e=>e/255)),{...w.defaultUniforms,...o}}};export{v as P,m as a,C as b,w as g,a as l};

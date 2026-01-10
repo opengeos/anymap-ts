@@ -3,29 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arc Layer - anymap-ts Example</title>
+  <title>Scatterplot Layer - anymap-ts Example</title>
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
-  <script type="module" crossorigin src="../assets/maplibre-arc-CQ8f5wGi.js"></script>
+  <script type="module" crossorigin src="../assets/maplibre-scatterplot-CNjAPErp.js"></script>
   <link rel="modulepreload" crossorigin href="../assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="../assets/_commonjsHelpers-Cpj98o6Y.js">
   <link rel="modulepreload" crossorigin href="../assets/maplibre-gl-BTjYUjN0.js">
   <link rel="modulepreload" crossorigin href="../assets/maplibre-gl-layer-control-CsWFEept.js">
   <link rel="modulepreload" crossorigin href="../assets/DeckLayerAdapter-hp-VgOtN.js">
   <link rel="modulepreload" crossorigin href="../assets/mapbox-overlay-DuGg2Dfa.js">
+  <link rel="modulepreload" crossorigin href="../assets/color-CUNNsFV-.js">
   <link rel="modulepreload" crossorigin href="../assets/picking-CN0D5Hbh.js">
-  <link rel="modulepreload" crossorigin href="../assets/arc-layer-Dv94UPby.js">
+  <link rel="modulepreload" crossorigin href="../assets/geometry-BGUg4AMQ.js">
+  <link rel="modulepreload" crossorigin href="../assets/scatterplot-layer-CrHtgie3.js">
   <link rel="stylesheet" crossorigin href="../assets/maplibre-gl-layer-control-BSGvcCDv.css">
   <link rel="stylesheet" crossorigin href="../assets/styles-BIBrycxJ.css">
 </head>
 <body>
   <div class="header">
-    <h1>Arc Layer Example</h1>
+    <h1>Scatterplot Layer Example</h1>
     <a href="../">← Back to Examples</a>
   </div>
   <div id="map"></div>
   <div class="controls">
-    <h3>Arc Layer</h3>
-    <p>Great-circle arcs connect major US cities. Use the layer control (top-left) to toggle visibility.</p>
+    <h3>Scatterplot Layer</h3>
+    <p>500 random points with size based on value. Points are rendered using deck.gl ScatterplotLayer with GPU acceleration.</p>
+    <p>Use the layer control panel to toggle visibility and adjust opacity.</p>
   </div>
 </body>
 </html>
