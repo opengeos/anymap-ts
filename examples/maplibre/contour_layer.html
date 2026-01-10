@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contour Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Contour Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Contour Layer</h3>
+    <p>Density isolines showing point clustering around Bay Area urban centers. Colors range from yellow (low density) to red (high density).</p>
+    <p>2000 weighted points aggregated into contour lines using deck.gl ContourLayer with GPU acceleration.</p>
+  </div>
+  <script type="module" src="./contour-main.ts"></script>
+</body>
+</html>

@@ -51,6 +51,11 @@ export default defineConfig({
         'maplibre-wms': resolve(__dirname, 'examples/maplibre/wms_layer.html'),
         'maplibre-simplemesh': resolve(__dirname, 'examples/maplibre/simplemesh_layer.html'),
         'maplibre-scenegraph': resolve(__dirname, 'examples/maplibre/scenegraph_layer.html'),
+        'maplibre-geojson': resolve(__dirname, 'examples/maplibre/geojson_layer.html'),
+        'maplibre-icon': resolve(__dirname, 'examples/maplibre/icon_layer.html'),
+        'maplibre-polygon': resolve(__dirname, 'examples/maplibre/polygon_layer.html'),
+        'maplibre-text': resolve(__dirname, 'examples/maplibre/text_layer.html'),
+        'maplibre-contour': resolve(__dirname, 'examples/maplibre/contour_layer.html'),
         // Other map libraries
         leaflet: resolve(__dirname, 'examples/leaflet/index.html'),
         mapbox: resolve(__dirname, 'examples/mapbox/index.html'),

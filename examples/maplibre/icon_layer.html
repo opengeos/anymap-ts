@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Icon Layer Example</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Icon Layer</h3>
+    <p>Points of interest with category-based icons: Restaurants (red R), Hotels (blue H), and Attractions (green A).</p>
+    <p>Icons are rendered using deck.gl IconLayer with a dynamically generated atlas. Icon size varies by importance.</p>
+  </div>
+  <script type="module" src="./icon-main.ts"></script>
+</body>
+</html>
