@@ -33,6 +33,12 @@ export default defineConfig({
         'maplibre-trips': resolve(__dirname, 'examples/maplibre/trips_layer.html'),
         'maplibre-heatmap': resolve(__dirname, 'examples/maplibre/heatmap_layer.html'),
         'maplibre-path': resolve(__dirname, 'examples/maplibre/path_layer.html'),
+        // New DeckGL layers
+        'maplibre-bitmap': resolve(__dirname, 'examples/maplibre/bitmap_layer.html'),
+        'maplibre-column': resolve(__dirname, 'examples/maplibre/column_layer.html'),
+        'maplibre-terrain': resolve(__dirname, 'examples/maplibre/terrain_layer.html'),
+        'maplibre-greatcircle': resolve(__dirname, 'examples/maplibre/greatcircle_layer.html'),
+        'maplibre-h3hexagon': resolve(__dirname, 'examples/maplibre/h3hexagon_layer.html'),
         // Other map libraries
         leaflet: resolve(__dirname, 'examples/leaflet/index.html'),
         mapbox: resolve(__dirname, 'examples/mapbox/index.html'),
