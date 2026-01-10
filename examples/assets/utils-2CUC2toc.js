@@ -1,0 +1,1 @@
+function w({data:e,getIndex:f,dataRange:s,replace:o}){const{startRow:c=0,endRow:d=1/0}=s,l=e.length;let t=l,i=l;for(let n=0;n<l;n++){const h=f(e[n]);if(t>n&&h>=c&&(t=n),h>=d){i=n;break}}let r=t;const g=i-t!==o.length?e.slice(i):void 0;for(let n=0;n<o.length;n++)e[r++]=o[n];if(g){for(let n=0;n<g.length;n++)e[r++]=g[n];e.length=r}return{startRow:t,endRow:t+o.length}}export{w as r};
