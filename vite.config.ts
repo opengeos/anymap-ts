@@ -31,6 +31,8 @@ export default defineConfig({
         'maplibre-scatterplot': resolve(__dirname, 'examples/maplibre/scatterplot_layer.html'),
         'maplibre-hexagon': resolve(__dirname, 'examples/maplibre/hexagon_layer.html'),
         'maplibre-trips': resolve(__dirname, 'examples/maplibre/trips_layer.html'),
+        'maplibre-heatmap': resolve(__dirname, 'examples/maplibre/heatmap_layer.html'),
+        'maplibre-path': resolve(__dirname, 'examples/maplibre/path_layer.html'),
         // Other map libraries
         leaflet: resolve(__dirname, 'examples/leaflet/index.html'),
         mapbox: resolve(__dirname, 'examples/mapbox/index.html'),
