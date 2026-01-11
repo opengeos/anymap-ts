@@ -23,6 +23,7 @@ class MapWidget(anywidget.AnyWidget):
     width = traitlets.Unicode("100%").tag(sync=True)
     height = traitlets.Unicode("400px").tag(sync=True)
     style = traitlets.Union([traitlets.Unicode(), traitlets.Dict()]).tag(sync=True)
+    max_pitch = traitlets.Float(85.0).tag(sync=True)
 
     # JavaScript method call queue
     _js_calls = traitlets.List([]).tag(sync=True)

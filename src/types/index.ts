@@ -4,6 +4,7 @@
 
 export * from './anywidget';
 export * from './maplibre';
+export * from './lidar';
 
 // Re-export GeoJSON types for convenience
 export type {

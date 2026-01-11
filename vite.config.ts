@@ -27,6 +27,7 @@ export default defineConfig({
         'maplibre-cog': resolve(__dirname, 'examples/maplibre/cog_layer.html'),
         'maplibre-arc': resolve(__dirname, 'examples/maplibre/arc_layer.html'),
         'maplibre-pointcloud': resolve(__dirname, 'examples/maplibre/pointcloud_layer.html'),
+        'maplibre-lidar': resolve(__dirname, 'examples/maplibre/lidar_layer.html'),
         'maplibre-zarr': resolve(__dirname, 'examples/maplibre/zarr_layer.html'),
         'maplibre-scatterplot': resolve(__dirname, 'examples/maplibre/scatterplot_layer.html'),
         'maplibre-hexagon': resolve(__dirname, 'examples/maplibre/hexagon_layer.html'),

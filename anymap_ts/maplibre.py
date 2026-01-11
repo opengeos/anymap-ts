@@ -51,23 +51,25 @@ class MapLibreMap(MapWidget):
         style: Union[str, Dict] = "https://demotiles.maplibre.org/style.json",
         bearing: float = 0.0,
         pitch: float = 0.0,
+        max_pitch: float = 85.0,
         controls: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
         """Initialize a MapLibre map.
 
         Args:
-            center: Map center as (longitude, latitude)
-            zoom: Initial zoom level
-            width: Map width as CSS string
-            height: Map height as CSS string
-            style: MapLibre style URL or style object
-            bearing: Map bearing in degrees
-            pitch: Map pitch in degrees
+            center: Map center as (longitude, latitude).
+            zoom: Initial zoom level.
+            width: Map width as CSS string.
+            height: Map height as CSS string.
+            style: MapLibre style URL or style object.
+            bearing: Map bearing in degrees.
+            pitch: Map pitch in degrees.
+            max_pitch: Maximum pitch angle in degrees (default: 85).
             controls: Dict of controls to add. If None, defaults to
                 {"navigation": True, "fullscreen": True, "globe": True, "layer-control": True}.
                 Use {"layer-control": {"collapsed": True}} for custom options.
-            **kwargs: Additional widget arguments
+            **kwargs: Additional widget arguments.
         """
         # Handle style shortcuts
         if isinstance(style, str) and not style.startswith("http"):
@@ -84,6 +86,7 @@ class MapLibreMap(MapWidget):
             style=style,
             bearing=bearing,
             pitch=pitch,
+            max_pitch=max_pitch,
             **kwargs,
         )
 
@@ -752,6 +755,212 @@ class MapLibreMap(MapWidget):
             del layers[layer_id]
             self._layers = layers
         self.call_js_method("removePointCloudLayer", layer_id)
+
+    # -------------------------------------------------------------------------
+    # LiDAR Layers (maplibre-gl-lidar)
+    # -------------------------------------------------------------------------
+
+    def add_lidar_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        title: str = "LiDAR Viewer",
+        point_size: float = 2,
+        opacity: float = 1.0,
+        color_scheme: str = "elevation",
+        use_percentile: bool = True,
+        point_budget: int = 1000000,
+        pickable: bool = False,
+        auto_zoom: bool = True,
+        copc_loading_mode: Optional[str] = None,
+        streaming_point_budget: int = 5000000,
+        panel_max_height: int = 600,
+        **kwargs,
+    ) -> None:
+        """Add an interactive LiDAR control panel.
+
+        The LiDAR control provides a UI panel for loading, visualizing, and
+        styling LiDAR point cloud files (LAS, LAZ, COPC formats).
+
+        Args:
+            position: Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').
+            collapsed: Whether the panel starts collapsed.
+            title: Title displayed on the panel.
+            point_size: Point size in pixels.
+            opacity: Layer opacity (0-1).
+            color_scheme: Color scheme ('elevation', 'intensity', 'classification', 'rgb').
+            use_percentile: Use 2-98% percentile for color scaling.
+            point_budget: Maximum number of points to display.
+            pickable: Enable hover/click interactions.
+            auto_zoom: Auto-zoom to point cloud after loading.
+            copc_loading_mode: COPC loading mode ('full' or 'dynamic').
+            streaming_point_budget: Point budget for streaming mode.
+            panel_max_height: Maximum height of the panel in pixels.
+            **kwargs: Additional control options.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> m = MapLibreMap(pitch=60)
+            >>> m.add_lidar_control(color_scheme="classification", pickable=True)
+        """
+        self.call_js_method(
+            "addLidarControl",
+            position=position,
+            collapsed=collapsed,
+            title=title,
+            pointSize=point_size,
+            opacity=opacity,
+            colorScheme=color_scheme,
+            usePercentile=use_percentile,
+            pointBudget=point_budget,
+            pickable=pickable,
+            autoZoom=auto_zoom,
+            copcLoadingMode=copc_loading_mode,
+            streamingPointBudget=streaming_point_budget,
+            panelMaxHeight=panel_max_height,
+            **kwargs,
+        )
+        self._controls = {
+            **self._controls,
+            "lidar-control": {"position": position, "collapsed": collapsed},
+        }
+
+    def add_lidar_layer(
+        self,
+        source: Union[str, Path],
+        name: Optional[str] = None,
+        color_scheme: str = "elevation",
+        point_size: float = 2,
+        opacity: float = 1.0,
+        pickable: bool = True,
+        auto_zoom: bool = True,
+        streaming_mode: bool = True,
+        point_budget: int = 1000000,
+        **kwargs,
+    ) -> None:
+        """Load and display a LiDAR file from URL or local path.
+
+        Supports LAS, LAZ, and COPC (Cloud-Optimized Point Cloud) formats.
+        For local files, the file is read and sent as base64 to JavaScript.
+        For URLs, the data is loaded directly via streaming when possible.
+
+        Args:
+            source: URL or local file path to the LiDAR file.
+            name: Layer identifier. If None, auto-generated.
+            color_scheme: Color scheme ('elevation', 'intensity', 'classification', 'rgb').
+            point_size: Point size in pixels.
+            opacity: Layer opacity (0-1).
+            pickable: Enable hover/click interactions.
+            auto_zoom: Auto-zoom to point cloud after loading.
+            streaming_mode: Use streaming mode for large COPC files.
+            point_budget: Maximum number of points to display.
+            **kwargs: Additional layer options.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> m = MapLibreMap(center=[-123.07, 44.05], zoom=14, pitch=60)
+            >>> m.add_lidar_layer(
+            ...     source="https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz",
+            ...     name="autzen",
+            ...     color_scheme="classification",
+            ... )
+        """
+        layer_id = name or f"lidar-{len(self._layers)}"
+
+        # Check if source is a local file
+        source_path = Path(source) if isinstance(source, (str, Path)) else None
+        is_local = source_path is not None and source_path.exists()
+
+        if is_local:
+            # Read local file and encode as base64
+            import base64
+
+            with open(source_path, "rb") as f:
+                file_data = f.read()
+            source_b64 = base64.b64encode(file_data).decode("utf-8")
+
+            self.call_js_method(
+                "addLidarLayer",
+                source=source_b64,
+                name=layer_id,
+                isBase64=True,
+                filename=source_path.name,
+                colorScheme=color_scheme,
+                pointSize=point_size,
+                opacity=opacity,
+                pickable=pickable,
+                autoZoom=auto_zoom,
+                streamingMode=streaming_mode,
+                pointBudget=point_budget,
+                **kwargs,
+            )
+        else:
+            # Load from URL
+            self.call_js_method(
+                "addLidarLayer",
+                source=str(source),
+                name=layer_id,
+                isBase64=False,
+                colorScheme=color_scheme,
+                pointSize=point_size,
+                opacity=opacity,
+                pickable=pickable,
+                autoZoom=auto_zoom,
+                streamingMode=streaming_mode,
+                pointBudget=point_budget,
+                **kwargs,
+            )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "lidar",
+                "source": str(source),
+            },
+        }
+
+    def remove_lidar_layer(self, layer_id: Optional[str] = None) -> None:
+        """Remove a LiDAR layer.
+
+        Args:
+            layer_id: Layer identifier to remove. If None, removes all LiDAR layers.
+        """
+        if layer_id:
+            if layer_id in self._layers:
+                layers = dict(self._layers)
+                del layers[layer_id]
+                self._layers = layers
+            self.call_js_method("removeLidarLayer", id=layer_id)
+        else:
+            # Remove all lidar layers
+            layers = dict(self._layers)
+            self._layers = {k: v for k, v in layers.items() if v.get("type") != "lidar"}
+            self.call_js_method("removeLidarLayer")
+
+    def set_lidar_color_scheme(self, color_scheme: str) -> None:
+        """Set the LiDAR color scheme.
+
+        Args:
+            color_scheme: Color scheme ('elevation', 'intensity', 'classification', 'rgb').
+        """
+        self.call_js_method("setLidarColorScheme", colorScheme=color_scheme)
+
+    def set_lidar_point_size(self, point_size: float) -> None:
+        """Set the LiDAR point size.
+
+        Args:
+            point_size: Point size in pixels.
+        """
+        self.call_js_method("setLidarPointSize", pointSize=point_size)
+
+    def set_lidar_opacity(self, opacity: float) -> None:
+        """Set the LiDAR layer opacity.
+
+        Args:
+            opacity: Opacity value between 0 and 1.
+        """
+        self.call_js_method("setLidarOpacity", opacity=opacity)
 
     def _process_deck_data(self, data: Any) -> Any:
         """Process data for deck.gl layers.

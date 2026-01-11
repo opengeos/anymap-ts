@@ -26,6 +26,8 @@ import type {
   FitBoundsOptions,
 } from '../types/mapbox';
 import type { Feature, FeatureCollection } from 'geojson';
+import { LidarControl } from 'maplibre-gl-lidar';
+import type { LidarControlOptions, LidarLayerOptions } from '../types/lidar';
 
 /**
  * Parse GeoKeys to proj4 definition for COG reprojection.
@@ -55,6 +57,10 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   // Deck.gl overlay for COG layers
   private deckOverlay: MapboxOverlay | null = null;
   private deckLayers: globalThis.Map<string, unknown> = new globalThis.Map();
+
+  // LiDAR control
+  private lidarControl: LidarControl | null = null;
+  private lidarLayers: globalThis.Map<string, string> = new globalThis.Map();
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -128,6 +134,8 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     const zoom = this.model.get('zoom');
     const bearing = this.model.get('bearing') || 0;
     const pitch = this.model.get('pitch') || 0;
+    const maxPitchValue = this.model.get('max_pitch');
+    const maxPitch = typeof maxPitchValue === 'number' ? maxPitchValue : 85;
 
     return new MapboxMap({
       container: this.mapContainer!,
@@ -136,6 +144,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       zoom,
       bearing,
       pitch,
+      maxPitch,
       attributionControl: false,
     });
   }
@@ -250,6 +259,14 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     // PointCloud layers (deck.gl)
     this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
     this.registerMethod('removePointCloudLayer', this.handleRemovePointCloudLayer.bind(this));
+
+    // LiDAR layers (maplibre-gl-lidar)
+    this.registerMethod('addLidarControl', this.handleAddLidarControl.bind(this));
+    this.registerMethod('addLidarLayer', this.handleAddLidarLayer.bind(this));
+    this.registerMethod('removeLidarLayer', this.handleRemoveLidarLayer.bind(this));
+    this.registerMethod('setLidarColorScheme', this.handleSetLidarColorScheme.bind(this));
+    this.registerMethod('setLidarPointSize', this.handleSetLidarPointSize.bind(this));
+    this.registerMethod('setLidarOpacity', this.handleSetLidarOpacity.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -892,6 +909,184 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   }
 
   // -------------------------------------------------------------------------
+  // LiDAR layer handlers (maplibre-gl-lidar)
+  // -------------------------------------------------------------------------
+
+  private handleAddLidarControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    if (this.lidarControl) {
+      console.warn('LiDAR control already exists');
+      return;
+    }
+
+    const options = {
+      position: (kwargs.position as string) || 'top-right',
+      collapsed: kwargs.collapsed !== false,
+      title: (kwargs.title as string) || 'LiDAR Viewer',
+      panelWidth: (kwargs.panelWidth as number) || 365,
+      panelMaxHeight: (kwargs.panelMaxHeight as number) || 600,
+      pointSize: (kwargs.pointSize as number) || 2,
+      opacity: (kwargs.opacity as number) || 1.0,
+      colorScheme: (kwargs.colorScheme as string) || 'elevation',
+      usePercentile: kwargs.usePercentile !== false,
+      pointBudget: (kwargs.pointBudget as number) || 1000000,
+      pickable: kwargs.pickable === true,
+      autoZoom: kwargs.autoZoom !== false,
+      copcLoadingMode: kwargs.copcLoadingMode as 'full' | 'dynamic' | undefined,
+      streamingPointBudget: (kwargs.streamingPointBudget as number) || 5000000,
+    };
+
+    // LidarControl works with both MapLibre and Mapbox GL JS
+    this.lidarControl = new LidarControl(options as Parameters<typeof LidarControl>[0]);
+    this.map.addControl(
+      this.lidarControl as unknown as mapboxgl.IControl,
+      options.position as ControlPosition
+    );
+
+    this.lidarControl.on('load', (event) => {
+      const info = event.pointCloudInfo;
+      if (info) {
+        this.lidarLayers.set(info.id, info.source);
+        this.sendEvent('lidar:load', { id: info.id, name: info.name, pointCount: info.pointCount });
+      }
+    });
+
+    this.lidarControl.on('unload', (event) => {
+      const id = event.pointCloudId;
+      if (id) {
+        this.lidarLayers.delete(id);
+        this.sendEvent('lidar:unload', { id });
+      }
+    });
+  }
+
+  private handleAddLidarLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const source = kwargs.source as string;
+    const name = (kwargs.name as string) || `lidar-${Date.now()}`;
+    const isBase64 = kwargs.isBase64 === true;
+
+    if (!source) {
+      console.error('LiDAR layer requires a source URL or base64 data');
+      return;
+    }
+
+    if (!this.lidarControl) {
+      this.lidarControl = new LidarControl({
+        collapsed: true,
+        position: 'top-right',
+        pointSize: (kwargs.pointSize as number) || 2,
+        opacity: (kwargs.opacity as number) || 1.0,
+        colorScheme: (kwargs.colorScheme as string) || 'elevation',
+        usePercentile: kwargs.usePercentile !== false,
+        pointBudget: (kwargs.pointBudget as number) || 1000000,
+        pickable: kwargs.pickable !== false,
+        autoZoom: kwargs.autoZoom !== false,
+      } as Parameters<typeof LidarControl>[0]);
+
+      this.map.addControl(this.lidarControl as unknown as mapboxgl.IControl, 'top-right');
+
+      this.lidarControl.on('load', (event) => {
+        const info = event.pointCloudInfo;
+        if (info) {
+          this.lidarLayers.set(info.id, info.source);
+          this.sendEvent('lidar:load', { id: info.id, name: info.name, pointCount: info.pointCount });
+        }
+      });
+
+      this.lidarControl.on('unload', (event) => {
+        const id = event.pointCloudId;
+        if (id) {
+          this.lidarLayers.delete(id);
+          this.sendEvent('lidar:unload', { id });
+        }
+      });
+    }
+
+    if (kwargs.colorScheme) {
+      this.lidarControl.setColorScheme(kwargs.colorScheme as string);
+    }
+    if (kwargs.pointSize !== undefined) {
+      this.lidarControl.setPointSize(kwargs.pointSize as number);
+    }
+    if (kwargs.opacity !== undefined) {
+      this.lidarControl.setOpacity(kwargs.opacity as number);
+    }
+    if (kwargs.pickable !== undefined) {
+      this.lidarControl.setPickable(kwargs.pickable as boolean);
+    }
+
+    const loadOptions = {
+      id: name,
+      name: (kwargs.filename as string) || name,
+    };
+
+    if (isBase64) {
+      const binaryString = atob(source);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const arrayBuffer = bytes.buffer;
+
+      const streamingMode = kwargs.streamingMode !== false;
+      if (streamingMode) {
+        this.lidarControl.loadPointCloudStreaming(arrayBuffer, loadOptions);
+      } else {
+        this.lidarControl.loadPointCloud(arrayBuffer, loadOptions);
+      }
+    } else {
+      const streamingMode = kwargs.streamingMode !== false;
+      if (streamingMode) {
+        this.lidarControl.loadPointCloudStreaming(source, loadOptions);
+      } else {
+        this.lidarControl.loadPointCloud(source, loadOptions);
+      }
+    }
+
+    this.lidarLayers.set(name, source);
+  }
+
+  private handleRemoveLidarLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.lidarControl) return;
+
+    const id = kwargs.id as string;
+    if (id) {
+      this.lidarControl.unloadPointCloud(id);
+      this.lidarLayers.delete(id);
+    } else {
+      this.lidarControl.unloadPointCloud();
+      this.lidarLayers.clear();
+    }
+  }
+
+  private handleSetLidarColorScheme(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.lidarControl) return;
+    const colorScheme = kwargs.colorScheme as string;
+    if (colorScheme) {
+      this.lidarControl.setColorScheme(colorScheme);
+    }
+  }
+
+  private handleSetLidarPointSize(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.lidarControl) return;
+    const pointSize = kwargs.pointSize as number;
+    if (pointSize !== undefined) {
+      this.lidarControl.setPointSize(pointSize);
+    }
+  }
+
+  private handleSetLidarOpacity(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.lidarControl) return;
+    const opacity = kwargs.opacity as number;
+    if (opacity !== undefined) {
+      this.lidarControl.setOpacity(opacity);
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Trait change handlers
   // -------------------------------------------------------------------------
 
@@ -934,6 +1129,13 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       this.deckOverlay = null;
     }
     this.deckLayers.clear();
+
+    // Remove LiDAR control
+    if (this.lidarControl && this.map) {
+      this.map.removeControl(this.lidarControl as unknown as mapboxgl.IControl);
+      this.lidarControl = null;
+    }
+    this.lidarLayers.clear();
 
     this.markersMap.forEach((marker) => marker.remove());
     this.markersMap.clear();
