@@ -54,7 +54,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 import { GeoEditorPlugin } from './plugins/GeoEditorPlugin';
 import { LayerControlPlugin } from './plugins/LayerControlPlugin';
 import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter } from './adapters';
-import { LidarControl } from 'maplibre-gl-lidar';
+import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
 import type { LidarControlOptions, LidarLayerOptions } from '../types/lidar';
 
 /**
@@ -95,6 +95,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private cogAdapter: COGLayerAdapter | null = null;
   private zarrAdapter: ZarrLayerAdapter | null = null;
   private deckLayerAdapter: DeckLayerAdapter | null = null;
+  private lidarAdapter: LidarLayerAdapter | null = null;
 
   // LiDAR control
   protected lidarControl: LidarControl | null = null;
@@ -775,6 +776,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (this.deckOverlay && this.map) {
       this.deckLayerAdapter = new DeckLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
       customLayerAdapters.push(this.deckLayerAdapter);
+    }
+
+    // Create LiDAR adapter if LidarControl exists
+    if (this.lidarControl) {
+      this.lidarAdapter = new LidarLayerAdapter(this.lidarControl);
+      customLayerAdapters.push(this.lidarAdapter);
     }
 
     // Initialize plugin if not already
@@ -1726,6 +1733,28 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         this.sendEvent('lidar:unload', { id });
       }
     });
+
+    // Register with existing layer control if present
+    this.registerLidarAdapterWithLayerControl();
+  }
+
+  /**
+   * Register the LiDAR adapter with the layer control if it exists.
+   * This enables dynamic registration when LiDAR layers are added after the layer control.
+   */
+  private registerLidarAdapterWithLayerControl(): void {
+    if (!this.lidarControl || !this.layerControlPlugin) return;
+
+    const layerControl = this.layerControlPlugin.getControl();
+    if (!layerControl) return;
+
+    // Create adapter if not exists
+    if (!this.lidarAdapter) {
+      this.lidarAdapter = new LidarLayerAdapter(this.lidarControl);
+    }
+
+    // Register the adapter with the layer control
+    layerControl.registerCustomAdapter(this.lidarAdapter);
   }
 
   /**
@@ -1775,6 +1804,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
           this.sendEvent('lidar:unload', { id });
         }
       });
+
+      // Register with existing layer control if present
+      this.registerLidarAdapterWithLayerControl();
     }
 
     // Apply styling options
@@ -1933,7 +1965,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
     this.deckLayers.clear();
 
-    // Remove LiDAR control
+    // Remove LiDAR control and adapter
+    if (this.lidarAdapter) {
+      this.lidarAdapter.destroy();
+      this.lidarAdapter = null;
+    }
     if (this.lidarControl && this.map) {
       this.map.removeControl(this.lidarControl as unknown as maplibregl.IControl);
       this.lidarControl = null;

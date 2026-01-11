@@ -6,85 +6,6 @@
   <title>LiDAR Layer - anymap-ts Example</title>
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
-  <style>
-    .controls {
-      background: rgba(30, 30, 40, 0.95);
-      padding: 15px;
-      border-radius: 8px;
-      position: absolute;
-      bottom: 30px;
-      left: 20px;
-      z-index: 1000;
-      min-width: 280px;
-      color: #fff;
-    }
-    .controls h3 {
-      margin: 0 0 12px 0;
-      color: #00d9ff;
-      font-size: 14px;
-    }
-    .controls p {
-      margin: 0 0 10px 0;
-      font-size: 12px;
-      color: #aaa;
-    }
-    .control-group {
-      margin-bottom: 10px;
-    }
-    .control-group label {
-      display: block;
-      font-size: 12px;
-      margin-bottom: 4px;
-      color: #ccc;
-    }
-    .control-group select,
-    .control-group input[type="range"] {
-      width: 100%;
-    }
-    .control-group select {
-      padding: 6px;
-      background: #333;
-      border: 1px solid #555;
-      border-radius: 4px;
-      color: #fff;
-    }
-    .status {
-      margin-top: 10px;
-      padding: 8px;
-      background: rgba(0, 217, 255, 0.1);
-      border-radius: 4px;
-      font-size: 11px;
-      color: #00d9ff;
-    }
-    .info-panel {
-      background: rgba(30, 30, 40, 0.95);
-      padding: 15px;
-      border-radius: 8px;
-      position: absolute;
-      bottom: 30px;
-      right: 20px;
-      z-index: 1000;
-      min-width: 250px;
-      color: #fff;
-    }
-    .info-panel h3 {
-      margin: 0 0 10px 0;
-      color: #00d9ff;
-      font-size: 14px;
-    }
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      font-size: 12px;
-    }
-    .info-label {
-      color: #888;
-    }
-    .info-value {
-      color: #fff;
-    }
-  </style>
 </head>
 <body>
   <div class="header">
@@ -92,53 +13,6 @@
     <a href="../">Back to Examples</a>
   </div>
   <div id="map"></div>
-
-  <div class="controls">
-    <h3>LiDAR Controls</h3>
-    <p>Visualize LiDAR point clouds with the interactive LiDAR control panel.</p>
-
-    <div class="control-group">
-      <label>Color Scheme</label>
-      <select id="color-scheme">
-        <option value="elevation">Elevation</option>
-        <option value="intensity">Intensity</option>
-        <option value="classification" selected>Classification</option>
-        <option value="rgb">RGB</option>
-      </select>
-    </div>
-
-    <div class="control-group">
-      <label>Point Size: <span id="size-value">2</span></label>
-      <input type="range" id="point-size" min="1" max="10" value="2" step="0.5">
-    </div>
-
-    <div class="control-group">
-      <label>Opacity: <span id="opacity-value">100%</span></label>
-      <input type="range" id="opacity" min="0" max="100" value="100">
-    </div>
-
-    <div class="status" id="status">Initializing...</div>
-  </div>
-
-  <div class="info-panel">
-    <h3>Dataset Information</h3>
-    <div class="info-row">
-      <span class="info-label">Dataset</span>
-      <span class="info-value">Autzen Stadium</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Format</span>
-      <span class="info-value">COPC (LAZ)</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Location</span>
-      <span class="info-value">Eugene, Oregon</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Source</span>
-      <span class="info-value">USGS / Hobu</span>
-    </div>
-  </div>
 
   <script type="module" src="./lidar-main.ts"></script>
 </body>

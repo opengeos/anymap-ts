@@ -1,6 +1,8 @@
 import maplibregl from 'maplibre-gl';
-import { LidarControl } from 'maplibre-gl-lidar';
+import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
+import { LayerControl } from 'maplibre-gl-layer-control';
 import 'maplibre-gl-lidar/style.css';
+import 'maplibre-gl-layer-control/style.css';
 
 // Autzen Stadium COPC LiDAR dataset
 const AUTZEN_COPC_URL = 'https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz';
@@ -19,14 +21,6 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
 
-// Status element
-const statusEl = document.getElementById('status');
-const updateStatus = (message: string) => {
-  if (statusEl) {
-    statusEl.textContent = message;
-  }
-};
-
 // Create LiDAR control with initial settings
 const lidarControl = new LidarControl({
   collapsed: false,
@@ -34,7 +28,7 @@ const lidarControl = new LidarControl({
   title: 'LiDAR Viewer',
   pointSize: 2,
   opacity: 1.0,
-  colorScheme: 'classification',
+  colorScheme: 'elevation',
   usePercentile: true,
   pointBudget: 2000000,
   pickable: true,
@@ -43,72 +37,25 @@ const lidarControl = new LidarControl({
   streamingPointBudget: 5000000,
 });
 
-// Set up control event listeners
-lidarControl.on('loadstart', () => {
-  updateStatus('Loading LiDAR data...');
-});
+// Create LiDAR adapter for layer control integration
+const lidarAdapter = new LidarLayerAdapter(lidarControl);
 
-lidarControl.on('load', (event) => {
-  const info = event.pointCloudInfo;
-  if (info) {
-    updateStatus(`Loaded ${info.pointCount.toLocaleString()} points`);
-  }
-});
-
-lidarControl.on('loaderror', (event) => {
-  updateStatus(`Error: ${event.error?.message || 'Failed to load'}`);
-});
-
-lidarControl.on('streamingprogress', (event) => {
-  const progress = event.progress;
-  if (progress) {
-    updateStatus(`Loading: ${progress.loadedPoints.toLocaleString()} points (${Math.round(progress.percentComplete)}%)`);
-  }
-});
-
-lidarControl.on('statechange', () => {
-  // Update UI when state changes
+// Create layer control with LiDAR adapter
+const layerControl = new LayerControl({
+  collapsed: true,
+  customLayerAdapters: [lidarAdapter],
 });
 
 map.on('load', () => {
-  // Add the LiDAR control to the map
-  map.addControl(lidarControl as unknown as maplibregl.IControl, 'top-left');
+  // Add layer control
+  map.addControl(layerControl, 'top-right');
 
-  updateStatus('Loading Autzen Stadium LiDAR...');
+  // Add the LiDAR control to the map
+  map.addControl(lidarControl as unknown as maplibregl.IControl, 'top-right');
 
   // Load the Autzen COPC dataset
   lidarControl.loadPointCloudStreaming(AUTZEN_COPC_URL, {
     id: 'autzen',
     name: 'Autzen Stadium',
   });
-});
-
-// UI Controls
-const colorSchemeSelect = document.getElementById('color-scheme') as HTMLSelectElement;
-const pointSizeSlider = document.getElementById('point-size') as HTMLInputElement;
-const opacitySlider = document.getElementById('opacity') as HTMLInputElement;
-const sizeValueEl = document.getElementById('size-value');
-const opacityValueEl = document.getElementById('opacity-value');
-
-// Color scheme change
-colorSchemeSelect?.addEventListener('change', () => {
-  lidarControl.setColorScheme(colorSchemeSelect.value);
-});
-
-// Point size change
-pointSizeSlider?.addEventListener('input', () => {
-  const size = parseFloat(pointSizeSlider.value);
-  lidarControl.setPointSize(size);
-  if (sizeValueEl) {
-    sizeValueEl.textContent = size.toString();
-  }
-});
-
-// Opacity change
-opacitySlider?.addEventListener('input', () => {
-  const opacity = parseInt(opacitySlider.value, 10) / 100;
-  lidarControl.setOpacity(opacity);
-  if (opacityValueEl) {
-    opacityValueEl.textContent = `${opacitySlider.value}%`;
-  }
 });

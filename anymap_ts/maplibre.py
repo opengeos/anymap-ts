@@ -771,6 +771,7 @@ class MapLibreMap(MapWidget):
         auto_zoom: bool = True,
         copc_loading_mode: Optional[str] = None,
         streaming_point_budget: int = 5000000,
+        panel_max_height: int = 600,
         **kwargs,
     ) -> None:
         """Add an interactive LiDAR control panel.
@@ -791,6 +792,7 @@ class MapLibreMap(MapWidget):
             auto_zoom: Auto-zoom to point cloud after loading.
             copc_loading_mode: COPC loading mode ('full' or 'dynamic').
             streaming_point_budget: Point budget for streaming mode.
+            panel_max_height: Maximum height of the panel in pixels.
             **kwargs: Additional control options.
 
         Example:
@@ -812,6 +814,7 @@ class MapLibreMap(MapWidget):
             autoZoom=auto_zoom,
             copcLoadingMode=copc_loading_mode,
             streamingPointBudget=streaming_point_budget,
+            panelMaxHeight=panel_max_height,
             **kwargs,
         )
         self._controls = {
