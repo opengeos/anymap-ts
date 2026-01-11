@@ -48,7 +48,7 @@
     "maplibre-gl": ">=5.14.0",
     "maplibre-gl-geo-editor": "^0.3.2",
     "maplibre-gl-layer-control": "^0.7.1",
-    "maplibre-gl-lidar": "^0.3.0",
+    "maplibre-gl-lidar": "^0.3.1",
     "ol": "^10.0.0"
   },
   "devDependencies": {
