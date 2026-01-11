@@ -7,6 +7,8 @@ import type { AnyModel } from '@anywidget/types';
 
 // Import Mapbox CSS
 import 'mapbox-gl/dist/mapbox-gl.css';
+// Import LiDAR Control CSS
+import 'maplibre-gl-lidar/style.css';
 
 /**
  * Store renderer reference on element for cleanup and multi-cell support.

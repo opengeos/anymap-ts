@@ -5,10 +5,10 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "build:maplibre": "esbuild src/maplibre/index.ts --bundle --format=esm --outfile=anymap_ts/static/maplibre.js --loader:.css=css",
-    "build:mapbox": "esbuild src/mapbox/index.ts --bundle --format=esm --outfile=anymap_ts/static/mapbox.js --loader:.css=css",
+    "build:maplibre": "esbuild src/maplibre/index.ts --bundle --format=esm --outfile=anymap_ts/static/maplibre.js --loader:.css=css --external:path --external:fs",
+    "build:mapbox": "esbuild src/mapbox/index.ts --bundle --format=esm --outfile=anymap_ts/static/mapbox.js --loader:.css=css --external:path --external:fs",
     "build:leaflet": "esbuild src/leaflet/index.ts --bundle --format=esm --outfile=anymap_ts/static/leaflet.js --loader:.css=css --loader:.png=dataurl",
-    "build:deckgl": "esbuild src/deckgl/index.ts --bundle --format=esm --outfile=anymap_ts/static/deckgl.js --loader:.css=css",
+    "build:deckgl": "esbuild src/deckgl/index.ts --bundle --format=esm --outfile=anymap_ts/static/deckgl.js --loader:.css=css --external:path --external:fs",
     "build:openlayers": "esbuild src/openlayers/index.ts --bundle --format=esm --outfile=anymap_ts/static/openlayers.js --loader:.css=css",
     "build:cesium": "esbuild src/cesium/index.ts --bundle --format=esm --outfile=anymap_ts/static/cesium.js --loader:.css=css",
     "build:keplergl": "esbuild src/keplergl/index.ts --bundle --format=esm --outfile=anymap_ts/static/keplergl.js --loader:.css=css",
@@ -47,7 +47,8 @@
     "mapbox-gl": "^3.9.0",
     "maplibre-gl": ">=5.14.0",
     "maplibre-gl-geo-editor": "^0.3.2",
-    "maplibre-gl-layer-control": "^0.6.2",
+    "maplibre-gl-layer-control": "^0.7.1",
+    "maplibre-gl-lidar": "^0.3.0",
     "ol": "^10.0.0"
   },
   "devDependencies": {

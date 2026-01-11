@@ -59,6 +59,7 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
     'wms-',
     'simplemesh-',
     'scenegraph-',
+    'lidar-',
   ];
 
   private map: MapLibreMap;
@@ -149,7 +150,7 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
   getSymbolType(layerId: string): string {
     // Point-based layers
     if (layerId.startsWith('scatterplot-') || layerId.startsWith('pointcloud-') ||
-        layerId.startsWith('icon-')) {
+        layerId.startsWith('icon-') || layerId.startsWith('lidar-')) {
       return 'circle';
     }
     // Line-based layers
