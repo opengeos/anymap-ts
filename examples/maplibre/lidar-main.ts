@@ -15,6 +15,7 @@ const map = new maplibregl.Map({
   zoom: 15,
   pitch: 60,
   bearing: -20,
+  maxPitch: 85,
 });
 
 // Add navigation and scale controls

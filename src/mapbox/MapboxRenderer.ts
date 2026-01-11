@@ -134,6 +134,8 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     const zoom = this.model.get('zoom');
     const bearing = this.model.get('bearing') || 0;
     const pitch = this.model.get('pitch') || 0;
+    const maxPitchValue = this.model.get('max_pitch');
+    const maxPitch = typeof maxPitchValue === 'number' ? maxPitchValue : 85;
 
     return new MapboxMap({
       container: this.mapContainer!,
@@ -142,6 +144,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       zoom,
       bearing,
       pitch,
+      maxPitch,
       attributionControl: false,
     });
   }

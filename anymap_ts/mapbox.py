@@ -66,6 +66,7 @@ class MapboxMap(MapWidget):
         style: str = "mapbox://styles/mapbox/streets-v12",
         bearing: float = 0.0,
         pitch: float = 0.0,
+        max_pitch: float = 85.0,
         access_token: Optional[str] = None,
         controls: Optional[Dict[str, Any]] = None,
         **kwargs,
@@ -80,6 +81,7 @@ class MapboxMap(MapWidget):
             style: Mapbox style URL (e.g., "mapbox://styles/mapbox/streets-v12").
             bearing: Map bearing in degrees.
             pitch: Map pitch in degrees.
+            max_pitch: Maximum pitch angle in degrees (default: 85).
             access_token: Mapbox access token. If None, reads from MAPBOX_TOKEN env var.
             controls: Dict of controls to add (e.g., {"navigation": True}).
             **kwargs: Additional widget arguments.
@@ -100,6 +102,7 @@ class MapboxMap(MapWidget):
             style=style,
             bearing=bearing,
             pitch=pitch,
+            max_pitch=max_pitch,
             access_token=token,
             **kwargs,
         )

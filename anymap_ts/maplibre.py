@@ -51,23 +51,25 @@ class MapLibreMap(MapWidget):
         style: Union[str, Dict] = "https://demotiles.maplibre.org/style.json",
         bearing: float = 0.0,
         pitch: float = 0.0,
+        max_pitch: float = 85.0,
         controls: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
         """Initialize a MapLibre map.
 
         Args:
-            center: Map center as (longitude, latitude)
-            zoom: Initial zoom level
-            width: Map width as CSS string
-            height: Map height as CSS string
-            style: MapLibre style URL or style object
-            bearing: Map bearing in degrees
-            pitch: Map pitch in degrees
+            center: Map center as (longitude, latitude).
+            zoom: Initial zoom level.
+            width: Map width as CSS string.
+            height: Map height as CSS string.
+            style: MapLibre style URL or style object.
+            bearing: Map bearing in degrees.
+            pitch: Map pitch in degrees.
+            max_pitch: Maximum pitch angle in degrees (default: 85).
             controls: Dict of controls to add. If None, defaults to
                 {"navigation": True, "fullscreen": True, "globe": True, "layer-control": True}.
                 Use {"layer-control": {"collapsed": True}} for custom options.
-            **kwargs: Additional widget arguments
+            **kwargs: Additional widget arguments.
         """
         # Handle style shortcuts
         if isinstance(style, str) and not style.startswith("http"):
@@ -84,6 +86,7 @@ class MapLibreMap(MapWidget):
             style=style,
             bearing=bearing,
             pitch=pitch,
+            max_pitch=max_pitch,
             **kwargs,
         )
 

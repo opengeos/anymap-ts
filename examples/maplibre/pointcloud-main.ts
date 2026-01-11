@@ -37,6 +37,7 @@ const map = new maplibregl.Map({
   center: [-122.4194, 37.7749],
   zoom: 14,
   pitch: 60,
+  maxPitch: 85,
 });
 
 map.addControl(new maplibregl.NavigationControl(), 'top-right');

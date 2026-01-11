@@ -47,6 +47,7 @@ class DeckGLMap(MapLibreMap):
         style: Union[str, Dict] = "https://demotiles.maplibre.org/style.json",
         bearing: float = 0.0,
         pitch: float = 0.0,
+        max_pitch: float = 85.0,
         controls: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
@@ -60,6 +61,7 @@ class DeckGLMap(MapLibreMap):
             style: MapLibre style URL or style object.
             bearing: Map bearing in degrees.
             pitch: Map pitch in degrees.
+            max_pitch: Maximum pitch angle in degrees (default: 85).
             controls: Dict of controls to add (e.g., {"navigation": True}).
             **kwargs: Additional widget arguments.
         """
@@ -71,6 +73,7 @@ class DeckGLMap(MapLibreMap):
             style=style,
             bearing=bearing,
             pitch=pitch,
+            max_pitch=max_pitch,
             controls=controls,
             **kwargs,
         )
