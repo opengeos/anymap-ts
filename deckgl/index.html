@@ -3109,6 +3109,7 @@ for GPU-accelerated geospatial visualizations.</p>
         <span class="n">style</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;https://demotiles.maplibre.org/style.json&quot;</span><span class="p">,</span>
         <span class="n">bearing</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">max_pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">85.0</span><span class="p">,</span>
         <span class="n">controls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -3122,6 +3123,7 @@ for GPU-accelerated geospatial visualizations.</p>
 <span class="sd">            style: MapLibre style URL or style object.</span>
 <span class="sd">            bearing: Map bearing in degrees.</span>
 <span class="sd">            pitch: Map pitch in degrees.</span>
+<span class="sd">            max_pitch: Maximum pitch angle in degrees (default: 85).</span>
 <span class="sd">            controls: Dict of controls to add (e.g., {&quot;navigation&quot;: True}).</span>
 <span class="sd">            **kwargs: Additional widget arguments.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -3133,6 +3135,7 @@ for GPU-accelerated geospatial visualizations.</p>
             <span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">,</span>
             <span class="n">bearing</span><span class="o">=</span><span class="n">bearing</span><span class="p">,</span>
             <span class="n">pitch</span><span class="o">=</span><span class="n">pitch</span><span class="p">,</span>
+            <span class="n">max_pitch</span><span class="o">=</span><span class="n">max_pitch</span><span class="p">,</span>
             <span class="n">controls</span><span class="o">=</span><span class="n">controls</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
@@ -5346,7 +5349,7 @@ for GPU-accelerated geospatial visualizations.</p>
 
 
 <h3 id="anymap_ts.deckgl.DeckGLMap.__init__" class="doc doc-heading">
-<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">zoom</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;600px&#39;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">&#39;https://demotiles.maplibre.org/style.json&#39;</span><span class="p">,</span> <span class="n">bearing</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">pitch</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">controls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">zoom</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;600px&#39;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">&#39;https://demotiles.maplibre.org/style.json&#39;</span><span class="p">,</span> <span class="n">bearing</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">pitch</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_pitch</span><span class="o">=</span><span class="mf">85.0</span><span class="p">,</span> <span class="n">controls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
   <span class="doc doc-properties">
       <small class="doc doc-property doc-property-special"><code>special</code></small>
@@ -5412,6 +5415,12 @@ for GPU-accelerated geospatial visualizations.</p>
         <td><code>0.0</code></td>
       </tr>
       <tr>
+        <td><code>max_pitch</code></td>
+        <td><code>float</code></td>
+        <td><p>Maximum pitch angle in degrees (default: 85).</p></td>
+        <td><code>85.0</code></td>
+      </tr>
+      <tr>
         <td><code>controls</code></td>
         <td><code>Optional[Dict[str, Any]]</code></td>
         <td><p>Dict of controls to add (e.g., {"navigation": True}).</p></td>
@@ -5436,6 +5445,7 @@ for GPU-accelerated geospatial visualizations.</p>
     <span class="n">style</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;https://demotiles.maplibre.org/style.json&quot;</span><span class="p">,</span>
     <span class="n">bearing</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="n">pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">max_pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">85.0</span><span class="p">,</span>
     <span class="n">controls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">):</span>
@@ -5449,6 +5459,7 @@ for GPU-accelerated geospatial visualizations.</p>
 <span class="sd">        style: MapLibre style URL or style object.</span>
 <span class="sd">        bearing: Map bearing in degrees.</span>
 <span class="sd">        pitch: Map pitch in degrees.</span>
+<span class="sd">        max_pitch: Maximum pitch angle in degrees (default: 85).</span>
 <span class="sd">        controls: Dict of controls to add (e.g., {&quot;navigation&quot;: True}).</span>
 <span class="sd">        **kwargs: Additional widget arguments.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -5460,6 +5471,7 @@ for GPU-accelerated geospatial visualizations.</p>
         <span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">,</span>
         <span class="n">bearing</span><span class="o">=</span><span class="n">bearing</span><span class="p">,</span>
         <span class="n">pitch</span><span class="o">=</span><span class="n">pitch</span><span class="p">,</span>
+        <span class="n">max_pitch</span><span class="o">=</span><span class="n">max_pitch</span><span class="p">,</span>
         <span class="n">controls</span><span class="o">=</span><span class="n">controls</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span>
