@@ -12,7 +12,6 @@ from .base import MapWidget
 from .basemaps import get_basemap_url
 from .utils import to_geojson, get_bounds, infer_layer_type
 
-
 # Path to bundled static assets
 STATIC_DIR = Path(__file__).parent / "static"
 
