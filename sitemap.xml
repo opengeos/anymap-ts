@@ -2,274 +2,274 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://anymap-ts.gishub.org/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/anymap_ts/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/base/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/basemaps/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/cesium/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/contributing/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/deckgl/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/installation/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/keplergl/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/leaflet/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/mapbox/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/maplibre/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/openlayers/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/potree/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/usage/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/utils/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/arc_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/bitmap_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/cesium/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/cog_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/column_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/contour_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/deckgl/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/geohash_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/geojson_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/great_circle_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/gridcell_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/h3_cluster_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/h3_hexagon_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/heatmap_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/hexagon_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/icon_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/keplergl/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/leaflet/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/lidar_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/mapbox/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/maplibre/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/mvt_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/openlayers/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/pointcloud_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/polygon_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/potree/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/quadkey_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/s2_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/scatterplot_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/scenegraph_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/simplemesh_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/solidpolygon_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/terrain_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/text_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/tile3d_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/tile_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/trips_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/wms_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/notebooks/zarr_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/arc_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/cesium/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/cog_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/deckgl/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/keplergl/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/leaflet/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/mapbox/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/maplibre/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/openlayers/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/pointcloud_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/potree/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
     <url>
          <loc>https://anymap-ts.gishub.org/typescript/examples/zarr_layer/</loc>
-         <lastmod>2026-01-11</lastmod>
+         <lastmod>2026-01-22</lastmod>
     </url>
 </urlset>
