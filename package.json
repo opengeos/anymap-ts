@@ -1,6 +1,6 @@
 {
   "name": "anymap-ts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript frontend for anymap-ts interactive maps",
   "type": "module",
   "main": "src/index.ts",
@@ -34,7 +34,7 @@
     "@deck.gl/geo-layers": "^9.2.5",
     "@deck.gl/layers": "^9.0.0",
     "@deck.gl/mapbox": "^9.0.0",
-    "@developmentseed/deck.gl-geotiff": "^0.1.0",
+    "@developmentseed/deck.gl-geotiff": "^0.2.0",
     "@geoman-io/maplibre-geoman-free": "^0.5.5",
     "@loaders.gl/core": "^4.3.4",
     "@loaders.gl/gltf": "^4.3.4",
