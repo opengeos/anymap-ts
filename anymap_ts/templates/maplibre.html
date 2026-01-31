@@ -7,6 +7,8 @@
     <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
+    <!-- PMTiles -->
+    <script src="https://unpkg.com/pmtiles@3.0.8/dist/pmtiles.js"></script>
     <!-- Geoman for drawing -->
     <script src="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.umd.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.css" rel="stylesheet" />
@@ -77,6 +79,12 @@
             bearing: state.bearing || 0,
             pitch: state.pitch || 0
         });
+
+        // Initialize PMTiles protocol
+        if (typeof pmtiles !== 'undefined') {
+            const protocol = new pmtiles.Protocol();
+            maplibregl.addProtocol("pmtiles", protocol.tile);
+        }
 
         map.on('load', function() {
             // Replay JS calls
@@ -271,6 +279,117 @@
                         if (opacityProp) {
                             map.setPaintProperty(layerId, opacityProp, opacity);
                         }
+                    }
+                    break;
+                }
+
+                case 'addPMTilesLayer': {
+                    const url = kwargs.url;
+                    const layerId = kwargs.id;
+                    const sourceType = kwargs.sourceType || 'vector';
+                    const opacity = kwargs.opacity || 1.0;
+                    const visible = kwargs.visible !== false;
+                    const style = kwargs.style || {};
+                    
+                    // Prepare PMTiles URL with protocol
+                    const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
+                    
+                    // Add source
+                    const sourceId = `${layerId}-source`;
+                    if (!map.getSource(sourceId)) {
+                        map.addSource(sourceId, {
+                            type: sourceType,
+                            url: pmtilesUrl
+                        });
+                    }
+                    
+                    // Add layer(s)
+                    if (!map.getLayer(layerId)) {
+                        if (sourceType === 'vector') {
+                            // For vector PMTiles, we might need to add multiple layers
+                            // Use provided style or create default
+                            const layerStyle = {
+                                id: layerId,
+                                source: sourceId,
+                                type: 'fill',
+                                layout: {
+                                    visibility: visible ? 'visible' : 'none'
+                                },
+                                paint: {
+                                    'fill-opacity': opacity,
+                                    'fill-color': '#3388ff',
+                                    ...style
+                                }
+                            };
+                            
+                            if (style.type) {
+                                layerStyle.type = style.type;
+                                if (style.type === 'line') {
+                                    layerStyle.paint = {
+                                        'line-opacity': opacity,
+                                        'line-color': '#3388ff',
+                                        'line-width': 2,
+                                        ...style
+                                    };
+                                } else if (style.type === 'circle') {
+                                    layerStyle.paint = {
+                                        'circle-opacity': opacity,
+                                        'circle-color': '#3388ff',
+                                        'circle-radius': 5,
+                                        ...style
+                                    };
+                                }
+                            }
+                            
+                            if (style['source-layer']) {
+                                layerStyle['source-layer'] = style['source-layer'];
+                            }
+                            
+                            map.addLayer(layerStyle);
+                        } else {
+                            // For raster PMTiles
+                            map.addLayer({
+                                id: layerId,
+                                type: 'raster',
+                                source: sourceId,
+                                layout: {
+                                    visibility: visible ? 'visible' : 'none'
+                                },
+                                paint: {
+                                    'raster-opacity': opacity
+                                }
+                            });
+                        }
+                        
+                        addedLayers.push({ 
+                            id: layerId, 
+                            name: kwargs.name || layerId, 
+                            type: sourceType === 'vector' ? (style.type || 'fill') : 'raster'
+                        });
+                    }
+                    
+                    // Fit bounds if requested
+                    if (kwargs.fitBounds) {
+                        // For PMTiles, we could try to get metadata and fit to bounds
+                        // This is optional and complex, so we'll skip for now
+                    }
+                    
+                    break;
+                }
+
+                case 'removePMTilesLayer': {
+                    const layerId = args[0];
+                    if (map.getLayer(layerId)) {
+                        map.removeLayer(layerId);
+                    }
+                    const sourceId = `${layerId}-source`;
+                    if (map.getSource(sourceId)) {
+                        map.removeSource(sourceId);
+                    }
+                    // Remove from addedLayers
+                    const index = addedLayers.findIndex(l => l.id === layerId);
+                    if (index > -1) {
+                        addedLayers.splice(index, 1);
                     }
                     break;
                 }

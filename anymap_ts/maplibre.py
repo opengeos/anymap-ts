@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from urllib.parse import urlencode
 
 import traitlets
 
@@ -361,6 +362,125 @@ class MapLibreMap(MapWidget):
             },
         }
 
+    def add_stac_layer(
+        self,
+        url: Optional[str] = None,
+        item: Optional[Any] = None,
+        assets: Optional[List[str]] = None,
+        colormap: Optional[str] = None,
+        rescale: Optional[List[float]] = None,
+        opacity: float = 1.0,
+        layer_id: Optional[str] = None,
+        titiler_endpoint: str = "https://titiler.xyz",
+        attribution: str = "STAC",
+        fit_bounds: bool = True,
+        **kwargs,
+    ) -> None:
+        """Add a STAC (SpatioTemporal Asset Catalog) layer to the map.
+
+        Uses TiTiler to render STAC items as XYZ tiles on the map.
+        Supports both STAC item URLs and pystac Item objects.
+
+        Args:
+            url: URL to a STAC item JSON
+            item: A pystac Item object 
+            assets: List of asset names/bands to visualize
+            colormap: Colormap name (e.g., 'viridis', 'plasma', 'inferno')
+            rescale: Min/max values for rescaling as [min, max]
+            opacity: Layer opacity (0-1)
+            layer_id: Custom layer identifier
+            titiler_endpoint: TiTiler server endpoint URL
+            attribution: Attribution text for the layer
+            fit_bounds: Whether to fit map to STAC item bounds
+            **kwargs: Additional tile layer options
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> # From URL
+            >>> m.add_stac_layer(
+            ...     url="https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a/items/S2A_MSIL2A_20220101T181901_N0301_R027_T10TEM_20220101T201906",
+            ...     assets=["red", "green", "blue"],
+            ...     rescale=[0, 3000]
+            ... )
+            >>> # From pystac Item
+            >>> import pystac
+            >>> item = pystac.Item.from_file("path/to/item.json")
+            >>> m.add_stac_layer(item=item, assets=["nir", "red"], colormap="ndvi")
+        """
+        if url is None and item is None:
+            raise ValueError("Either 'url' or 'item' must be provided")
+        
+        if url is not None and item is not None:
+            raise ValueError("Provide either 'url' or 'item', not both")
+
+        # Handle pystac Item object
+        if item is not None:
+            try:
+                # Check if it's a pystac Item
+                if hasattr(item, 'to_dict') and hasattr(item, 'self_href'):
+                    stac_url = item.self_href
+                    if not stac_url:
+                        # Try to get URL from item properties if no self_href
+                        if hasattr(item, 'links'):
+                            for link in item.links:
+                                if link.rel == 'self':
+                                    stac_url = link.href
+                                    break
+                        if not stac_url:
+                            raise ValueError("STAC item must have a self_href or self link for tile generation")
+                else:
+                    raise ValueError("Item must be a pystac Item object with to_dict() and self_href attributes")
+            except Exception as e:
+                raise ValueError(f"Invalid STAC item: {e}")
+        else:
+            stac_url = url
+
+        # Build TiTiler tile URL
+        tile_params = {"url": stac_url}
+        
+        if assets:
+            tile_params["assets"] = ",".join(assets)
+        if colormap:
+            tile_params["colormap_name"] = colormap
+        if rescale:
+            if len(rescale) == 2:
+                tile_params["rescale"] = f"{rescale[0]},{rescale[1]}"
+            else:
+                raise ValueError("rescale must be a list of two values [min, max]")
+
+        # Construct tile URL template
+        query_string = urlencode(tile_params)
+        tile_url = f"{titiler_endpoint.rstrip('/')}/stac/tiles/{{z}}/{{x}}/{{y}}?{query_string}"
+
+        layer_name = layer_id or f"stac-{len(self._layers)}"
+
+        # Add as tile layer
+        self.add_tile_layer(
+            url=tile_url,
+            name=layer_name,
+            attribution=attribution,
+            **kwargs,
+        )
+
+        # Update layer info to mark as STAC
+        if layer_name in self._layers:
+            self._layers[layer_name].update({
+                "stac_url": stac_url,
+                "stac_assets": assets,
+                "colormap": colormap,
+                "rescale": rescale,
+            })
+
+        # Try to fit bounds if requested and we have an item object
+        if fit_bounds and item is not None:
+            try:
+                bbox = item.bbox
+                if bbox and len(bbox) == 4:
+                    self.fit_bounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]])
+            except Exception:
+                pass  # Skip bounds fitting if bbox is not available
+
     # -------------------------------------------------------------------------
     # COG Layer (deck.gl)
     # -------------------------------------------------------------------------
@@ -570,6 +690,102 @@ class MapLibreMap(MapWidget):
         if opacity is not None:
             update_kwargs["opacity"] = opacity
         self.call_js_method("updateZarrLayer", **update_kwargs)
+
+    # -------------------------------------------------------------------------
+    # PMTiles Layer
+    # -------------------------------------------------------------------------
+
+    def add_pmtiles_layer(
+        self,
+        url: str,
+        layer_id: Optional[str] = None,
+        style: Optional[Dict[str, Any]] = None,
+        opacity: float = 1.0,
+        visible: bool = True,
+        fit_bounds: bool = False,
+        source_type: str = "vector",
+        **kwargs,
+    ) -> None:
+        """Add a PMTiles layer for efficient vector or raster tile serving.
+
+        PMTiles is a single-file archive format for pyramids of map tiles.
+        It enables efficient web-native map serving without requiring a
+        separate tile server infrastructure.
+
+        Args:
+            url: URL to the PMTiles file (e.g., "https://example.com/data.pmtiles").
+            layer_id: Layer identifier. If None, auto-generated.
+            style: Layer style configuration for vector tiles.
+                For vector PMTiles, can include:
+                - type: Layer type ('fill', 'line', 'circle', 'symbol')
+                - source-layer: Source layer name from vector tiles
+                - paint properties (e.g., 'fill-color', 'line-width')
+                - layout properties (e.g., 'visibility')
+                Example: {"type": "line", "source-layer": "roads", "line-color": "#ff0000"}
+            opacity: Layer opacity (0-1).
+            visible: Whether layer is initially visible.
+            fit_bounds: Whether to fit map to layer bounds after loading.
+            source_type: Source type - "vector" for vector PMTiles, "raster" for raster PMTiles.
+            **kwargs: Additional layer options.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> # Add vector PMTiles
+            >>> m.add_pmtiles_layer(
+            ...     url="https://example.com/countries.pmtiles",
+            ...     layer_id="countries",
+            ...     style={
+            ...         "type": "fill",
+            ...         "source-layer": "countries",
+            ...         "fill-color": "#3388ff",
+            ...         "fill-opacity": 0.6
+            ...     }
+            ... )
+            >>> # Add raster PMTiles
+            >>> m.add_pmtiles_layer(
+            ...     url="https://example.com/satellite.pmtiles",
+            ...     layer_id="satellite",
+            ...     source_type="raster",
+            ...     opacity=0.8
+            ... )
+        """
+        layer_id = layer_id or f"pmtiles-{len(self._layers)}"
+
+        self.call_js_method(
+            "addPMTilesLayer",
+            url=url,
+            id=layer_id,
+            style=style or {},
+            opacity=opacity,
+            visible=visible,
+            fitBounds=fit_bounds,
+            sourceType=source_type,
+            name=layer_id,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "pmtiles",
+                "url": url,
+                "source_type": source_type,
+            },
+        }
+
+    def remove_pmtiles_layer(self, layer_id: str) -> None:
+        """Remove a PMTiles layer.
+
+        Args:
+            layer_id: Layer identifier to remove.
+        """
+        if layer_id in self._layers:
+            layers = dict(self._layers)
+            del layers[layer_id]
+            self._layers = layers
+        self.call_js_method("removePMTilesLayer", layer_id)
 
     # -------------------------------------------------------------------------
     # Arc Layer (deck.gl)
@@ -1129,6 +1345,151 @@ class MapLibreMap(MapWidget):
             **self._controls,
             "layer-control": {"layers": layers, "position": position},
         }
+
+    def add_legend(
+        self,
+        title: str,
+        labels: List[str],
+        colors: List[str],
+        position: str = "bottom-right",
+        opacity: float = 1.0,
+        legend_id: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Add a floating legend control to the map.
+
+        Creates a custom legend control with colored boxes and labels that
+        floats over the map in the specified position.
+
+        Args:
+            title: Legend title text
+            labels: List of label strings for each legend item
+            colors: List of hex color strings (e.g., ['#ff0000', '#00ff00', '#0000ff'])
+            position: Legend position ('top-left', 'top-right', 'bottom-left', 'bottom-right')
+            opacity: Legend background opacity (0-1)
+            legend_id: Custom legend identifier (auto-generated if None)
+            **kwargs: Additional legend styling options
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> m.add_legend(
+            ...     title="Land Cover",
+            ...     labels=["Forest", "Water", "Urban"],
+            ...     colors=["#228B22", "#0000FF", "#808080"],
+            ...     position="top-left"
+            ... )
+        """
+        if len(labels) != len(colors):
+            raise ValueError("Number of labels must match number of colors")
+
+        # Validate position
+        valid_positions = ["top-left", "top-right", "bottom-left", "bottom-right"]
+        if position not in valid_positions:
+            raise ValueError(f"Position must be one of: {', '.join(valid_positions)}")
+
+        # Validate colors (basic hex color check)
+        for i, color in enumerate(colors):
+            if not isinstance(color, str) or not color.startswith('#'):
+                raise ValueError(f"Color at index {i} must be a hex color string (e.g., '#ff0000')")
+
+        legend_id = legend_id or f"legend-{len([k for k in self._controls.keys() if k.startswith('legend')])}"
+
+        # Prepare legend data
+        legend_items = []
+        for label, color in zip(labels, colors):
+            legend_items.append({
+                "label": label,
+                "color": color,
+            })
+
+        # Call JavaScript method to add legend
+        self.call_js_method(
+            "addLegend",
+            id=legend_id,
+            title=title,
+            items=legend_items,
+            position=position,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        # Track legend control
+        self._controls = {
+            **self._controls,
+            legend_id: {
+                "type": "legend",
+                "title": title,
+                "labels": labels,
+                "colors": colors,
+                "position": position,
+                "opacity": opacity,
+            },
+        }
+
+    def remove_legend(self, legend_id: Optional[str] = None) -> None:
+        """Remove a legend control from the map.
+
+        Args:
+            legend_id: Legend identifier to remove. If None, removes all legends.
+        """
+        if legend_id is None:
+            # Remove all legends
+            legend_keys = [k for k in self._controls.keys() if k.startswith('legend')]
+            for key in legend_keys:
+                self.call_js_method("removeLegend", key)
+                del self._controls[key]
+        else:
+            if legend_id in self._controls:
+                del self._controls[legend_id]
+            self.call_js_method("removeLegend", legend_id)
+
+    def update_legend(
+        self,
+        legend_id: str,
+        title: Optional[str] = None,
+        labels: Optional[List[str]] = None,
+        colors: Optional[List[str]] = None,
+        opacity: Optional[float] = None,
+        **kwargs,
+    ) -> None:
+        """Update an existing legend's properties.
+
+        Args:
+            legend_id: Legend identifier to update
+            title: New title (if provided)
+            labels: New labels list (if provided)
+            colors: New colors list (if provided)
+            opacity: New opacity (if provided)
+            **kwargs: Additional properties to update
+        """
+        if legend_id not in self._controls:
+            raise ValueError(f"Legend '{legend_id}' not found")
+
+        update_params = {"id": legend_id}
+        
+        if title is not None:
+            update_params["title"] = title
+            self._controls[legend_id]["title"] = title
+            
+        if labels is not None and colors is not None:
+            if len(labels) != len(colors):
+                raise ValueError("Number of labels must match number of colors")
+            
+            legend_items = [{"label": label, "color": color} for label, color in zip(labels, colors)]
+            update_params["items"] = legend_items
+            self._controls[legend_id]["labels"] = labels
+            self._controls[legend_id]["colors"] = colors
+            
+        elif labels is not None or colors is not None:
+            raise ValueError("Both labels and colors must be provided together")
+            
+        if opacity is not None:
+            update_params["opacity"] = opacity
+            self._controls[legend_id]["opacity"] = opacity
+
+        update_params.update(kwargs)
+        self.call_js_method("updateLegend", **update_params)
 
     # -------------------------------------------------------------------------
     # Drawing
