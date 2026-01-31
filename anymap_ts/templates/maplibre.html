@@ -290,10 +290,10 @@
                     const opacity = kwargs.opacity || 1.0;
                     const visible = kwargs.visible !== false;
                     const style = kwargs.style || {};
-                    
+
                     // Prepare PMTiles URL with protocol
                     const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
-                    
+
                     // Add source
                     const sourceId = `${layerId}-source`;
                     if (!map.getSource(sourceId)) {
@@ -302,7 +302,7 @@
                             url: pmtilesUrl
                         });
                     }
-                    
+
                     // Add layer(s)
                     if (!map.getLayer(layerId)) {
                         if (sourceType === 'vector') {
@@ -321,7 +321,7 @@
                                     ...style
                                 }
                             };
-                            
+
                             if (style.type) {
                                 layerStyle.type = style.type;
                                 if (style.type === 'line') {
@@ -340,11 +340,11 @@
                                     };
                                 }
                             }
-                            
+
                             if (style['source-layer']) {
                                 layerStyle['source-layer'] = style['source-layer'];
                             }
-                            
+
                             map.addLayer(layerStyle);
                         } else {
                             // For raster PMTiles
@@ -360,20 +360,20 @@
                                 }
                             });
                         }
-                        
-                        addedLayers.push({ 
-                            id: layerId, 
-                            name: kwargs.name || layerId, 
+
+                        addedLayers.push({
+                            id: layerId,
+                            name: kwargs.name || layerId,
                             type: sourceType === 'vector' ? (style.type || 'fill') : 'raster'
                         });
                     }
-                    
+
                     // Fit bounds if requested
                     if (kwargs.fitBounds) {
                         // For PMTiles, we could try to get metadata and fit to bounds
                         // This is optional and complex, so we'll skip for now
                     }
-                    
+
                     break;
                 }
 

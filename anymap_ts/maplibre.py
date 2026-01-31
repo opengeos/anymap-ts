@@ -383,7 +383,7 @@ class MapLibreMap(MapWidget):
 
         Args:
             url: URL to a STAC item JSON
-            item: A pystac Item object 
+            item: A pystac Item object
             assets: List of asset names/bands to visualize
             colormap: Colormap name (e.g., 'viridis', 'plasma', 'inferno')
             rescale: Min/max values for rescaling as [min, max]
@@ -410,7 +410,7 @@ class MapLibreMap(MapWidget):
         """
         if url is None and item is None:
             raise ValueError("Either 'url' or 'item' must be provided")
-        
+
         if url is not None and item is not None:
             raise ValueError("Provide either 'url' or 'item', not both")
 
@@ -418,19 +418,23 @@ class MapLibreMap(MapWidget):
         if item is not None:
             try:
                 # Check if it's a pystac Item
-                if hasattr(item, 'to_dict') and hasattr(item, 'self_href'):
+                if hasattr(item, "to_dict") and hasattr(item, "self_href"):
                     stac_url = item.self_href
                     if not stac_url:
                         # Try to get URL from item properties if no self_href
-                        if hasattr(item, 'links'):
+                        if hasattr(item, "links"):
                             for link in item.links:
-                                if link.rel == 'self':
+                                if link.rel == "self":
                                     stac_url = link.href
                                     break
                         if not stac_url:
-                            raise ValueError("STAC item must have a self_href or self link for tile generation")
+                            raise ValueError(
+                                "STAC item must have a self_href or self link for tile generation"
+                            )
                 else:
-                    raise ValueError("Item must be a pystac Item object with to_dict() and self_href attributes")
+                    raise ValueError(
+                        "Item must be a pystac Item object with to_dict() and self_href attributes"
+                    )
             except Exception as e:
                 raise ValueError(f"Invalid STAC item: {e}")
         else:
@@ -438,7 +442,7 @@ class MapLibreMap(MapWidget):
 
         # Build TiTiler tile URL
         tile_params = {"url": stac_url}
-        
+
         if assets:
             tile_params["assets"] = ",".join(assets)
         if colormap:
@@ -465,12 +469,14 @@ class MapLibreMap(MapWidget):
 
         # Update layer info to mark as STAC
         if layer_name in self._layers:
-            self._layers[layer_name].update({
-                "stac_url": stac_url,
-                "stac_assets": assets,
-                "colormap": colormap,
-                "rescale": rescale,
-            })
+            self._layers[layer_name].update(
+                {
+                    "stac_url": stac_url,
+                    "stac_assets": assets,
+                    "colormap": colormap,
+                    "rescale": rescale,
+                }
+            )
 
         # Try to fit bounds if requested and we have an item object
         if fit_bounds and item is not None:
@@ -1390,18 +1396,25 @@ class MapLibreMap(MapWidget):
 
         # Validate colors (basic hex color check)
         for i, color in enumerate(colors):
-            if not isinstance(color, str) or not color.startswith('#'):
-                raise ValueError(f"Color at index {i} must be a hex color string (e.g., '#ff0000')")
+            if not isinstance(color, str) or not color.startswith("#"):
+                raise ValueError(
+                    f"Color at index {i} must be a hex color string (e.g., '#ff0000')"
+                )
 
-        legend_id = legend_id or f"legend-{len([k for k in self._controls.keys() if k.startswith('legend')])}"
+        legend_id = (
+            legend_id
+            or f"legend-{len([k for k in self._controls.keys() if k.startswith('legend')])}"
+        )
 
         # Prepare legend data
         legend_items = []
         for label, color in zip(labels, colors):
-            legend_items.append({
-                "label": label,
-                "color": color,
-            })
+            legend_items.append(
+                {
+                    "label": label,
+                    "color": color,
+                }
+            )
 
         # Call JavaScript method to add legend
         self.call_js_method(
@@ -1435,7 +1448,7 @@ class MapLibreMap(MapWidget):
         """
         if legend_id is None:
             # Remove all legends
-            legend_keys = [k for k in self._controls.keys() if k.startswith('legend')]
+            legend_keys = [k for k in self._controls.keys() if k.startswith("legend")]
             for key in legend_keys:
                 self.call_js_method("removeLegend", key)
                 del self._controls[key]
@@ -1467,23 +1480,25 @@ class MapLibreMap(MapWidget):
             raise ValueError(f"Legend '{legend_id}' not found")
 
         update_params = {"id": legend_id}
-        
+
         if title is not None:
             update_params["title"] = title
             self._controls[legend_id]["title"] = title
-            
+
         if labels is not None and colors is not None:
             if len(labels) != len(colors):
                 raise ValueError("Number of labels must match number of colors")
-            
-            legend_items = [{"label": label, "color": color} for label, color in zip(labels, colors)]
+
+            legend_items = [
+                {"label": label, "color": color} for label, color in zip(labels, colors)
+            ]
             update_params["items"] = legend_items
             self._controls[legend_id]["labels"] = labels
             self._controls[legend_id]["colors"] = colors
-            
+
         elif labels is not None or colors is not None:
             raise ValueError("Both labels and colors must be provided together")
-            
+
         if opacity is not None:
             update_params["opacity"] = opacity
             self._controls[legend_id]["opacity"] = opacity
