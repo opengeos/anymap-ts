@@ -25,7 +25,9 @@ def main():
     # Test 2: COG Control
     print("\n2. Testing COG Control...")
     m2 = MapLibreMap(center=[-120, 37], zoom=6)
-    m2.add_cog_control(position="top-right", collapsed=False, default_colormap="viridis")
+    m2.add_cog_control(
+        position="top-right", collapsed=False, default_colormap="viridis"
+    )
     print("   ✓ COG control added successfully")
 
     # Test 3: Zarr Control
