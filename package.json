@@ -48,7 +48,7 @@
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.9.0",
     "maplibre-gl": ">=5.14.0",
-    "maplibre-gl-components": "file:../maplibre-gl-components",
+    "maplibre-gl-components": "^0.8.1",
     "maplibre-gl-geo-editor": "^0.3.2",
     "maplibre-gl-layer-control": "^0.7.2",
     "maplibre-gl-lidar": "^0.3.1",

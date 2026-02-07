@@ -63,10 +63,6 @@ import {
   CogLayerControl,
   ZarrLayerControl,
   AddVectorControl,
-  PMTilesLayerAdapter,
-  CogLayerAdapter as MglcCogLayerAdapter,
-  ZarrLayerAdapter as MglcZarrLayerAdapter,
-  AddVectorAdapter,
 } from 'maplibre-gl-components';
 import 'maplibre-gl-components/style.css';
 
@@ -1949,12 +1945,19 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const defaultUrl = kwargs.defaultUrl as string || '';
     const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
 
+    // Remove existing control if present
+    const existingControl = this.controlsMap.get('pmtiles-control');
+    if (existingControl) {
+      this.map.removeControl(existingControl);
+      this.controlsMap.delete('pmtiles-control');
+    }
+
     // Create PMTiles control
     this.pmtilesLayerControl = new PMTilesLayerControl({
       collapsed,
       defaultUrl,
       loadDefaultUrl,
-      defaultOpacity: kwargs.defaultOpacity as number || 1,
+      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
       defaultFillColor: kwargs.defaultFillColor as string || 'steelblue',
       defaultLineColor: kwargs.defaultLineColor as string || '#333',
       defaultPickable: kwargs.defaultPickable !== false,
@@ -1965,12 +1968,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Set up event listeners
     this.pmtilesLayerControl.on('layeradd', (event) => {
-      console.log('PMTiles layer added:', event.url);
+      console.debug('PMTiles layer added:', event.url);
       this.sendEvent('pmtiles_layer_add', { url: event.url, layerId: event.layerId });
     });
 
     this.pmtilesLayerControl.on('layerremove', (event) => {
-      console.log('PMTiles layer removed:', event.layerId);
+      console.debug('PMTiles layer removed:', event.layerId);
       this.sendEvent('pmtiles_layer_remove', { layerId: event.layerId });
     });
 
@@ -1988,16 +1991,23 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const defaultUrl = kwargs.defaultUrl as string || '';
     const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
 
+    // Remove existing control if present
+    const existingControl = this.controlsMap.get('cog-control');
+    if (existingControl) {
+      this.map.removeControl(existingControl);
+      this.controlsMap.delete('cog-control');
+    }
+
     // Create COG control
     this.cogLayerUiControl = new CogLayerControl({
       collapsed,
       defaultUrl,
       loadDefaultUrl,
-      defaultOpacity: kwargs.defaultOpacity as number || 1,
+      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
       defaultColormap: kwargs.defaultColormap as string || 'viridis',
       defaultBands: kwargs.defaultBands as string || '1',
-      defaultRescaleMin: kwargs.defaultRescaleMin as number || 0,
-      defaultRescaleMax: kwargs.defaultRescaleMax as number || 255,
+      defaultRescaleMin: (kwargs.defaultRescaleMin as number) ?? 0,
+      defaultRescaleMax: (kwargs.defaultRescaleMax as number) ?? 255,
     });
 
     this.map.addControl(this.cogLayerUiControl as unknown as maplibregl.IControl, position);
@@ -2005,12 +2015,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Set up event listeners
     this.cogLayerUiControl.on('layeradd', (event) => {
-      console.log('COG layer added:', event.url);
+      console.debug('COG layer added:', event.url);
       this.sendEvent('cog_layer_add', { url: event.url, layerId: event.layerId });
     });
 
     this.cogLayerUiControl.on('layerremove', (event) => {
-      console.log('COG layer removed:', event.layerId);
+      console.debug('COG layer removed:', event.layerId);
       this.sendEvent('cog_layer_remove', { layerId: event.layerId });
     });
 
@@ -2028,12 +2038,19 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const defaultUrl = kwargs.defaultUrl as string || '';
     const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
 
+    // Remove existing control if present
+    const existingControl = this.controlsMap.get('zarr-control');
+    if (existingControl) {
+      this.map.removeControl(existingControl);
+      this.controlsMap.delete('zarr-control');
+    }
+
     // Create Zarr control
     this.zarrLayerUiControl = new ZarrLayerControl({
       collapsed,
       defaultUrl,
       loadDefaultUrl,
-      defaultOpacity: kwargs.defaultOpacity as number || 1,
+      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
       defaultVariable: kwargs.defaultVariable as string || '',
       defaultClim: kwargs.defaultClim as [number, number] || [0, 1],
     });
@@ -2043,12 +2060,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Set up event listeners
     this.zarrLayerUiControl.on('layeradd', (event) => {
-      console.log('Zarr layer added:', event.url);
+      console.debug('Zarr layer added:', event.url);
       this.sendEvent('zarr_layer_add', { url: event.url, layerId: event.layerId });
     });
 
     this.zarrLayerUiControl.on('layerremove', (event) => {
-      console.log('Zarr layer removed:', event.layerId);
+      console.debug('Zarr layer removed:', event.layerId);
       this.sendEvent('zarr_layer_remove', { layerId: event.layerId });
     });
 
@@ -2066,12 +2083,19 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const defaultUrl = kwargs.defaultUrl as string || '';
     const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
 
+    // Remove existing control if present
+    const existingControl = this.controlsMap.get('vector-control');
+    if (existingControl) {
+      this.map.removeControl(existingControl);
+      this.controlsMap.delete('vector-control');
+    }
+
     // Create AddVector control
     this.addVectorControl = new AddVectorControl({
       collapsed,
       defaultUrl,
       loadDefaultUrl,
-      defaultOpacity: kwargs.defaultOpacity as number || 1,
+      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
       defaultFillColor: kwargs.defaultFillColor as string || '#3388ff',
       defaultStrokeColor: kwargs.defaultStrokeColor as string || '#3388ff',
       fitBounds: kwargs.fitBounds !== false,
@@ -2082,12 +2106,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Set up event listeners
     this.addVectorControl.on('layeradd', (event) => {
-      console.log('Vector layer added:', event.url);
+      console.debug('Vector layer added:', event.url);
       this.sendEvent('vector_layer_add', { url: event.url, layerId: event.layerId });
     });
 
     this.addVectorControl.on('layerremove', (event) => {
-      console.log('Vector layer removed:', event.layerId);
+      console.debug('Vector layer removed:', event.layerId);
       this.sendEvent('vector_layer_remove', { layerId: event.layerId });
     });
 
