@@ -35,6 +35,7 @@
     "@deck.gl/geo-layers": "^9.2.5",
     "@deck.gl/layers": "^9.0.0",
     "@deck.gl/mapbox": "^9.0.0",
+    "@deck.gl/mesh-layers": "^9.2.6",
     "@developmentseed/deck.gl-geotiff": "^0.1.0",
     "@geoman-io/maplibre-geoman-free": "^0.5.5",
     "@loaders.gl/core": "^4.3.4",
@@ -50,7 +51,8 @@
     "maplibre-gl-geo-editor": "^0.3.2",
     "maplibre-gl-layer-control": "^0.7.2",
     "maplibre-gl-lidar": "^0.3.1",
-    "ol": "^10.0.0"
+    "ol": "^10.7.0",
+    "pmtiles": "^4.4.0"
   },
   "devDependencies": {
     "@anywidget/types": "^0.2.0",

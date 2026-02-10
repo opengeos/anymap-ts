@@ -330,6 +330,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('setLidarColorScheme', this.handleSetLidarColorScheme.bind(this));
     this.registerMethod('setLidarPointSize', this.handleSetLidarPointSize.bind(this));
     this.registerMethod('setLidarOpacity', this.handleSetLidarOpacity.bind(this));
+
+    // PMTiles layers
+    this.registerMethod('addPMTilesLayer', this.handleAddPMTilesLayer.bind(this));
+    this.registerMethod('removePMTilesLayer', this.handleRemovePMTilesLayer.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -1934,6 +1938,115 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (this.map && this.isMapReady) {
       const style = this.model.get('style');
       this.map.setStyle(typeof style === 'string' ? style : (style as maplibregl.StyleSpecification));
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // PMTiles layer handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddPMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const url = kwargs.url as string;
+    const layerId = kwargs.id as string;
+    const sourceType = (kwargs.sourceType as string) || 'vector';
+    const opacity = (kwargs.opacity as number) ?? 1.0;
+    const visible = kwargs.visible !== false;
+    const style = (kwargs.style as Record<string, unknown>) || {};
+
+    // Ensure pmtiles:// protocol prefix
+    const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
+
+    try {
+      // Add source
+      const sourceId = `${layerId}-source`;
+      if (!this.map.getSource(sourceId)) {
+        this.map.addSource(sourceId, {
+          type: sourceType as 'vector' | 'raster',
+          url: pmtilesUrl,
+        });
+      }
+
+      // Add layer
+      if (!this.map.getLayer(layerId)) {
+        if (sourceType === 'vector') {
+          const layerType = (style.type as string) || 'fill';
+
+          // Build paint properties based on layer type
+          let defaultPaint: Record<string, unknown> = {};
+          if (layerType === 'fill') {
+            defaultPaint = {
+              'fill-color': '#3388ff',
+              'fill-opacity': opacity,
+            };
+          } else if (layerType === 'line') {
+            defaultPaint = {
+              'line-color': '#3388ff',
+              'line-width': 2,
+              'line-opacity': opacity,
+            };
+          } else if (layerType === 'circle') {
+            defaultPaint = {
+              'circle-color': '#3388ff',
+              'circle-radius': 5,
+              'circle-opacity': opacity,
+            };
+          }
+
+          // Extract paint properties from style (everything except type and source-layer)
+          const paintFromStyle: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(style)) {
+            if (key !== 'type' && key !== 'source-layer') {
+              paintFromStyle[key] = value;
+            }
+          }
+
+          const layerDef: Record<string, unknown> = {
+            id: layerId,
+            type: layerType,
+            source: sourceId,
+            layout: {
+              visibility: visible ? 'visible' : 'none',
+            },
+            paint: { ...defaultPaint, ...paintFromStyle },
+          };
+
+          if (style['source-layer']) {
+            layerDef['source-layer'] = style['source-layer'];
+          }
+
+          this.map.addLayer(layerDef as maplibregl.AddLayerObject);
+        } else {
+          // Raster PMTiles
+          this.map.addLayer({
+            id: layerId,
+            type: 'raster',
+            source: sourceId,
+            paint: {
+              'raster-opacity': opacity,
+            },
+            layout: {
+              visibility: visible ? 'visible' : 'none',
+            },
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`[anymap-ts] Error adding PMTiles layer "${layerId}":`, error);
+    }
+  }
+
+  private handleRemovePMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const [layerId] = args as [string];
+    const sourceId = `${layerId}-source`;
+
+    if (this.map.getLayer(layerId)) {
+      this.map.removeLayer(layerId);
+    }
+    if (this.map.getSource(sourceId)) {
+      this.map.removeSource(sourceId);
     }
   }
 

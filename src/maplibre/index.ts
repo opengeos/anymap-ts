@@ -4,6 +4,8 @@
 
 import { MapLibreRenderer } from './MapLibreRenderer';
 import type { AnyModel } from '@anywidget/types';
+import { addProtocol } from 'maplibre-gl';
+import { Protocol } from 'pmtiles';
 
 // Import MapLibre CSS
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -14,6 +16,10 @@ import 'maplibre-gl-geo-editor/style.css';
 import 'maplibre-gl-layer-control/style.css';
 // Import LiDAR Control CSS
 import 'maplibre-gl-lidar/style.css';
+
+// Register PMTiles protocol globally (must be called once before any map is created)
+const pmtilesProtocol = new Protocol();
+addProtocol('pmtiles', pmtilesProtocol.tile);
 
 /**
  * Store renderer reference on element for cleanup and multi-cell support.
