@@ -1387,6 +1387,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/ui_controls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ui controls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3376,6 +3404,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_cog_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_cog_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.add_cog_layer" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3464,6 +3503,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_pmtiles_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_pmtiles_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.add_point_cloud_layer" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3501,6 +3551,28 @@
     <span class="md-ellipsis">
       
         add_vector()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_vector_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_vector_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_zarr_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_zarr_control()
       
     </span>
   </a>
@@ -6222,6 +6294,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_cog_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_cog_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.add_cog_layer" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6310,6 +6393,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_pmtiles_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_pmtiles_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.add_point_cloud_layer" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6347,6 +6441,28 @@
     <span class="md-ellipsis">
       
         add_vector()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_vector_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_vector_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_zarr_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_zarr_control()
       
     </span>
   </a>
@@ -25529,8 +25645,10 @@ full bidirectional communication through anywidget.</p>
         <span class="n">center</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
         <span class="n">zoom</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
         <span class="n">width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;100%&quot;</span><span class="p">,</span>
-        <span class="n">height</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;600px&quot;</span><span class="p">,</span>
-        <span class="n">style</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;https://demotiles.maplibre.org/style.json&quot;</span><span class="p">,</span>
+        <span class="n">height</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;700px&quot;</span><span class="p">,</span>
+        <span class="n">style</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;https://basemaps.cartocdn.com/gl/positron-gl-style/style.json&quot;</span><span class="p">,</span>
         <span class="n">bearing</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">max_pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">85.0</span><span class="p">,</span>
@@ -25543,8 +25661,8 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">            center: Map center as (longitude, latitude).</span>
 <span class="sd">            zoom: Initial zoom level.</span>
 <span class="sd">            width: Map width as CSS string.</span>
-<span class="sd">            height: Map height as CSS string.</span>
-<span class="sd">            style: MapLibre style URL or style object.</span>
+<span class="sd">            height: Map height as CSS string. Default is &quot;700px&quot;.</span>
+<span class="sd">            style: MapLibre style URL or style object. Default is &quot;https://basemaps.cartocdn.com/gl/positron-gl-style/style.json&quot;.</span>
 <span class="sd">            bearing: Map bearing in degrees.</span>
 <span class="sd">            pitch: Map pitch in degrees.</span>
 <span class="sd">            max_pitch: Maximum pitch angle in degrees (default: 85).</span>
@@ -26444,6 +26562,222 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;setLidarOpacity&quot;</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">)</span>
 
+    <span class="c1"># -------------------------------------------------------------------------</span>
+    <span class="c1"># maplibre-gl-components UI Controls</span>
+    <span class="c1"># -------------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_pmtiles_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">default_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">load_default_url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">default_opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">default_fill_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;steelblue&quot;</span><span class="p">,</span>
+        <span class="n">default_line_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#333&quot;</span><span class="p">,</span>
+        <span class="n">default_pickable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a PMTiles layer control for loading PMTiles files via UI.</span>
+
+<span class="sd">        This provides an interactive panel for users to enter PMTiles URLs</span>
+<span class="sd">        and visualize vector or raster tile data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;, &#39;bottom-right&#39;).</span>
+<span class="sd">            collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">            default_url: Default PMTiles URL to pre-fill.</span>
+<span class="sd">            load_default_url: Whether to auto-load the default URL.</span>
+<span class="sd">            default_opacity: Default layer opacity (0-1).</span>
+<span class="sd">            default_fill_color: Default fill color for vector polygons.</span>
+<span class="sd">            default_line_color: Default line color for vector lines.</span>
+<span class="sd">            default_pickable: Whether features are clickable by default.</span>
+<span class="sd">            **kwargs: Additional control options.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">            &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">            &gt;&gt;&gt; m.add_pmtiles_control(</span>
+<span class="sd">            ...     default_url=&quot;https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles&quot;,</span>
+<span class="sd">            ...     load_default_url=True</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+            <span class="s2">&quot;addPMTilesControl&quot;</span><span class="p">,</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+            <span class="n">collapsed</span><span class="o">=</span><span class="n">collapsed</span><span class="p">,</span>
+            <span class="n">defaultUrl</span><span class="o">=</span><span class="n">default_url</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">loadDefaultUrl</span><span class="o">=</span><span class="n">load_default_url</span><span class="p">,</span>
+            <span class="n">defaultOpacity</span><span class="o">=</span><span class="n">default_opacity</span><span class="p">,</span>
+            <span class="n">defaultFillColor</span><span class="o">=</span><span class="n">default_fill_color</span><span class="p">,</span>
+            <span class="n">defaultLineColor</span><span class="o">=</span><span class="n">default_line_color</span><span class="p">,</span>
+            <span class="n">defaultPickable</span><span class="o">=</span><span class="n">default_pickable</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+            <span class="s2">&quot;pmtiles-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_cog_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">default_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">load_default_url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">default_opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">default_colormap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
+        <span class="n">default_bands</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+        <span class="n">default_rescale_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">default_rescale_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">255</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a COG layer control for loading Cloud Optimized GeoTIFFs via UI.</span>
+
+<span class="sd">        This provides an interactive panel for users to enter COG URLs</span>
+<span class="sd">        and configure visualization parameters like colormap and rescaling.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;, &#39;bottom-right&#39;).</span>
+<span class="sd">            collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">            default_url: Default COG URL to pre-fill.</span>
+<span class="sd">            load_default_url: Whether to auto-load the default URL.</span>
+<span class="sd">            default_opacity: Default layer opacity (0-1).</span>
+<span class="sd">            default_colormap: Default colormap name.</span>
+<span class="sd">            default_bands: Default bands (e.g., &#39;1&#39; or &#39;1,2,3&#39;).</span>
+<span class="sd">            default_rescale_min: Default minimum value for rescaling.</span>
+<span class="sd">            default_rescale_max: Default maximum value for rescaling.</span>
+<span class="sd">            **kwargs: Additional control options.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">            &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">            &gt;&gt;&gt; m.add_cog_control(</span>
+<span class="sd">            ...     default_url=&quot;https://example.com/cog.tif&quot;,</span>
+<span class="sd">            ...     default_colormap=&quot;terrain&quot;</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+            <span class="s2">&quot;addCogControl&quot;</span><span class="p">,</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+            <span class="n">collapsed</span><span class="o">=</span><span class="n">collapsed</span><span class="p">,</span>
+            <span class="n">defaultUrl</span><span class="o">=</span><span class="n">default_url</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">loadDefaultUrl</span><span class="o">=</span><span class="n">load_default_url</span><span class="p">,</span>
+            <span class="n">defaultOpacity</span><span class="o">=</span><span class="n">default_opacity</span><span class="p">,</span>
+            <span class="n">defaultColormap</span><span class="o">=</span><span class="n">default_colormap</span><span class="p">,</span>
+            <span class="n">defaultBands</span><span class="o">=</span><span class="n">default_bands</span><span class="p">,</span>
+            <span class="n">defaultRescaleMin</span><span class="o">=</span><span class="n">default_rescale_min</span><span class="p">,</span>
+            <span class="n">defaultRescaleMax</span><span class="o">=</span><span class="n">default_rescale_max</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+            <span class="s2">&quot;cog-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_zarr_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">default_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">load_default_url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">default_opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">default_variable</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">default_clim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a Zarr layer control for loading Zarr datasets via UI.</span>
+
+<span class="sd">        This provides an interactive panel for users to enter Zarr URLs</span>
+<span class="sd">        and configure visualization parameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;, &#39;bottom-right&#39;).</span>
+<span class="sd">            collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">            default_url: Default Zarr URL to pre-fill.</span>
+<span class="sd">            load_default_url: Whether to auto-load the default URL.</span>
+<span class="sd">            default_opacity: Default layer opacity (0-1).</span>
+<span class="sd">            default_variable: Default variable name.</span>
+<span class="sd">            default_clim: Default color limits (min, max).</span>
+<span class="sd">            **kwargs: Additional control options.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">            &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">            &gt;&gt;&gt; m.add_zarr_control(</span>
+<span class="sd">            ...     default_url=&quot;https://example.com/data.zarr&quot;,</span>
+<span class="sd">            ...     default_variable=&quot;temperature&quot;</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+            <span class="s2">&quot;addZarrControl&quot;</span><span class="p">,</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+            <span class="n">collapsed</span><span class="o">=</span><span class="n">collapsed</span><span class="p">,</span>
+            <span class="n">defaultUrl</span><span class="o">=</span><span class="n">default_url</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">loadDefaultUrl</span><span class="o">=</span><span class="n">load_default_url</span><span class="p">,</span>
+            <span class="n">defaultOpacity</span><span class="o">=</span><span class="n">default_opacity</span><span class="p">,</span>
+            <span class="n">defaultVariable</span><span class="o">=</span><span class="n">default_variable</span><span class="p">,</span>
+            <span class="n">defaultClim</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">default_clim</span><span class="p">)</span> <span class="k">if</span> <span class="n">default_clim</span> <span class="k">else</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+            <span class="s2">&quot;zarr-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_vector_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">default_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">load_default_url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">default_opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">default_fill_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
+        <span class="n">default_stroke_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
+        <span class="n">fit_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a vector layer control for loading vector datasets from URLs.</span>
+
+<span class="sd">        This provides an interactive panel for users to enter URLs to</span>
+<span class="sd">        GeoJSON, GeoParquet, or FlatGeobuf datasets.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;, &#39;bottom-right&#39;).</span>
+<span class="sd">            collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">            default_url: Default vector URL to pre-fill.</span>
+<span class="sd">            load_default_url: Whether to auto-load the default URL.</span>
+<span class="sd">            default_opacity: Default layer opacity (0-1).</span>
+<span class="sd">            default_fill_color: Default fill color for polygons.</span>
+<span class="sd">            default_stroke_color: Default stroke color for lines/outlines.</span>
+<span class="sd">            fit_bounds: Whether to fit map to loaded data bounds.</span>
+<span class="sd">            **kwargs: Additional control options.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">            &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">            &gt;&gt;&gt; m.add_vector_control(</span>
+<span class="sd">            ...     default_url=&quot;https://example.com/data.geojson&quot;,</span>
+<span class="sd">            ...     default_fill_color=&quot;#ff0000&quot;</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+            <span class="s2">&quot;addVectorControl&quot;</span><span class="p">,</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+            <span class="n">collapsed</span><span class="o">=</span><span class="n">collapsed</span><span class="p">,</span>
+            <span class="n">defaultUrl</span><span class="o">=</span><span class="n">default_url</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">loadDefaultUrl</span><span class="o">=</span><span class="n">load_default_url</span><span class="p">,</span>
+            <span class="n">defaultOpacity</span><span class="o">=</span><span class="n">default_opacity</span><span class="p">,</span>
+            <span class="n">defaultFillColor</span><span class="o">=</span><span class="n">default_fill_color</span><span class="p">,</span>
+            <span class="n">defaultStrokeColor</span><span class="o">=</span><span class="n">default_stroke_color</span><span class="p">,</span>
+            <span class="n">fitBounds</span><span class="o">=</span><span class="n">fit_bounds</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+            <span class="s2">&quot;vector-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+        <span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_process_deck_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process data for deck.gl layers.</span>
 
@@ -26963,7 +27297,7 @@ full bidirectional communication through anywidget.</p>
 
 
 <h4 id="anymap_ts.maplibre.MapLibreMap.__init__" class="doc doc-heading">
-<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">zoom</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;600px&#39;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">&#39;https://demotiles.maplibre.org/style.json&#39;</span><span class="p">,</span> <span class="n">bearing</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">pitch</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_pitch</span><span class="o">=</span><span class="mf">85.0</span><span class="p">,</span> <span class="n">controls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">zoom</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;700px&#39;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">&#39;https://basemaps.cartocdn.com/gl/positron-gl-style/style.json&#39;</span><span class="p">,</span> <span class="n">bearing</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">pitch</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_pitch</span><span class="o">=</span><span class="mf">85.0</span><span class="p">,</span> <span class="n">controls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
   <span class="doc doc-properties">
       <small class="doc doc-property doc-property-special"><code>special</code></small>
@@ -27007,14 +27341,14 @@ full bidirectional communication through anywidget.</p>
       <tr>
         <td><code>height</code></td>
         <td><code>str</code></td>
-        <td><p>Map height as CSS string.</p></td>
-        <td><code>&#39;600px&#39;</code></td>
+        <td><p>Map height as CSS string. Default is "700px".</p></td>
+        <td><code>&#39;700px&#39;</code></td>
       </tr>
       <tr>
         <td><code>style</code></td>
         <td><code>Union[str, Dict]</code></td>
-        <td><p>MapLibre style URL or style object.</p></td>
-        <td><code>&#39;https://demotiles.maplibre.org/style.json&#39;</code></td>
+        <td><p>MapLibre style URL or style object. Default is "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json".</p></td>
+        <td><code>&#39;https://basemaps.cartocdn.com/gl/positron-gl-style/style.json&#39;</code></td>
       </tr>
       <tr>
         <td><code>bearing</code></td>
@@ -27057,8 +27391,10 @@ Use {"layer-control": {"collapsed": True}} for custom options.</p></td>
     <span class="n">center</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
     <span class="n">zoom</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
     <span class="n">width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;100%&quot;</span><span class="p">,</span>
-    <span class="n">height</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;600px&quot;</span><span class="p">,</span>
-    <span class="n">style</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;https://demotiles.maplibre.org/style.json&quot;</span><span class="p">,</span>
+    <span class="n">height</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;700px&quot;</span><span class="p">,</span>
+    <span class="n">style</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;https://basemaps.cartocdn.com/gl/positron-gl-style/style.json&quot;</span><span class="p">,</span>
     <span class="n">bearing</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="n">pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="n">max_pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">85.0</span><span class="p">,</span>
@@ -27071,8 +27407,8 @@ Use {"layer-control": {"collapsed": True}} for custom options.</p></td>
 <span class="sd">        center: Map center as (longitude, latitude).</span>
 <span class="sd">        zoom: Initial zoom level.</span>
 <span class="sd">        width: Map width as CSS string.</span>
-<span class="sd">        height: Map height as CSS string.</span>
-<span class="sd">        style: MapLibre style URL or style object.</span>
+<span class="sd">        height: Map height as CSS string. Default is &quot;700px&quot;.</span>
+<span class="sd">        style: MapLibre style URL or style object. Default is &quot;https://basemaps.cartocdn.com/gl/positron-gl-style/style.json&quot;.</span>
 <span class="sd">        bearing: Map bearing in degrees.</span>
 <span class="sd">        pitch: Map pitch in degrees.</span>
 <span class="sd">        max_pitch: Maximum pitch angle in degrees (default: 85).</span>
@@ -27407,6 +27743,169 @@ Default: [255, 136, 51, 255] (orange).</p></td>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layer_dict</span><span class="p">,</span>
             <span class="s2">&quot;Basemaps&quot;</span><span class="p">:</span> <span class="n">basemaps</span> <span class="o">+</span> <span class="p">[</span><span class="n">basemap</span><span class="p">],</span>
         <span class="p">}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="anymap_ts.maplibre.MapLibreMap.add_cog_control" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_cog_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_default_url</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default_opacity</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">default_colormap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">,</span> <span class="n">default_bands</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">default_rescale_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">default_rescale_max</span><span class="o">=</span><span class="mi">255</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.add_cog_control" class="headerlink" title="Permanent link">&para;</a></h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Add a COG layer control for loading Cloud Optimized GeoTIFFs via UI.</p>
+<p>This provides an interactive panel for users to enter COG URLs
+and configure visualization parameters like colormap and rescaling.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>position</code></td>
+        <td><code>str</code></td>
+        <td><p>Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').</p></td>
+        <td><code>&#39;top-right&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>collapsed</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the panel starts collapsed.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>default_url</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Default COG URL to pre-fill.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>load_default_url</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to auto-load the default URL.</p></td>
+        <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>default_opacity</code></td>
+        <td><code>float</code></td>
+        <td><p>Default layer opacity (0-1).</p></td>
+        <td><code>1.0</code></td>
+      </tr>
+      <tr>
+        <td><code>default_colormap</code></td>
+        <td><code>str</code></td>
+        <td><p>Default colormap name.</p></td>
+        <td><code>&#39;viridis&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>default_bands</code></td>
+        <td><code>str</code></td>
+        <td><p>Default bands (e.g., '1' or '1,2,3').</p></td>
+        <td><code>&#39;1&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>default_rescale_min</code></td>
+        <td><code>float</code></td>
+        <td><p>Default minimum value for rescaling.</p></td>
+        <td><code>0</code></td>
+      </tr>
+      <tr>
+        <td><code>default_rescale_max</code></td>
+        <td><code>float</code></td>
+        <td><p>Default maximum value for rescaling.</p></td>
+        <td><code>255</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td></td>
+        <td><p>Additional control options.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">MapLibreMap</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_cog_control</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">default_url</span><span class="o">=</span><span class="s2">&quot;https://example.com/cog.tif&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">default_colormap</span><span class="o">=</span><span class="s2">&quot;terrain&quot;</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_cog_control</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+    <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">load_default_url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">default_opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">default_colormap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
+    <span class="n">default_bands</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+    <span class="n">default_rescale_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">default_rescale_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">255</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a COG layer control for loading Cloud Optimized GeoTIFFs via UI.</span>
+
+<span class="sd">    This provides an interactive panel for users to enter COG URLs</span>
+<span class="sd">    and configure visualization parameters like colormap and rescaling.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;, &#39;bottom-right&#39;).</span>
+<span class="sd">        collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">        default_url: Default COG URL to pre-fill.</span>
+<span class="sd">        load_default_url: Whether to auto-load the default URL.</span>
+<span class="sd">        default_opacity: Default layer opacity (0-1).</span>
+<span class="sd">        default_colormap: Default colormap name.</span>
+<span class="sd">        default_bands: Default bands (e.g., &#39;1&#39; or &#39;1,2,3&#39;).</span>
+<span class="sd">        default_rescale_min: Default minimum value for rescaling.</span>
+<span class="sd">        default_rescale_max: Default maximum value for rescaling.</span>
+<span class="sd">        **kwargs: Additional control options.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">        &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">        &gt;&gt;&gt; m.add_cog_control(</span>
+<span class="sd">        ...     default_url=&quot;https://example.com/cog.tif&quot;,</span>
+<span class="sd">        ...     default_colormap=&quot;terrain&quot;</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+        <span class="s2">&quot;addCogControl&quot;</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="o">=</span><span class="n">collapsed</span><span class="p">,</span>
+        <span class="n">defaultUrl</span><span class="o">=</span><span class="n">default_url</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">loadDefaultUrl</span><span class="o">=</span><span class="n">load_default_url</span><span class="p">,</span>
+        <span class="n">defaultOpacity</span><span class="o">=</span><span class="n">default_opacity</span><span class="p">,</span>
+        <span class="n">defaultColormap</span><span class="o">=</span><span class="n">default_colormap</span><span class="p">,</span>
+        <span class="n">defaultBands</span><span class="o">=</span><span class="n">default_bands</span><span class="p">,</span>
+        <span class="n">defaultRescaleMin</span><span class="o">=</span><span class="n">default_rescale_min</span><span class="p">,</span>
+        <span class="n">defaultRescaleMax</span><span class="o">=</span><span class="n">default_rescale_max</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+        <span class="s2">&quot;cog-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+    <span class="p">}</span>
 </code></pre></div>
         </details>
     </div>
@@ -28470,6 +28969,160 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 
 
 
+<h4 id="anymap_ts.maplibre.MapLibreMap.add_pmtiles_control" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_pmtiles_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_default_url</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default_opacity</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">default_fill_color</span><span class="o">=</span><span class="s1">&#39;steelblue&#39;</span><span class="p">,</span> <span class="n">default_line_color</span><span class="o">=</span><span class="s1">&#39;#333&#39;</span><span class="p">,</span> <span class="n">default_pickable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.add_pmtiles_control" class="headerlink" title="Permanent link">&para;</a></h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Add a PMTiles layer control for loading PMTiles files via UI.</p>
+<p>This provides an interactive panel for users to enter PMTiles URLs
+and visualize vector or raster tile data.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>position</code></td>
+        <td><code>str</code></td>
+        <td><p>Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').</p></td>
+        <td><code>&#39;top-right&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>collapsed</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the panel starts collapsed.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>default_url</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Default PMTiles URL to pre-fill.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>load_default_url</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to auto-load the default URL.</p></td>
+        <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>default_opacity</code></td>
+        <td><code>float</code></td>
+        <td><p>Default layer opacity (0-1).</p></td>
+        <td><code>1.0</code></td>
+      </tr>
+      <tr>
+        <td><code>default_fill_color</code></td>
+        <td><code>str</code></td>
+        <td><p>Default fill color for vector polygons.</p></td>
+        <td><code>&#39;steelblue&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>default_line_color</code></td>
+        <td><code>str</code></td>
+        <td><p>Default line color for vector lines.</p></td>
+        <td><code>&#39;#333&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>default_pickable</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether features are clickable by default.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td></td>
+        <td><p>Additional control options.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">MapLibreMap</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_control</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">default_url</span><span class="o">=</span><span class="s2">&quot;https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">load_default_url</span><span class="o">=</span><span class="kc">True</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_pmtiles_control</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+    <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">load_default_url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">default_opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">default_fill_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;steelblue&quot;</span><span class="p">,</span>
+    <span class="n">default_line_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#333&quot;</span><span class="p">,</span>
+    <span class="n">default_pickable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a PMTiles layer control for loading PMTiles files via UI.</span>
+
+<span class="sd">    This provides an interactive panel for users to enter PMTiles URLs</span>
+<span class="sd">    and visualize vector or raster tile data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;, &#39;bottom-right&#39;).</span>
+<span class="sd">        collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">        default_url: Default PMTiles URL to pre-fill.</span>
+<span class="sd">        load_default_url: Whether to auto-load the default URL.</span>
+<span class="sd">        default_opacity: Default layer opacity (0-1).</span>
+<span class="sd">        default_fill_color: Default fill color for vector polygons.</span>
+<span class="sd">        default_line_color: Default line color for vector lines.</span>
+<span class="sd">        default_pickable: Whether features are clickable by default.</span>
+<span class="sd">        **kwargs: Additional control options.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">        &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">        &gt;&gt;&gt; m.add_pmtiles_control(</span>
+<span class="sd">        ...     default_url=&quot;https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles&quot;,</span>
+<span class="sd">        ...     load_default_url=True</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+        <span class="s2">&quot;addPMTilesControl&quot;</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="o">=</span><span class="n">collapsed</span><span class="p">,</span>
+        <span class="n">defaultUrl</span><span class="o">=</span><span class="n">default_url</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">loadDefaultUrl</span><span class="o">=</span><span class="n">load_default_url</span><span class="p">,</span>
+        <span class="n">defaultOpacity</span><span class="o">=</span><span class="n">default_opacity</span><span class="p">,</span>
+        <span class="n">defaultFillColor</span><span class="o">=</span><span class="n">default_fill_color</span><span class="p">,</span>
+        <span class="n">defaultLineColor</span><span class="o">=</span><span class="n">default_line_color</span><span class="p">,</span>
+        <span class="n">defaultPickable</span><span class="o">=</span><span class="n">default_pickable</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+        <span class="s2">&quot;pmtiles-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+    <span class="p">}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
 <h4 id="anymap_ts.maplibre.MapLibreMap.add_point_cloud_layer" class="doc doc-heading">
 <code class="highlight language-python"><span class="n">add_point_cloud_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">get_position</span><span class="o">=</span><span class="s1">&#39;position&#39;</span><span class="p">,</span> <span class="n">get_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">get_normal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">point_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">size_units</span><span class="o">=</span><span class="s1">&#39;pixels&#39;</span><span class="p">,</span> <span class="n">pickable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">material</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coordinate_system</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">coordinate_origin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
@@ -29084,6 +29737,305 @@ Default: [0, 0, 1] (pointing up).</p></td>
             <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">layer_id</span><span class="si">}</span><span class="s2">-source&quot;</span><span class="p">,</span>
             <span class="s2">&quot;paint&quot;</span><span class="p">:</span> <span class="n">paint</span><span class="p">,</span>
         <span class="p">},</span>
+    <span class="p">}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="anymap_ts.maplibre.MapLibreMap.add_vector_control" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_vector_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_default_url</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default_opacity</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">default_fill_color</span><span class="o">=</span><span class="s1">&#39;#3388ff&#39;</span><span class="p">,</span> <span class="n">default_stroke_color</span><span class="o">=</span><span class="s1">&#39;#3388ff&#39;</span><span class="p">,</span> <span class="n">fit_bounds</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.add_vector_control" class="headerlink" title="Permanent link">&para;</a></h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Add a vector layer control for loading vector datasets from URLs.</p>
+<p>This provides an interactive panel for users to enter URLs to
+GeoJSON, GeoParquet, or FlatGeobuf datasets.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>position</code></td>
+        <td><code>str</code></td>
+        <td><p>Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').</p></td>
+        <td><code>&#39;top-right&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>collapsed</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the panel starts collapsed.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>default_url</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Default vector URL to pre-fill.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>load_default_url</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to auto-load the default URL.</p></td>
+        <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>default_opacity</code></td>
+        <td><code>float</code></td>
+        <td><p>Default layer opacity (0-1).</p></td>
+        <td><code>1.0</code></td>
+      </tr>
+      <tr>
+        <td><code>default_fill_color</code></td>
+        <td><code>str</code></td>
+        <td><p>Default fill color for polygons.</p></td>
+        <td><code>&#39;#3388ff&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>default_stroke_color</code></td>
+        <td><code>str</code></td>
+        <td><p>Default stroke color for lines/outlines.</p></td>
+        <td><code>&#39;#3388ff&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>fit_bounds</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to fit map to loaded data bounds.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td></td>
+        <td><p>Additional control options.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">MapLibreMap</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_vector_control</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">default_url</span><span class="o">=</span><span class="s2">&quot;https://example.com/data.geojson&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">default_fill_color</span><span class="o">=</span><span class="s2">&quot;#ff0000&quot;</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_vector_control</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+    <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">load_default_url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">default_opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">default_fill_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
+    <span class="n">default_stroke_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
+    <span class="n">fit_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a vector layer control for loading vector datasets from URLs.</span>
+
+<span class="sd">    This provides an interactive panel for users to enter URLs to</span>
+<span class="sd">    GeoJSON, GeoParquet, or FlatGeobuf datasets.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;, &#39;bottom-right&#39;).</span>
+<span class="sd">        collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">        default_url: Default vector URL to pre-fill.</span>
+<span class="sd">        load_default_url: Whether to auto-load the default URL.</span>
+<span class="sd">        default_opacity: Default layer opacity (0-1).</span>
+<span class="sd">        default_fill_color: Default fill color for polygons.</span>
+<span class="sd">        default_stroke_color: Default stroke color for lines/outlines.</span>
+<span class="sd">        fit_bounds: Whether to fit map to loaded data bounds.</span>
+<span class="sd">        **kwargs: Additional control options.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">        &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">        &gt;&gt;&gt; m.add_vector_control(</span>
+<span class="sd">        ...     default_url=&quot;https://example.com/data.geojson&quot;,</span>
+<span class="sd">        ...     default_fill_color=&quot;#ff0000&quot;</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+        <span class="s2">&quot;addVectorControl&quot;</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="o">=</span><span class="n">collapsed</span><span class="p">,</span>
+        <span class="n">defaultUrl</span><span class="o">=</span><span class="n">default_url</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">loadDefaultUrl</span><span class="o">=</span><span class="n">load_default_url</span><span class="p">,</span>
+        <span class="n">defaultOpacity</span><span class="o">=</span><span class="n">default_opacity</span><span class="p">,</span>
+        <span class="n">defaultFillColor</span><span class="o">=</span><span class="n">default_fill_color</span><span class="p">,</span>
+        <span class="n">defaultStrokeColor</span><span class="o">=</span><span class="n">default_stroke_color</span><span class="p">,</span>
+        <span class="n">fitBounds</span><span class="o">=</span><span class="n">fit_bounds</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+        <span class="s2">&quot;vector-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+    <span class="p">}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="anymap_ts.maplibre.MapLibreMap.add_zarr_control" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_zarr_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_default_url</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default_opacity</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">default_variable</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">default_clim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.add_zarr_control" class="headerlink" title="Permanent link">&para;</a></h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Add a Zarr layer control for loading Zarr datasets via UI.</p>
+<p>This provides an interactive panel for users to enter Zarr URLs
+and configure visualization parameters.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>position</code></td>
+        <td><code>str</code></td>
+        <td><p>Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').</p></td>
+        <td><code>&#39;top-right&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>collapsed</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the panel starts collapsed.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>default_url</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Default Zarr URL to pre-fill.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>load_default_url</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to auto-load the default URL.</p></td>
+        <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>default_opacity</code></td>
+        <td><code>float</code></td>
+        <td><p>Default layer opacity (0-1).</p></td>
+        <td><code>1.0</code></td>
+      </tr>
+      <tr>
+        <td><code>default_variable</code></td>
+        <td><code>str</code></td>
+        <td><p>Default variable name.</p></td>
+        <td><code>&#39;&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>default_clim</code></td>
+        <td><code>Optional[Tuple[float, float]]</code></td>
+        <td><p>Default color limits (min, max).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td></td>
+        <td><p>Additional control options.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">MapLibreMap</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_zarr_control</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">default_url</span><span class="o">=</span><span class="s2">&quot;https://example.com/data.zarr&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">default_variable</span><span class="o">=</span><span class="s2">&quot;temperature&quot;</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_zarr_control</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+    <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">load_default_url</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">default_opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">default_variable</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">default_clim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a Zarr layer control for loading Zarr datasets via UI.</span>
+
+<span class="sd">    This provides an interactive panel for users to enter Zarr URLs</span>
+<span class="sd">    and configure visualization parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;, &#39;bottom-right&#39;).</span>
+<span class="sd">        collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">        default_url: Default Zarr URL to pre-fill.</span>
+<span class="sd">        load_default_url: Whether to auto-load the default URL.</span>
+<span class="sd">        default_opacity: Default layer opacity (0-1).</span>
+<span class="sd">        default_variable: Default variable name.</span>
+<span class="sd">        default_clim: Default color limits (min, max).</span>
+<span class="sd">        **kwargs: Additional control options.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">        &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">        &gt;&gt;&gt; m.add_zarr_control(</span>
+<span class="sd">        ...     default_url=&quot;https://example.com/data.zarr&quot;,</span>
+<span class="sd">        ...     default_variable=&quot;temperature&quot;</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+        <span class="s2">&quot;addZarrControl&quot;</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="o">=</span><span class="n">collapsed</span><span class="p">,</span>
+        <span class="n">defaultUrl</span><span class="o">=</span><span class="n">default_url</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">loadDefaultUrl</span><span class="o">=</span><span class="n">load_default_url</span><span class="p">,</span>
+        <span class="n">defaultOpacity</span><span class="o">=</span><span class="n">default_opacity</span><span class="p">,</span>
+        <span class="n">defaultVariable</span><span class="o">=</span><span class="n">default_variable</span><span class="p">,</span>
+        <span class="n">defaultClim</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">default_clim</span><span class="p">)</span> <span class="k">if</span> <span class="n">default_clim</span> <span class="k">else</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+        <span class="s2">&quot;zarr-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
     <span class="p">}</span>
 </code></pre></div>
         </details>

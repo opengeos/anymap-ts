@@ -12,9 +12,13 @@
         <meta name="author" content="giswqs">
       
       
-        <link rel="canonical" href="https://anymap-ts.gishub.org/notebooks/column_layer/">
+        <link rel="canonical" href="https://anymap-ts.gishub.org/notebooks/ui_controls/">
       
       
+        <link rel="prev" href="../pointcloud_layer/">
+      
+      
+        <link rel="next" href="../mapbox/">
       
       
         
@@ -25,7 +29,7 @@
     
     
       
-        <title>Column layer - anymap-ts</title>
+        <title>Ui controls - anymap-ts</title>
       
     
     
@@ -82,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#column-layer-example" class="md-skip">
+        <a href="#ui-controls-for-maplibre" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Column layer
+              Ui controls
             
           </span>
         </div>
@@ -1200,18 +1204,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" checked>
         
           
           <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
@@ -1232,7 +1238,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1387,10 +1393,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../ui_controls/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ui controls
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1406,6 +1439,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pmtiles-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PMTiles Control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cog-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        COG Control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zarr-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zarr Control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vector-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vector Control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#all-controls-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        All Controls Together
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2081,10 +2189,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#generate-sample-data" class="md-nav__link">
+  <a href="#pmtiles-control" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Generate sample data
+        PMTiles Control
       
     </span>
   </a>
@@ -2092,10 +2200,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-map-with-column-layer" class="md-nav__link">
+  <a href="#cog-control" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Create map with column layer
+        COG Control
       
     </span>
   </a>
@@ -2103,10 +2211,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#export-to-html" class="md-nav__link">
+  <a href="#zarr-control" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Export to HTML
+        Zarr Control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vector-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vector Control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#all-controls-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        All Controls Together
       
     </span>
   </a>
@@ -2127,7 +2257,7 @@
               <article class="md-content__inner md-typeset">
                 
 
-    <a href="/notebooks/column_layer/column_layer.ipynb" title="Download Notebook" class="md-content__button md-icon">
+    <a href="/notebooks/ui_controls/ui_controls.ipynb" title="Download Notebook" class="md-content__button md-icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
     </a>
 
@@ -2867,7 +2997,13 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="column-layer-example">Column Layer Example<a class="anchor-link" href="#column-layer-example">¶</a></h1><p>3D column/bar visualization using deck.gl ColumnLayer.</p>
+<h1 id="ui-controls-for-maplibre">UI Controls for MapLibre<a class="anchor-link" href="#ui-controls-for-maplibre">¶</a></h1><p>This notebook demonstrates the UI controls for loading various data formats:</p>
+<ul>
+<li>PMTiles</li>
+<li>COG (Cloud Optimized GeoTIFF)</li>
+<li>Zarr</li>
+<li>Vector (GeoJSON, GeoParquet, FlatGeobuf)</li>
+</ul>
 </div>
 </div>
 </div>
@@ -2890,11 +3026,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeckGLMap</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">MapLibreMap</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">import random
-from anymap_ts import DeckGLMap</div>
+<div class="clipboard-copy-txt" id="cell-1">from anymap_ts import MapLibreMap</div>
 </div>
 </div>
 </div>
@@ -2907,7 +3041,7 @@ from anymap_ts import DeckGLMap</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="generate-sample-data">Generate sample data<a class="anchor-link" href="#generate-sample-data">¶</a></h2>
+<h2 id="pmtiles-control">PMTiles Control<a class="anchor-link" href="#pmtiles-control">¶</a></h2><p>Load PMTiles vector or raster tiles via an interactive UI panel.</p>
 </div>
 </div>
 </div>
@@ -2930,29 +3064,23 @@ from anymap_ts import DeckGLMap</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Generate random column data around San Francisco</span>
-<span class="n">columns</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">"coordinates"</span><span class="p">:</span> <span class="p">[</span>
-            <span class="o">-</span><span class="mf">122.4</span> <span class="o">+</span> <span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.3</span><span class="p">,</span>
-            <span class="mf">37.8</span> <span class="o">+</span> <span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.3</span><span class="p">,</span>
-        <span class="p">],</span>
-        <span class="s2">"value"</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">5000</span><span class="p">),</span>
-    <span class="p">}</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
-<span class="p">]</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mf">11.25</span><span class="p">,</span> <span class="mf">43.77</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_control</span><span class="p">(</span>
+    <span class="n">position</span><span class="o">=</span><span class="s2">"top-right"</span><span class="p">,</span>
+    <span class="n">collapsed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">default_url</span><span class="o">=</span><span class="s2">"https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles"</span><span class="p">,</span>
+    <span class="n">load_default_url</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">m</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2"># Generate random column data around San Francisco
-columns = [
-    {
-        "coordinates": [
-            -122.4 + (random.random() - 0.5) * 0.3,
-            37.8 + (random.random() - 0.5) * 0.3,
-        ],
-        "value": random.randint(500, 5000),
-    }
-    for _ in range(100)
-]</div>
+<div class="clipboard-copy-txt" id="cell-2">m = MapLibreMap(center=[11.25, 43.77], zoom=12)
+m.add_pmtiles_control(
+    position="top-right",
+    collapsed=False,
+    default_url="https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles",
+    load_default_url=True,
+)
+m</div>
 </div>
 </div>
 </div>
@@ -2965,7 +3093,7 @@ columns = [
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="create-map-with-column-layer">Create map with column layer<a class="anchor-link" href="#create-map-with-column-layer">¶</a></h2>
+<h2 id="cog-control">COG Control<a class="anchor-link" href="#cog-control">¶</a></h2><p>Load Cloud Optimized GeoTIFF files via an interactive UI panel with colormap selection.</p>
 </div>
 </div>
 </div>
@@ -2988,34 +3116,12 @@ columns = [
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">DeckGLMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">pitch</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">bearing</span><span class="o">=-</span><span class="mi">17</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"CartoDB.DarkMatter"</span><span class="p">)</span>
-
-<span class="n">m</span><span class="o">.</span><span class="n">add_column_layer</span><span class="p">(</span>
-    <span class="n">data</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span>
-    <span class="n">get_position</span><span class="o">=</span><span class="s2">"coordinates"</span><span class="p">,</span>
-    <span class="n">get_elevation</span><span class="o">=</span><span class="s2">"value"</span><span class="p">,</span>
-    <span class="n">radius</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
-    <span class="n">elevation_scale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">extruded</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">get_fill_color</span><span class="o">=</span><span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="mi">140</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">],</span>
-    <span class="n">opacity</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
-<span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">120</span><span class="p">,</span> <span class="mi">37</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_cog_control</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="s2">"top-right"</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default_colormap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">)</span>
 <span class="n">m</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">m = DeckGLMap(center=[-122.4, 37.8], zoom=11, pitch=45, bearing=-17)
-m.add_basemap("CartoDB.DarkMatter")
-
-m.add_column_layer(
-    data=columns,
-    get_position="coordinates",
-    get_elevation="value",
-    radius=200,
-    elevation_scale=1,
-    extruded=True,
-    get_fill_color=[255, 140, 0, 200],
-    opacity=0.8,
-)
+<div class="clipboard-copy-txt" id="cell-3">m = MapLibreMap(center=[-120, 37], zoom=6)
+m.add_cog_control(position="top-right", collapsed=False, default_colormap="viridis")
 m</div>
 </div>
 </div>
@@ -3029,7 +3135,7 @@ m</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="export-to-html">Export to HTML<a class="anchor-link" href="#export-to-html">¶</a></h2>
+<h2 id="zarr-control">Zarr Control<a class="anchor-link" href="#zarr-control">¶</a></h2><p>Load Zarr pyramid datasets via an interactive UI panel.</p>
 </div>
 </div>
 </div>
@@ -3052,9 +3158,115 @@ m</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="s2">"column_layer_example.html"</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_zarr_control</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="s2">"top-right"</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">m</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4">m.to_html("column_layer_example.html")</div>
+<div class="clipboard-copy-txt" id="cell-4">m = MapLibreMap(center=[0, 20], zoom=2)
+m.add_zarr_control(position="top-right", collapsed=False)
+m</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="vector-control">Vector Control<a class="anchor-link" href="#vector-control">¶</a></h2><p>Load vector datasets (GeoJSON, GeoParquet, FlatGeobuf) via URL.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-5">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_vector_control</span><span class="p">(</span>
+    <span class="n">position</span><span class="o">=</span><span class="s2">"top-right"</span><span class="p">,</span>
+    <span class="n">collapsed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">default_url</span><span class="o">=</span><span class="s2">"https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson"</span><span class="p">,</span>
+    <span class="n">default_fill_color</span><span class="o">=</span><span class="s2">"#3388ff"</span><span class="p">,</span>
+    <span class="n">default_stroke_color</span><span class="o">=</span><span class="s2">"#2266cc"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">m</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-5">m = MapLibreMap(center=[0, 20], zoom=2)
+m.add_vector_control(
+    position="top-right",
+    collapsed=False,
+    default_url="https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson",
+    default_fill_color="#3388ff",
+    default_stroke_color="#2266cc",
+)
+m</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="all-controls-together">All Controls Together<a class="anchor-link" href="#all-controls-together">¶</a></h2><p>You can add multiple controls to the same map.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-6">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_control</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="s2">"top-right"</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_cog_control</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="s2">"top-right"</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_zarr_control</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="s2">"top-right"</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_vector_control</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="s2">"top-right"</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">m</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-6">m = MapLibreMap(center=[0, 20], zoom=2)
+m.add_pmtiles_control(position="top-right", collapsed=True)
+m.add_cog_control(position="top-right", collapsed=True)
+m.add_zarr_control(position="top-right", collapsed=True)
+m.add_vector_control(position="top-right", collapsed=True)
+m</div>
 </div>
 </div>
 </div>
@@ -3090,7 +3302,7 @@ m</div>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 10, 2026 06:12:58 UTC"><span class="timeago" datetime="2026-01-10T06:12:58+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 10, 2026 06:12:58 UTC">2026-01-10</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 10, 2026 04:30:27 UTC"><span class="timeago" datetime="2026-02-10T04:30:27+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 10, 2026 04:30:27 UTC">2026-02-10</span>
   </span>
 
     
@@ -3100,7 +3312,7 @@ m</div>
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 10, 2026 06:12:58 UTC"><span class="timeago" datetime="2026-01-10T06:12:58+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 10, 2026 06:12:58 UTC">2026-01-10</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 10, 2026 04:30:27 UTC"><span class="timeago" datetime="2026-02-10T04:30:27+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 10, 2026 04:30:27 UTC">2026-02-10</span>
   </span>
 
     
