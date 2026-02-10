@@ -47,8 +47,10 @@ class MapLibreMap(MapWidget):
         center: Tuple[float, float] = (0.0, 0.0),
         zoom: float = 2.0,
         width: str = "100%",
-        height: str = "600px",
-        style: Union[str, Dict] = "https://demotiles.maplibre.org/style.json",
+        height: str = "700px",
+        style: Union[
+            str, Dict
+        ] = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
         bearing: float = 0.0,
         pitch: float = 0.0,
         max_pitch: float = 85.0,
@@ -61,8 +63,8 @@ class MapLibreMap(MapWidget):
             center: Map center as (longitude, latitude).
             zoom: Initial zoom level.
             width: Map width as CSS string.
-            height: Map height as CSS string.
-            style: MapLibre style URL or style object.
+            height: Map height as CSS string. Default is "700px".
+            style: MapLibre style URL or style object. Default is "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json".
             bearing: Map bearing in degrees.
             pitch: Map pitch in degrees.
             max_pitch: Maximum pitch angle in degrees (default: 85).

@@ -109,6 +109,7 @@ nav:
           - notebooks/zarr_layer.ipynb
           - notebooks/arc_layer.ipynb
           - notebooks/pointcloud_layer.ipynb
+          - notebooks/ui_controls.ipynb
     - Mapbox:
           - notebooks/mapbox.ipynb
     - OpenLayers:
