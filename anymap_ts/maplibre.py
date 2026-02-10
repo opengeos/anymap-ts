@@ -47,8 +47,10 @@ class MapLibreMap(MapWidget):
         center: Tuple[float, float] = (0.0, 0.0),
         zoom: float = 2.0,
         width: str = "100%",
-        height: str = "600px",
-        style: Union[str, Dict] = "https://demotiles.maplibre.org/style.json",
+        height: str = "700px",
+        style: Union[
+            str, Dict
+        ] = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
         bearing: float = 0.0,
         pitch: float = 0.0,
         max_pitch: float = 85.0,
@@ -61,8 +63,8 @@ class MapLibreMap(MapWidget):
             center: Map center as (longitude, latitude).
             zoom: Initial zoom level.
             width: Map width as CSS string.
-            height: Map height as CSS string.
-            style: MapLibre style URL or style object.
+            height: Map height as CSS string. Default is "700px".
+            style: MapLibre style URL or style object. Default is "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json".
             bearing: Map bearing in degrees.
             pitch: Map pitch in degrees.
             max_pitch: Maximum pitch angle in degrees (default: 85).
@@ -961,6 +963,222 @@ class MapLibreMap(MapWidget):
             opacity: Opacity value between 0 and 1.
         """
         self.call_js_method("setLidarOpacity", opacity=opacity)
+
+    # -------------------------------------------------------------------------
+    # maplibre-gl-components UI Controls
+    # -------------------------------------------------------------------------
+
+    def add_pmtiles_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        default_url: Optional[str] = None,
+        load_default_url: bool = False,
+        default_opacity: float = 1.0,
+        default_fill_color: str = "steelblue",
+        default_line_color: str = "#333",
+        default_pickable: bool = True,
+        **kwargs,
+    ) -> None:
+        """Add a PMTiles layer control for loading PMTiles files via UI.
+
+        This provides an interactive panel for users to enter PMTiles URLs
+        and visualize vector or raster tile data.
+
+        Args:
+            position: Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').
+            collapsed: Whether the panel starts collapsed.
+            default_url: Default PMTiles URL to pre-fill.
+            load_default_url: Whether to auto-load the default URL.
+            default_opacity: Default layer opacity (0-1).
+            default_fill_color: Default fill color for vector polygons.
+            default_line_color: Default line color for vector lines.
+            default_pickable: Whether features are clickable by default.
+            **kwargs: Additional control options.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> m = MapLibreMap()
+            >>> m.add_pmtiles_control(
+            ...     default_url="https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles",
+            ...     load_default_url=True
+            ... )
+        """
+        self.call_js_method(
+            "addPMTilesControl",
+            position=position,
+            collapsed=collapsed,
+            defaultUrl=default_url or "",
+            loadDefaultUrl=load_default_url,
+            defaultOpacity=default_opacity,
+            defaultFillColor=default_fill_color,
+            defaultLineColor=default_line_color,
+            defaultPickable=default_pickable,
+            **kwargs,
+        )
+        self._controls = {
+            **self._controls,
+            "pmtiles-control": {"position": position, "collapsed": collapsed},
+        }
+
+    def add_cog_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        default_url: Optional[str] = None,
+        load_default_url: bool = False,
+        default_opacity: float = 1.0,
+        default_colormap: str = "viridis",
+        default_bands: str = "1",
+        default_rescale_min: float = 0,
+        default_rescale_max: float = 255,
+        **kwargs,
+    ) -> None:
+        """Add a COG layer control for loading Cloud Optimized GeoTIFFs via UI.
+
+        This provides an interactive panel for users to enter COG URLs
+        and configure visualization parameters like colormap and rescaling.
+
+        Args:
+            position: Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').
+            collapsed: Whether the panel starts collapsed.
+            default_url: Default COG URL to pre-fill.
+            load_default_url: Whether to auto-load the default URL.
+            default_opacity: Default layer opacity (0-1).
+            default_colormap: Default colormap name.
+            default_bands: Default bands (e.g., '1' or '1,2,3').
+            default_rescale_min: Default minimum value for rescaling.
+            default_rescale_max: Default maximum value for rescaling.
+            **kwargs: Additional control options.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> m = MapLibreMap()
+            >>> m.add_cog_control(
+            ...     default_url="https://example.com/cog.tif",
+            ...     default_colormap="terrain"
+            ... )
+        """
+        self.call_js_method(
+            "addCogControl",
+            position=position,
+            collapsed=collapsed,
+            defaultUrl=default_url or "",
+            loadDefaultUrl=load_default_url,
+            defaultOpacity=default_opacity,
+            defaultColormap=default_colormap,
+            defaultBands=default_bands,
+            defaultRescaleMin=default_rescale_min,
+            defaultRescaleMax=default_rescale_max,
+            **kwargs,
+        )
+        self._controls = {
+            **self._controls,
+            "cog-control": {"position": position, "collapsed": collapsed},
+        }
+
+    def add_zarr_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        default_url: Optional[str] = None,
+        load_default_url: bool = False,
+        default_opacity: float = 1.0,
+        default_variable: str = "",
+        default_clim: Optional[Tuple[float, float]] = None,
+        **kwargs,
+    ) -> None:
+        """Add a Zarr layer control for loading Zarr datasets via UI.
+
+        This provides an interactive panel for users to enter Zarr URLs
+        and configure visualization parameters.
+
+        Args:
+            position: Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').
+            collapsed: Whether the panel starts collapsed.
+            default_url: Default Zarr URL to pre-fill.
+            load_default_url: Whether to auto-load the default URL.
+            default_opacity: Default layer opacity (0-1).
+            default_variable: Default variable name.
+            default_clim: Default color limits (min, max).
+            **kwargs: Additional control options.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> m = MapLibreMap()
+            >>> m.add_zarr_control(
+            ...     default_url="https://example.com/data.zarr",
+            ...     default_variable="temperature"
+            ... )
+        """
+        self.call_js_method(
+            "addZarrControl",
+            position=position,
+            collapsed=collapsed,
+            defaultUrl=default_url or "",
+            loadDefaultUrl=load_default_url,
+            defaultOpacity=default_opacity,
+            defaultVariable=default_variable,
+            defaultClim=list(default_clim) if default_clim else [0, 1],
+            **kwargs,
+        )
+        self._controls = {
+            **self._controls,
+            "zarr-control": {"position": position, "collapsed": collapsed},
+        }
+
+    def add_vector_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        default_url: Optional[str] = None,
+        load_default_url: bool = False,
+        default_opacity: float = 1.0,
+        default_fill_color: str = "#3388ff",
+        default_stroke_color: str = "#3388ff",
+        fit_bounds: bool = True,
+        **kwargs,
+    ) -> None:
+        """Add a vector layer control for loading vector datasets from URLs.
+
+        This provides an interactive panel for users to enter URLs to
+        GeoJSON, GeoParquet, or FlatGeobuf datasets.
+
+        Args:
+            position: Control position ('top-left', 'top-right', 'bottom-left', 'bottom-right').
+            collapsed: Whether the panel starts collapsed.
+            default_url: Default vector URL to pre-fill.
+            load_default_url: Whether to auto-load the default URL.
+            default_opacity: Default layer opacity (0-1).
+            default_fill_color: Default fill color for polygons.
+            default_stroke_color: Default stroke color for lines/outlines.
+            fit_bounds: Whether to fit map to loaded data bounds.
+            **kwargs: Additional control options.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> m = MapLibreMap()
+            >>> m.add_vector_control(
+            ...     default_url="https://example.com/data.geojson",
+            ...     default_fill_color="#ff0000"
+            ... )
+        """
+        self.call_js_method(
+            "addVectorControl",
+            position=position,
+            collapsed=collapsed,
+            defaultUrl=default_url or "",
+            loadDefaultUrl=load_default_url,
+            defaultOpacity=default_opacity,
+            defaultFillColor=default_fill_color,
+            defaultStrokeColor=default_stroke_color,
+            fitBounds=fit_bounds,
+            **kwargs,
+        )
+        self._controls = {
+            **self._controls,
+            "vector-control": {"position": position, "collapsed": collapsed},
+        }
 
     def _process_deck_data(self, data: Any) -> Any:
         """Process data for deck.gl layers.
