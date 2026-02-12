@@ -1282,6 +1282,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../notebooks/control_grid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Control grid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../notebooks/cog_layer/" class="md-nav__link">
         
   
@@ -1961,6 +1989,17 @@
     <span class="md-ellipsis">
       
         add_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_control_grid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_control_grid()
       
     </span>
   </a>
@@ -2680,6 +2719,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_control_grid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_control_grid()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.add_draw_control" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3152,7 +3202,7 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">            pitch: Map pitch in degrees.</span>
 <span class="sd">            max_pitch: Maximum pitch angle in degrees (default: 85).</span>
 <span class="sd">            controls: Dict of controls to add. If None, defaults to</span>
-<span class="sd">                {&quot;navigation&quot;: True, &quot;fullscreen&quot;: True, &quot;globe&quot;: True, &quot;layer-control&quot;: True}.</span>
+<span class="sd">                {&quot;layer-control&quot;: True, &quot;control-grid&quot;: True}.</span>
 <span class="sd">                Use {&quot;layer-control&quot;: {&quot;collapsed&quot;: True}} for custom options.</span>
 <span class="sd">            **kwargs: Additional widget arguments.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -3181,17 +3231,18 @@ full bidirectional communication through anywidget.</p>
         <span class="c1"># Add default controls</span>
         <span class="k">if</span> <span class="n">controls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;navigation&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                <span class="s2">&quot;fullscreen&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                <span class="s2">&quot;globe&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="s2">&quot;layer-control&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
             <span class="p">}</span>
 
         <span class="k">for</span> <span class="n">control_name</span><span class="p">,</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">controls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">config</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">control_name</span> <span class="o">==</span> <span class="s2">&quot;layer-control&quot;</span><span class="p">:</span>
-                    <span class="c1"># Layer control uses a separate method</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">add_layer_control</span><span class="p">(</span>
+                        <span class="o">**</span><span class="p">(</span><span class="n">config</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{})</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">control_name</span> <span class="o">==</span> <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add_control_grid</span><span class="p">(</span>
                         <span class="o">**</span><span class="p">(</span><span class="n">config</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{})</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -4263,6 +4314,94 @@ full bidirectional communication through anywidget.</p>
             <span class="s2">&quot;vector-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
         <span class="p">}</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_control_grid</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+        <span class="n">default_controls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exclude</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">rows</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">collapsible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">show_row_column_controls</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">gap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">basemap_style_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exclude_layers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ControlGrid with all default tools or a custom subset.</span>
+
+<span class="sd">        The ControlGrid provides a collapsible toolbar with up to 26 built-in</span>
+<span class="sd">        controls (search, basemap, terrain, measure, draw, etc.) in a</span>
+<span class="sd">        configurable grid layout.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;,</span>
+<span class="sd">                &#39;bottom-right&#39;).</span>
+<span class="sd">            default_controls: Explicit list of control names to include. If None,</span>
+<span class="sd">                all 26 default controls are used (minus any in ``exclude``).</span>
+<span class="sd">                Valid names: &#39;globe&#39;, &#39;fullscreen&#39;, &#39;north&#39;, &#39;terrain&#39;, &#39;search&#39;,</span>
+<span class="sd">                &#39;viewState&#39;, &#39;inspect&#39;, &#39;vectorDataset&#39;, &#39;basemap&#39;, &#39;measure&#39;,</span>
+<span class="sd">                &#39;geoEditor&#39;, &#39;bookmark&#39;, &#39;print&#39;, &#39;minimap&#39;, &#39;swipe&#39;,</span>
+<span class="sd">                &#39;streetView&#39;, &#39;addVector&#39;, &#39;cogLayer&#39;, &#39;zarrLayer&#39;,</span>
+<span class="sd">                &#39;pmtilesLayer&#39;, &#39;stacLayer&#39;, &#39;stacSearch&#39;, &#39;planetaryComputer&#39;,</span>
+<span class="sd">                &#39;gaussianSplat&#39;, &#39;lidar&#39;, &#39;usgsLidar&#39;.</span>
+<span class="sd">            exclude: Controls to remove from the default set. Ignored when</span>
+<span class="sd">                ``default_controls`` is provided.</span>
+<span class="sd">            rows: Number of grid rows (auto-calculated if None).</span>
+<span class="sd">            columns: Number of grid columns (auto-calculated if None).</span>
+<span class="sd">            collapsed: Whether the grid starts collapsed. Default True.</span>
+<span class="sd">            collapsible: Whether the grid can be collapsed. Default True.</span>
+<span class="sd">            title: Optional header title for the grid.</span>
+<span class="sd">            show_row_column_controls: Show row/column input fields. Default True.</span>
+<span class="sd">            gap: Gap between grid cells in pixels. Default 2.</span>
+<span class="sd">            basemap_style_url: Basemap style URL for SwipeControl layer grouping.</span>
+<span class="sd">                If None, the current map style is used automatically.</span>
+<span class="sd">            exclude_layers: Layer ID patterns to exclude from SwipeControl</span>
+<span class="sd">                (e.g., &#39;measure-*&#39;, &#39;gl-draw-*&#39;). If None, sensible defaults</span>
+<span class="sd">                are applied.</span>
+<span class="sd">            **kwargs: Additional ControlGrid options.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">            &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">            &gt;&gt;&gt; m.add_control_grid()  # All 26 controls</span>
+<span class="sd">            &gt;&gt;&gt; # Or with customization:</span>
+<span class="sd">            &gt;&gt;&gt; m.add_control_grid(</span>
+<span class="sd">            ...     exclude=[&quot;minimap&quot;, &quot;streetView&quot;],</span>
+<span class="sd">            ...     collapsed=True,</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">js_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+            <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">,</span>
+            <span class="s2">&quot;collapsible&quot;</span><span class="p">:</span> <span class="n">collapsible</span><span class="p">,</span>
+            <span class="s2">&quot;showRowColumnControls&quot;</span><span class="p">:</span> <span class="n">show_row_column_controls</span><span class="p">,</span>
+            <span class="s2">&quot;gap&quot;</span><span class="p">:</span> <span class="n">gap</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">default_controls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;defaultControls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_controls</span>
+        <span class="k">if</span> <span class="n">exclude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;exclude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span>
+        <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
+        <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="k">if</span> <span class="n">basemap_style_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;basemapStyleUrl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemap_style_url</span>
+        <span class="k">if</span> <span class="n">exclude_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;excludeLayers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude_layers</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addControlGrid&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">js_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+            <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+        <span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_process_deck_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process data for deck.gl layers.</span>
 
@@ -4857,7 +4996,7 @@ full bidirectional communication through anywidget.</p>
         <td><code>controls</code></td>
         <td><code>Optional[Dict[str, Any]]</code></td>
         <td><p>Dict of controls to add. If None, defaults to
-{"navigation": True, "fullscreen": True, "globe": True, "layer-control": True}.
+{"layer-control": True, "control-grid": True}.
 Use {"layer-control": {"collapsed": True}} for custom options.</p></td>
         <td><code>None</code></td>
       </tr>
@@ -4898,7 +5037,7 @@ Use {"layer-control": {"collapsed": True}} for custom options.</p></td>
 <span class="sd">        pitch: Map pitch in degrees.</span>
 <span class="sd">        max_pitch: Maximum pitch angle in degrees (default: 85).</span>
 <span class="sd">        controls: Dict of controls to add. If None, defaults to</span>
-<span class="sd">            {&quot;navigation&quot;: True, &quot;fullscreen&quot;: True, &quot;globe&quot;: True, &quot;layer-control&quot;: True}.</span>
+<span class="sd">            {&quot;layer-control&quot;: True, &quot;control-grid&quot;: True}.</span>
 <span class="sd">            Use {&quot;layer-control&quot;: {&quot;collapsed&quot;: True}} for custom options.</span>
 <span class="sd">        **kwargs: Additional widget arguments.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4927,17 +5066,18 @@ Use {"layer-control": {"collapsed": True}} for custom options.</p></td>
     <span class="c1"># Add default controls</span>
     <span class="k">if</span> <span class="n">controls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;navigation&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;fullscreen&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;globe&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
             <span class="s2">&quot;layer-control&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
         <span class="p">}</span>
 
     <span class="k">for</span> <span class="n">control_name</span><span class="p">,</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">controls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">config</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">control_name</span> <span class="o">==</span> <span class="s2">&quot;layer-control&quot;</span><span class="p">:</span>
-                <span class="c1"># Layer control uses a separate method</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">add_layer_control</span><span class="p">(</span>
+                    <span class="o">**</span><span class="p">(</span><span class="n">config</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{})</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">control_name</span> <span class="o">==</span> <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_control_grid</span><span class="p">(</span>
                     <span class="o">**</span><span class="p">(</span><span class="n">config</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{})</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -5637,6 +5777,234 @@ create denser mesh for better accuracy.</p></td>
     <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
         <span class="n">control_type</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">control_type</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">},</span>
+    <span class="p">}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h3 id="anymap_ts.maplibre.MapLibreMap.add_control_grid" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_control_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">default_controls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">collapsible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">show_row_column_controls</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gap</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">basemap_style_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exclude_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.add_control_grid" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Add a ControlGrid with all default tools or a custom subset.</p>
+<p>The ControlGrid provides a collapsible toolbar with up to 26 built-in
+controls (search, basemap, terrain, measure, draw, etc.) in a
+configurable grid layout.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>position</code></td>
+        <td><code>str</code></td>
+        <td><p>Control position ('top-left', 'top-right', 'bottom-left',
+'bottom-right').</p></td>
+        <td><code>&#39;top-right&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>default_controls</code></td>
+        <td><code>Optional[List[str]]</code></td>
+        <td><p>Explicit list of control names to include. If None,
+all 26 default controls are used (minus any in <code>exclude</code>).
+Valid names: 'globe', 'fullscreen', 'north', 'terrain', 'search',
+'viewState', 'inspect', 'vectorDataset', 'basemap', 'measure',
+'geoEditor', 'bookmark', 'print', 'minimap', 'swipe',
+'streetView', 'addVector', 'cogLayer', 'zarrLayer',
+'pmtilesLayer', 'stacLayer', 'stacSearch', 'planetaryComputer',
+'gaussianSplat', 'lidar', 'usgsLidar'.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>exclude</code></td>
+        <td><code>Optional[List[str]]</code></td>
+        <td><p>Controls to remove from the default set. Ignored when
+<code>default_controls</code> is provided.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>rows</code></td>
+        <td><code>Optional[int]</code></td>
+        <td><p>Number of grid rows (auto-calculated if None).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>columns</code></td>
+        <td><code>Optional[int]</code></td>
+        <td><p>Number of grid columns (auto-calculated if None).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>collapsed</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the grid starts collapsed. Default True.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>collapsible</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the grid can be collapsed. Default True.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>title</code></td>
+        <td><code>str</code></td>
+        <td><p>Optional header title for the grid.</p></td>
+        <td><code>&#39;&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>show_row_column_controls</code></td>
+        <td><code>bool</code></td>
+        <td><p>Show row/column input fields. Default True.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>gap</code></td>
+        <td><code>int</code></td>
+        <td><p>Gap between grid cells in pixels. Default 2.</p></td>
+        <td><code>2</code></td>
+      </tr>
+      <tr>
+        <td><code>basemap_style_url</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Basemap style URL for SwipeControl layer grouping.
+If None, the current map style is used automatically.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>exclude_layers</code></td>
+        <td><code>Optional[List[str]]</code></td>
+        <td><p>Layer ID patterns to exclude from SwipeControl
+(e.g., 'measure-<em>', 'gl-draw-</em>'). If None, sensible defaults
+are applied.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td></td>
+        <td><p>Additional ControlGrid options.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">MapLibreMap</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_control_grid</span><span class="p">()</span>  <span class="c1"># All 26 controls</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># Or with customization:</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_control_grid</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;minimap&quot;</span><span class="p">,</span> <span class="s2">&quot;streetView&quot;</span><span class="p">],</span>
+<span class="o">...</span>     <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_control_grid</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+    <span class="n">default_controls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">exclude</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">collapsible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">show_row_column_controls</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">gap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">basemap_style_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">exclude_layers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a ControlGrid with all default tools or a custom subset.</span>
+
+<span class="sd">    The ControlGrid provides a collapsible toolbar with up to 26 built-in</span>
+<span class="sd">    controls (search, basemap, terrain, measure, draw, etc.) in a</span>
+<span class="sd">    configurable grid layout.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;,</span>
+<span class="sd">            &#39;bottom-right&#39;).</span>
+<span class="sd">        default_controls: Explicit list of control names to include. If None,</span>
+<span class="sd">            all 26 default controls are used (minus any in ``exclude``).</span>
+<span class="sd">            Valid names: &#39;globe&#39;, &#39;fullscreen&#39;, &#39;north&#39;, &#39;terrain&#39;, &#39;search&#39;,</span>
+<span class="sd">            &#39;viewState&#39;, &#39;inspect&#39;, &#39;vectorDataset&#39;, &#39;basemap&#39;, &#39;measure&#39;,</span>
+<span class="sd">            &#39;geoEditor&#39;, &#39;bookmark&#39;, &#39;print&#39;, &#39;minimap&#39;, &#39;swipe&#39;,</span>
+<span class="sd">            &#39;streetView&#39;, &#39;addVector&#39;, &#39;cogLayer&#39;, &#39;zarrLayer&#39;,</span>
+<span class="sd">            &#39;pmtilesLayer&#39;, &#39;stacLayer&#39;, &#39;stacSearch&#39;, &#39;planetaryComputer&#39;,</span>
+<span class="sd">            &#39;gaussianSplat&#39;, &#39;lidar&#39;, &#39;usgsLidar&#39;.</span>
+<span class="sd">        exclude: Controls to remove from the default set. Ignored when</span>
+<span class="sd">            ``default_controls`` is provided.</span>
+<span class="sd">        rows: Number of grid rows (auto-calculated if None).</span>
+<span class="sd">        columns: Number of grid columns (auto-calculated if None).</span>
+<span class="sd">        collapsed: Whether the grid starts collapsed. Default True.</span>
+<span class="sd">        collapsible: Whether the grid can be collapsed. Default True.</span>
+<span class="sd">        title: Optional header title for the grid.</span>
+<span class="sd">        show_row_column_controls: Show row/column input fields. Default True.</span>
+<span class="sd">        gap: Gap between grid cells in pixels. Default 2.</span>
+<span class="sd">        basemap_style_url: Basemap style URL for SwipeControl layer grouping.</span>
+<span class="sd">            If None, the current map style is used automatically.</span>
+<span class="sd">        exclude_layers: Layer ID patterns to exclude from SwipeControl</span>
+<span class="sd">            (e.g., &#39;measure-*&#39;, &#39;gl-draw-*&#39;). If None, sensible defaults</span>
+<span class="sd">            are applied.</span>
+<span class="sd">        **kwargs: Additional ControlGrid options.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; from anymap_ts import MapLibreMap</span>
+<span class="sd">        &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">        &gt;&gt;&gt; m.add_control_grid()  # All 26 controls</span>
+<span class="sd">        &gt;&gt;&gt; # Or with customization:</span>
+<span class="sd">        &gt;&gt;&gt; m.add_control_grid(</span>
+<span class="sd">        ...     exclude=[&quot;minimap&quot;, &quot;streetView&quot;],</span>
+<span class="sd">        ...     collapsed=True,</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">js_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+        <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">,</span>
+        <span class="s2">&quot;collapsible&quot;</span><span class="p">:</span> <span class="n">collapsible</span><span class="p">,</span>
+        <span class="s2">&quot;showRowColumnControls&quot;</span><span class="p">:</span> <span class="n">show_row_column_controls</span><span class="p">,</span>
+        <span class="s2">&quot;gap&quot;</span><span class="p">:</span> <span class="n">gap</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">default_controls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;defaultControls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_controls</span>
+    <span class="k">if</span> <span class="n">exclude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;exclude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude</span>
+    <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span>
+    <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
+    <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+    <span class="k">if</span> <span class="n">basemap_style_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;basemapStyleUrl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemap_style_url</span>
+    <span class="k">if</span> <span class="n">exclude_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;excludeLayers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude_layers</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addControlGrid&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">js_kwargs</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+        <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
     <span class="p">}</span>
 </code></pre></div>
         </details>
