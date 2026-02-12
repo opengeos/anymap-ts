@@ -57,6 +57,7 @@ export default defineConfig({
         'maplibre-polygon': resolve(__dirname, 'examples/maplibre/polygon_layer.html'),
         'maplibre-text': resolve(__dirname, 'examples/maplibre/text_layer.html'),
         'maplibre-contour': resolve(__dirname, 'examples/maplibre/contour_layer.html'),
+        'maplibre-control-grid': resolve(__dirname, 'examples/maplibre/control_grid.html'),
         // Other map libraries
         leaflet: resolve(__dirname, 'examples/leaflet/index.html'),
         mapbox: resolve(__dirname, 'examples/mapbox/index.html'),
