@@ -1,7 +1,7 @@
 site_name: anymap-ts
 site_description: A Python package for creating interactive maps with anywidget and TypeScript
 site_author: giswqs
-site_url: https://anymap-ts.gishub.org
+site_url: https://ts.anymap.dev
 repo_url: https://github.com/opengeos/anymap-ts
 
 copyright: "Copyright &copy; 2025 Qiusheng Wu"
