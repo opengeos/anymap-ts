@@ -63,7 +63,9 @@ import {
   CogLayerControl,
   ZarrLayerControl,
   AddVectorControl,
+  addControlGrid,
 } from 'maplibre-gl-components';
+import type { ControlGrid } from 'maplibre-gl-components';
 import 'maplibre-gl-components/style.css';
 
 /**
@@ -115,6 +117,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   protected cogLayerUiControl: CogLayerControl | null = null;
   protected zarrLayerUiControl: ZarrLayerControl | null = null;
   protected addVectorControl: AddVectorControl | null = null;
+  protected controlGrid: ControlGrid | null = null;
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -351,6 +354,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addCogControl', this.handleAddCogControl.bind(this));
     this.registerMethod('addZarrControl', this.handleAddZarrControl.bind(this));
     this.registerMethod('addVectorControl', this.handleAddVectorControl.bind(this));
+    this.registerMethod('addControlGrid', this.handleAddControlGrid.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -776,6 +780,17 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const layers = kwargs.layers as string[] | undefined;
     const position = (kwargs.position as ControlPosition) || 'top-right';
     const collapsed = (kwargs.collapsed as boolean) || false;
+    // Exclude internal/helper layers from the layer control by default
+    const defaultExclude = [
+      'measure-*',
+      'mapbox-gl-draw-*',
+      'gl-draw-*',
+      'gm_*',
+      'inspect-highlight-*',
+      'lidar-*',
+      'usgs-lidar-*',
+    ];
+    const excludeLayers = (kwargs.excludeLayers as string[] | undefined) ?? defaultExclude;
 
     // Create custom layer adapters for deck.gl and Zarr layers
     const customLayerAdapters = [];
@@ -818,6 +833,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       position,
       collapsed,
       customLayerAdapters: customLayerAdapters.length > 0 ? customLayerAdapters : undefined,
+      excludeLayers,
     });
 
     this.stateManager.addControl('layer-control', 'layer-control', position, kwargs);
@@ -2121,6 +2137,75 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     });
   }
 
+  private handleAddControlGrid(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as string) || 'top-right';
+
+    // Remove existing control grid if present
+    if (this.controlGrid) {
+      this.map.removeControl(this.controlGrid as unknown as maplibregl.IControl);
+      this.controlsMap.delete('control-grid');
+      this.controlGrid = null;
+    }
+
+    // Build options for addControlGrid
+    const options: Record<string, unknown> = { position };
+
+    if (kwargs.defaultControls !== undefined && kwargs.defaultControls !== null) {
+      options.defaultControls = kwargs.defaultControls;
+    }
+    if (kwargs.exclude !== undefined && kwargs.exclude !== null) {
+      options.exclude = kwargs.exclude;
+    }
+    if (kwargs.rows !== undefined && kwargs.rows !== null) {
+      options.rows = kwargs.rows;
+    }
+    if (kwargs.columns !== undefined && kwargs.columns !== null) {
+      options.columns = kwargs.columns;
+    }
+    if (kwargs.collapsed !== undefined) {
+      options.collapsed = kwargs.collapsed;
+    }
+    if (kwargs.collapsible !== undefined) {
+      options.collapsible = kwargs.collapsible;
+    }
+    if (kwargs.title !== undefined) {
+      options.title = kwargs.title;
+    }
+    if (kwargs.showRowColumnControls !== undefined) {
+      options.showRowColumnControls = kwargs.showRowColumnControls;
+    }
+    if (kwargs.gap !== undefined && kwargs.gap !== null) {
+      options.gap = kwargs.gap;
+    }
+    if (kwargs.basemapStyleUrl !== undefined) {
+      options.basemapStyleUrl = kwargs.basemapStyleUrl;
+    } else {
+      // Use the current map style URL as default for SwipeControl
+      const style = this.model.get('style');
+      if (typeof style === 'string') {
+        options.basemapStyleUrl = style;
+      }
+    }
+    if (kwargs.excludeLayers !== undefined && kwargs.excludeLayers !== null) {
+      options.excludeLayers = kwargs.excludeLayers;
+    }
+
+    this.controlGrid = addControlGrid(this.map, options as Parameters<typeof addControlGrid>[1]);
+    this.controlsMap.set('control-grid', this.controlGrid as unknown as maplibregl.IControl);
+
+    // Register adapters with LayerControl if present
+    const layerControl = this.layerControlPlugin?.getControl();
+    if (layerControl) {
+      for (const adapter of this.controlGrid.getAdapters()) {
+        layerControl.registerCustomAdapter(adapter);
+      }
+    }
+
+    this.stateManager.addControl('control-grid', 'control-grid', position, kwargs);
+  }
+
   // -------------------------------------------------------------------------
   // Trait change handlers
   // -------------------------------------------------------------------------
@@ -2168,6 +2253,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (this.layerControlPlugin) {
       this.layerControlPlugin.destroy();
       this.layerControlPlugin = null;
+    }
+
+    // Remove control grid
+    if (this.controlGrid && this.map) {
+      this.map.removeControl(this.controlGrid as unknown as maplibregl.IControl);
+      this.controlGrid = null;
     }
 
     // Remove deck.gl overlay
