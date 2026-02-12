@@ -310,7 +310,7 @@ See the `examples/` folder for Jupyter notebooks demonstrating each library:
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - Node.js 18+
 - npm
 

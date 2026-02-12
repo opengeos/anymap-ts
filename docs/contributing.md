@@ -86,7 +86,7 @@ Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include tests if applicable.
 2. If the pull request adds functionality, the docs should be updated.
-3. The pull request should work for Python 3.9+.
+3. The pull request should work for Python 3.10+.
 
 ## Project Structure
 
