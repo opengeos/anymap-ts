@@ -4,4 +4,4 @@ channels:
   - conda-forge
 dependencies:
   - xeus-python
-  - anymap-ts >=0.4.0
+  - anymap-ts >=0.3.0
