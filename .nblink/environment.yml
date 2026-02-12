@@ -1,0 +1,7 @@
+name: default-environment
+channels:
+  - emscripten-forge
+  - conda-forge
+dependencies:
+  - xeus-python
+  - anymap-ts >=0.4.1

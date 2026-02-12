@@ -57,6 +57,17 @@ import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter } from './adapters'
 import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
 import type { LidarControlOptions, LidarLayerOptions } from '../types/lidar';
 
+// Import controls from maplibre-gl-components
+import {
+  PMTilesLayerControl,
+  CogLayerControl,
+  ZarrLayerControl,
+  AddVectorControl,
+  addControlGrid,
+} from 'maplibre-gl-components';
+import type { ControlGrid } from 'maplibre-gl-components';
+import 'maplibre-gl-components/style.css';
+
 /**
  * Parse GeoKeys to proj4 definition for COG reprojection.
  */
@@ -100,6 +111,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // LiDAR control
   protected lidarControl: LidarControl | null = null;
   protected lidarLayers: globalThis.Map<string, string> = new globalThis.Map(); // id -> source mapping
+
+  // maplibre-gl-components controls
+  protected pmtilesLayerControl: PMTilesLayerControl | null = null;
+  protected cogLayerUiControl: CogLayerControl | null = null;
+  protected zarrLayerUiControl: ZarrLayerControl | null = null;
+  protected addVectorControl: AddVectorControl | null = null;
+  protected controlGrid: ControlGrid | null = null;
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -334,6 +352,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // PMTiles layers
     this.registerMethod('addPMTilesLayer', this.handleAddPMTilesLayer.bind(this));
     this.registerMethod('removePMTilesLayer', this.handleRemovePMTilesLayer.bind(this));
+
+    // maplibre-gl-components controls
+    this.registerMethod('addPMTilesControl', this.handleAddPMTilesControl.bind(this));
+    this.registerMethod('addCogControl', this.handleAddCogControl.bind(this));
+    this.registerMethod('addZarrControl', this.handleAddZarrControl.bind(this));
+    this.registerMethod('addVectorControl', this.handleAddVectorControl.bind(this));
+    this.registerMethod('addControlGrid', this.handleAddControlGrid.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -759,6 +784,17 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const layers = kwargs.layers as string[] | undefined;
     const position = (kwargs.position as ControlPosition) || 'top-right';
     const collapsed = (kwargs.collapsed as boolean) || false;
+    // Exclude internal/helper layers from the layer control by default
+    const defaultExclude = [
+      'measure-*',
+      'mapbox-gl-draw-*',
+      'gl-draw-*',
+      'gm_*',
+      'inspect-highlight-*',
+      'lidar-*',
+      'usgs-lidar-*',
+    ];
+    const excludeLayers = (kwargs.excludeLayers as string[] | undefined) ?? defaultExclude;
 
     // Create custom layer adapters for deck.gl and Zarr layers
     const customLayerAdapters = [];
@@ -801,6 +837,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       position,
       collapsed,
       customLayerAdapters: customLayerAdapters.length > 0 ? customLayerAdapters : undefined,
+      excludeLayers,
     });
 
     this.stateManager.addControl('layer-control', 'layer-control', position, kwargs);
@@ -1917,6 +1954,263 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   }
 
   // -------------------------------------------------------------------------
+  // maplibre-gl-components control handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddPMTilesControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    const collapsed = kwargs.collapsed !== false;
+    const defaultUrl = kwargs.defaultUrl as string || '';
+    const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
+
+    // Remove existing control if present
+    const existingControl = this.controlsMap.get('pmtiles-control');
+    if (existingControl) {
+      this.map.removeControl(existingControl);
+      this.controlsMap.delete('pmtiles-control');
+    }
+
+    // Create PMTiles control
+    this.pmtilesLayerControl = new PMTilesLayerControl({
+      collapsed,
+      defaultUrl,
+      loadDefaultUrl,
+      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
+      defaultFillColor: kwargs.defaultFillColor as string || 'steelblue',
+      defaultLineColor: kwargs.defaultLineColor as string || '#333',
+      defaultPickable: kwargs.defaultPickable !== false,
+    });
+
+    this.map.addControl(this.pmtilesLayerControl as unknown as maplibregl.IControl, position);
+    this.controlsMap.set('pmtiles-control', this.pmtilesLayerControl as unknown as maplibregl.IControl);
+
+    // Set up event listeners
+    this.pmtilesLayerControl.on('layeradd', (event) => {
+      console.debug('PMTiles layer added:', event.url);
+      this.sendEvent('pmtiles_layer_add', { url: event.url, layerId: event.layerId });
+    });
+
+    this.pmtilesLayerControl.on('layerremove', (event) => {
+      console.debug('PMTiles layer removed:', event.layerId);
+      this.sendEvent('pmtiles_layer_remove', { layerId: event.layerId });
+    });
+
+    this.pmtilesLayerControl.on('error', (event) => {
+      console.error('PMTiles error:', event.error);
+      this.sendEvent('pmtiles_error', { error: event.error });
+    });
+  }
+
+  private handleAddCogControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    const collapsed = kwargs.collapsed !== false;
+    const defaultUrl = kwargs.defaultUrl as string || '';
+    const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
+
+    // Remove existing control if present
+    const existingControl = this.controlsMap.get('cog-control');
+    if (existingControl) {
+      this.map.removeControl(existingControl);
+      this.controlsMap.delete('cog-control');
+    }
+
+    // Create COG control
+    this.cogLayerUiControl = new CogLayerControl({
+      collapsed,
+      defaultUrl,
+      loadDefaultUrl,
+      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
+      defaultColormap: kwargs.defaultColormap as string || 'viridis',
+      defaultBands: kwargs.defaultBands as string || '1',
+      defaultRescaleMin: (kwargs.defaultRescaleMin as number) ?? 0,
+      defaultRescaleMax: (kwargs.defaultRescaleMax as number) ?? 255,
+    });
+
+    this.map.addControl(this.cogLayerUiControl as unknown as maplibregl.IControl, position);
+    this.controlsMap.set('cog-control', this.cogLayerUiControl as unknown as maplibregl.IControl);
+
+    // Set up event listeners
+    this.cogLayerUiControl.on('layeradd', (event) => {
+      console.debug('COG layer added:', event.url);
+      this.sendEvent('cog_layer_add', { url: event.url, layerId: event.layerId });
+    });
+
+    this.cogLayerUiControl.on('layerremove', (event) => {
+      console.debug('COG layer removed:', event.layerId);
+      this.sendEvent('cog_layer_remove', { layerId: event.layerId });
+    });
+
+    this.cogLayerUiControl.on('error', (event) => {
+      console.error('COG error:', event.error);
+      this.sendEvent('cog_error', { error: event.error });
+    });
+  }
+
+  private handleAddZarrControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    const collapsed = kwargs.collapsed !== false;
+    const defaultUrl = kwargs.defaultUrl as string || '';
+    const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
+
+    // Remove existing control if present
+    const existingControl = this.controlsMap.get('zarr-control');
+    if (existingControl) {
+      this.map.removeControl(existingControl);
+      this.controlsMap.delete('zarr-control');
+    }
+
+    // Create Zarr control
+    this.zarrLayerUiControl = new ZarrLayerControl({
+      collapsed,
+      defaultUrl,
+      loadDefaultUrl,
+      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
+      defaultVariable: kwargs.defaultVariable as string || '',
+      defaultClim: kwargs.defaultClim as [number, number] || [0, 1],
+    });
+
+    this.map.addControl(this.zarrLayerUiControl as unknown as maplibregl.IControl, position);
+    this.controlsMap.set('zarr-control', this.zarrLayerUiControl as unknown as maplibregl.IControl);
+
+    // Set up event listeners
+    this.zarrLayerUiControl.on('layeradd', (event) => {
+      console.debug('Zarr layer added:', event.url);
+      this.sendEvent('zarr_layer_add', { url: event.url, layerId: event.layerId });
+    });
+
+    this.zarrLayerUiControl.on('layerremove', (event) => {
+      console.debug('Zarr layer removed:', event.layerId);
+      this.sendEvent('zarr_layer_remove', { layerId: event.layerId });
+    });
+
+    this.zarrLayerUiControl.on('error', (event) => {
+      console.error('Zarr error:', event.error);
+      this.sendEvent('zarr_error', { error: event.error });
+    });
+  }
+
+  private handleAddVectorControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    const collapsed = kwargs.collapsed !== false;
+    const defaultUrl = kwargs.defaultUrl as string || '';
+    const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
+
+    // Remove existing control if present
+    const existingControl = this.controlsMap.get('vector-control');
+    if (existingControl) {
+      this.map.removeControl(existingControl);
+      this.controlsMap.delete('vector-control');
+    }
+
+    // Create AddVector control
+    this.addVectorControl = new AddVectorControl({
+      collapsed,
+      defaultUrl,
+      loadDefaultUrl,
+      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
+      defaultFillColor: kwargs.defaultFillColor as string || '#3388ff',
+      defaultStrokeColor: kwargs.defaultStrokeColor as string || '#3388ff',
+      fitBounds: kwargs.fitBounds !== false,
+    });
+
+    this.map.addControl(this.addVectorControl as unknown as maplibregl.IControl, position);
+    this.controlsMap.set('vector-control', this.addVectorControl as unknown as maplibregl.IControl);
+
+    // Set up event listeners
+    this.addVectorControl.on('layeradd', (event) => {
+      console.debug('Vector layer added:', event.url);
+      this.sendEvent('vector_layer_add', { url: event.url, layerId: event.layerId });
+    });
+
+    this.addVectorControl.on('layerremove', (event) => {
+      console.debug('Vector layer removed:', event.layerId);
+      this.sendEvent('vector_layer_remove', { layerId: event.layerId });
+    });
+
+    this.addVectorControl.on('error', (event) => {
+      console.error('Vector error:', event.error);
+      this.sendEvent('vector_error', { error: event.error });
+    });
+  }
+
+  private handleAddControlGrid(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as string) || 'top-right';
+
+    // Remove existing control grid if present
+    if (this.controlGrid) {
+      this.map.removeControl(this.controlGrid as unknown as maplibregl.IControl);
+      this.controlsMap.delete('control-grid');
+      this.controlGrid = null;
+    }
+
+    // Build options for addControlGrid
+    const options: Record<string, unknown> = { position };
+
+    if (kwargs.defaultControls !== undefined && kwargs.defaultControls !== null) {
+      options.defaultControls = kwargs.defaultControls;
+    }
+    if (kwargs.exclude !== undefined && kwargs.exclude !== null) {
+      options.exclude = kwargs.exclude;
+    }
+    if (kwargs.rows !== undefined && kwargs.rows !== null) {
+      options.rows = kwargs.rows;
+    }
+    if (kwargs.columns !== undefined && kwargs.columns !== null) {
+      options.columns = kwargs.columns;
+    }
+    if (kwargs.collapsed !== undefined) {
+      options.collapsed = kwargs.collapsed;
+    }
+    if (kwargs.collapsible !== undefined) {
+      options.collapsible = kwargs.collapsible;
+    }
+    if (kwargs.title !== undefined) {
+      options.title = kwargs.title;
+    }
+    if (kwargs.showRowColumnControls !== undefined) {
+      options.showRowColumnControls = kwargs.showRowColumnControls;
+    }
+    if (kwargs.gap !== undefined && kwargs.gap !== null) {
+      options.gap = kwargs.gap;
+    }
+    if (kwargs.basemapStyleUrl !== undefined) {
+      options.basemapStyleUrl = kwargs.basemapStyleUrl;
+    } else {
+      // Use the current map style URL as default for SwipeControl
+      const style = this.model.get('style');
+      if (typeof style === 'string') {
+        options.basemapStyleUrl = style;
+      }
+    }
+    if (kwargs.excludeLayers !== undefined && kwargs.excludeLayers !== null) {
+      options.excludeLayers = kwargs.excludeLayers;
+    }
+
+    this.controlGrid = addControlGrid(this.map, options as Parameters<typeof addControlGrid>[1]);
+    this.controlsMap.set('control-grid', this.controlGrid as unknown as maplibregl.IControl);
+
+    // Register adapters with LayerControl if present
+    const layerControl = this.layerControlPlugin?.getControl();
+    if (layerControl) {
+      for (const adapter of this.controlGrid.getAdapters()) {
+        layerControl.registerCustomAdapter(adapter);
+      }
+    }
+
+    this.stateManager.addControl('control-grid', 'control-grid', position, kwargs);
+  }
+
+  // -------------------------------------------------------------------------
   // Trait change handlers
   // -------------------------------------------------------------------------
 
@@ -2072,6 +2366,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (this.layerControlPlugin) {
       this.layerControlPlugin.destroy();
       this.layerControlPlugin = null;
+    }
+
+    // Remove control grid
+    if (this.controlGrid && this.map) {
+      this.map.removeControl(this.controlGrid as unknown as maplibregl.IControl);
+      this.controlGrid = null;
     }
 
     // Remove deck.gl overlay

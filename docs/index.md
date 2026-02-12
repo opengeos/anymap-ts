@@ -1,16 +1,18 @@
 # anymap-ts
 
 [![image](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/opengeos/anymap-ts/blob/main)
+[![notebook-link](https://img.shields.io/badge/notebook-link-e2d610?logo=jupyter&logoColor=white)](https://notebook.link/github/opengeos/anymap-ts/)
 [![image](https://img.shields.io/pypi/v/anymap-ts.svg)](https://pypi.python.org/pypi/anymap-ts)
-[![image](https://img.shields.io/conda/vn/conda-forge/anymap-ts.svg)](https://anaconda.org/conda-forge/anymap-ts)
 [![image](https://static.pepy.tech/badge/anymap-ts)](https://pepy.tech/project/anymap-ts)
+[![image](https://img.shields.io/conda/vn/conda-forge/anymap-ts.svg)](https://anaconda.org/conda-forge/anymap-ts)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/anymap-ts.svg)](https://anaconda.org/conda-forge/anymap-ts)
+[![Conda Recipe](https://img.shields.io/badge/recipe-anymap--ts-green.svg)](https://github.com/conda-forge/anymap-ts-feedstock)
 [![image](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **A Python package for creating interactive maps with anywidget and TypeScript**
 
 -   GitHub repo: <https://github.com/opengeos/anymap-ts>
--   Documentation: <https://anymap-ts.gishub.org>
+-   Documentation: <https://ts.anymap.dev>
 -   PyPI: <https://pypi.org/project/anymap-ts>
 -   Free software: MIT License
 
