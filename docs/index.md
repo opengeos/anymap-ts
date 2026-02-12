@@ -12,7 +12,7 @@
 **A Python package for creating interactive maps with anywidget and TypeScript**
 
 -   GitHub repo: <https://github.com/opengeos/anymap-ts>
--   Documentation: <https://anymap-ts.gishub.org>
+-   Documentation: <https://ts.anymap.dev>
 -   PyPI: <https://pypi.org/project/anymap-ts>
 -   Free software: MIT License
 

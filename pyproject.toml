@@ -60,7 +60,7 @@ docs = [
 
 [project.urls]
 Homepage = "https://github.com/opengeos/anymap-ts"
-Documentation = "https://anymap-ts.gishub.org"
+Documentation = "https://ts.anymap.dev"
 Repository = "https://github.com/opengeos/anymap-ts"
 Issues = "https://github.com/opengeos/anymap-ts/issues"
 
