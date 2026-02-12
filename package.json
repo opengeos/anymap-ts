@@ -45,16 +45,16 @@
     "@types/mapbox__mapbox-gl-draw": "^1.4.9",
     "cesium": "^1.138.0",
     "geotiff-geokeys-to-proj4": "^2024.4.13",
+    "jspdf": "^2.5.2",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.18.1",
-    "maplibre-gl": ">=5.16.0",
-    "maplibre-gl-components": "^0.10.0",
+    "maplibre-gl": ">=5.14.0",
+    "maplibre-gl-components": "^0.12.0",
     "maplibre-gl-geo-editor": "^0.5.0",
     "maplibre-gl-layer-control": "^0.12.0",
     "maplibre-gl-lidar": "^0.10.0",
     "ol": "^10.7.0",
-    "pmtiles": "^4.4.0",
-    "jspdf": "^2.5.2"
+    "pmtiles": "^4.4.0"
   },
   "devDependencies": {
     "@anywidget/types": "^0.2.0",

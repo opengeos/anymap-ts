@@ -105,6 +105,7 @@ nav:
           - notebooks/leaflet.ipynb
     - MapLibre:
           - notebooks/maplibre.ipynb
+          - notebooks/control_grid.ipynb
           - notebooks/cog_layer.ipynb
           - notebooks/zarr_layer.ipynb
           - notebooks/arc_layer.ipynb

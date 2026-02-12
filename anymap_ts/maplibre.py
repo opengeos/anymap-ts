@@ -69,7 +69,7 @@ class MapLibreMap(MapWidget):
             pitch: Map pitch in degrees.
             max_pitch: Maximum pitch angle in degrees (default: 85).
             controls: Dict of controls to add. If None, defaults to
-                {"navigation": True, "fullscreen": True, "globe": True, "layer-control": True}.
+                {"layer-control": True, "control-grid": True}.
                 Use {"layer-control": {"collapsed": True}} for custom options.
             **kwargs: Additional widget arguments.
         """
@@ -98,17 +98,18 @@ class MapLibreMap(MapWidget):
         # Add default controls
         if controls is None:
             controls = {
-                "navigation": True,
-                "fullscreen": True,
-                "globe": True,
                 "layer-control": True,
+                "control-grid": True,
             }
 
         for control_name, config in controls.items():
             if config:
                 if control_name == "layer-control":
-                    # Layer control uses a separate method
                     self.add_layer_control(
+                        **(config if isinstance(config, dict) else {})
+                    )
+                elif control_name == "control-grid":
+                    self.add_control_grid(
                         **(config if isinstance(config, dict) else {})
                     )
                 else:
@@ -1178,6 +1179,94 @@ class MapLibreMap(MapWidget):
         self._controls = {
             **self._controls,
             "vector-control": {"position": position, "collapsed": collapsed},
+        }
+
+    def add_control_grid(
+        self,
+        position: str = "top-right",
+        default_controls: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        rows: Optional[int] = None,
+        columns: Optional[int] = None,
+        collapsed: bool = True,
+        collapsible: bool = True,
+        title: str = "",
+        show_row_column_controls: bool = True,
+        gap: int = 2,
+        basemap_style_url: Optional[str] = None,
+        exclude_layers: Optional[List[str]] = None,
+        **kwargs,
+    ) -> None:
+        """Add a ControlGrid with all default tools or a custom subset.
+
+        The ControlGrid provides a collapsible toolbar with up to 26 built-in
+        controls (search, basemap, terrain, measure, draw, etc.) in a
+        configurable grid layout.
+
+        Args:
+            position: Control position ('top-left', 'top-right', 'bottom-left',
+                'bottom-right').
+            default_controls: Explicit list of control names to include. If None,
+                all 26 default controls are used (minus any in ``exclude``).
+                Valid names: 'globe', 'fullscreen', 'north', 'terrain', 'search',
+                'viewState', 'inspect', 'vectorDataset', 'basemap', 'measure',
+                'geoEditor', 'bookmark', 'print', 'minimap', 'swipe',
+                'streetView', 'addVector', 'cogLayer', 'zarrLayer',
+                'pmtilesLayer', 'stacLayer', 'stacSearch', 'planetaryComputer',
+                'gaussianSplat', 'lidar', 'usgsLidar'.
+            exclude: Controls to remove from the default set. Ignored when
+                ``default_controls`` is provided.
+            rows: Number of grid rows (auto-calculated if None).
+            columns: Number of grid columns (auto-calculated if None).
+            collapsed: Whether the grid starts collapsed. Default True.
+            collapsible: Whether the grid can be collapsed. Default True.
+            title: Optional header title for the grid.
+            show_row_column_controls: Show row/column input fields. Default True.
+            gap: Gap between grid cells in pixels. Default 2.
+            basemap_style_url: Basemap style URL for SwipeControl layer grouping.
+                If None, the current map style is used automatically.
+            exclude_layers: Layer ID patterns to exclude from SwipeControl
+                (e.g., 'measure-*', 'gl-draw-*'). If None, sensible defaults
+                are applied.
+            **kwargs: Additional ControlGrid options.
+
+        Example:
+            >>> from anymap_ts import MapLibreMap
+            >>> m = MapLibreMap()
+            >>> m.add_control_grid()  # All 26 controls
+            >>> # Or with customization:
+            >>> m.add_control_grid(
+            ...     exclude=["minimap", "streetView"],
+            ...     collapsed=True,
+            ... )
+        """
+        js_kwargs: Dict[str, Any] = {
+            "position": position,
+            "collapsed": collapsed,
+            "collapsible": collapsible,
+            "showRowColumnControls": show_row_column_controls,
+            "gap": gap,
+            **kwargs,
+        }
+        if default_controls is not None:
+            js_kwargs["defaultControls"] = default_controls
+        if exclude is not None:
+            js_kwargs["exclude"] = exclude
+        if rows is not None:
+            js_kwargs["rows"] = rows
+        if columns is not None:
+            js_kwargs["columns"] = columns
+        if title:
+            js_kwargs["title"] = title
+        if basemap_style_url is not None:
+            js_kwargs["basemapStyleUrl"] = basemap_style_url
+        if exclude_layers is not None:
+            js_kwargs["excludeLayers"] = exclude_layers
+
+        self.call_js_method("addControlGrid", **js_kwargs)
+        self._controls = {
+            **self._controls,
+            "control-grid": {"position": position, "collapsed": collapsed},
         }
 
     def _process_deck_data(self, data: Any) -> Any:
