@@ -27,7 +27,7 @@ import type {
 } from '../types/mapbox';
 import type { Feature, FeatureCollection } from 'geojson';
 import { LidarControl } from 'maplibre-gl-lidar';
-import type { LidarControlOptions, LidarLayerOptions } from '../types/lidar';
+import type { LidarControlOptions, LidarLayerOptions, LidarColorScheme } from '../types/lidar';
 
 /**
  * Parse GeoKeys to proj4 definition for COG reprojection.
@@ -35,7 +35,7 @@ import type { LidarControlOptions, LidarLayerOptions } from '../types/lidar';
 async function geoKeysParser(
   geoKeys: Record<string, unknown>,
 ): Promise<proj.ProjectionInfo> {
-  const projDefinition = toProj4(geoKeys as Parameters<typeof toProj4>[0]);
+  const projDefinition = toProj4(geoKeys as unknown as Parameters<typeof toProj4>[0]);
 
   return {
     def: projDefinition.proj4,
@@ -186,26 +186,28 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       const bounds = this.map.getBounds();
       const zoom = this.map.getZoom();
 
-      this.model.set('current_center', [center.lng, center.lat]);
-      this.model.set('current_zoom', zoom);
-      this.model.set('current_bounds', [
-        bounds.getWest(),
-        bounds.getSouth(),
-        bounds.getEast(),
-        bounds.getNorth(),
-      ]);
-      this.model.save_changes();
-
-      this.sendEvent('moveend', {
-        center: [center.lng, center.lat],
-        zoom,
-        bounds: [
+      if (bounds) {
+        this.model.set('current_center', [center.lng, center.lat]);
+        this.model.set('current_zoom', zoom);
+        this.model.set('current_bounds', [
           bounds.getWest(),
           bounds.getSouth(),
           bounds.getEast(),
           bounds.getNorth(),
-        ],
-      });
+        ]);
+        this.model.save_changes();
+
+        this.sendEvent('moveend', {
+          center: [center.lng, center.lat],
+          zoom,
+          bounds: [
+            bounds.getWest(),
+            bounds.getSouth(),
+            bounds.getEast(),
+            bounds.getNorth(),
+          ],
+        });
+      }
     });
 
     // Zoom end event
@@ -338,8 +340,8 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       return;
     }
 
-    this.map.addSource(sourceId, kwargs as mapboxgl.AnySourceData);
-    this.stateManager.addSource(sourceId, kwargs);
+    this.map.addSource(sourceId, kwargs as unknown as mapboxgl.AnySourceData);
+    this.stateManager.addSource(sourceId, kwargs as any);
   }
 
   private handleRemoveSource(args: unknown[], kwargs: Record<string, unknown>): void {
@@ -410,7 +412,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     const type = layer.type;
     const opacityProperty = this.getOpacityProperty(type);
     if (opacityProperty) {
-      this.map.setPaintProperty(layerId, opacityProperty, opacity);
+      this.map.setPaintProperty(layerId, opacityProperty as any, opacity);
     }
     this.stateManager.setLayerOpacity(layerId, opacity);
   }
@@ -436,7 +438,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       return;
     }
 
-    this.map.setPaintProperty(layerId, property, value);
+    this.map.setPaintProperty(layerId, property as any, value);
   }
 
   private handleSetLayoutProperty(args: unknown[], kwargs: Record<string, unknown>): void {
@@ -447,7 +449,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       return;
     }
 
-    this.map.setLayoutProperty(layerId, property, value);
+    this.map.setLayoutProperty(layerId, property as any, value);
   }
 
   // -------------------------------------------------------------------------
@@ -762,7 +764,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
    */
   private updateDeckOverlay(): void {
     if (this.deckOverlay) {
-      const layers = Array.from(this.deckLayers.values());
+      const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
       this.deckOverlay.setProps({ layers });
     }
   }
@@ -785,7 +787,6 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       debug: kwargs.debug as boolean ?? false,
       debugOpacity: kwargs.debugOpacity as number ?? 0.25,
       maxError: kwargs.maxError as number ?? 0.125,
-      beforeId: kwargs.beforeId as string | undefined,
       geoKeysParser,
       onGeoTIFFLoad: (tiff: unknown, options: { geographicBounds: { west: number; south: number; east: number; north: number } }) => {
         if (fitBounds && this.map) {
@@ -796,7 +797,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
           );
         }
       },
-    });
+    } as unknown as Record<string, unknown>);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -822,9 +823,10 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     const data = kwargs.data as unknown[];
 
     // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: unknown) => any): any => {
       if (typeof value === 'string') {
-        return (d: any) => d[value];
+        return (d: unknown) => (d as Record<string, unknown>)[value];
       }
       if (typeof value === 'function') {
         return value;
@@ -832,7 +834,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       if (value !== undefined && value !== null) {
         return value; // Return arrays/numbers directly
       }
-      return fallbackFn || ((d: any) => d[defaultProp]);
+      return fallbackFn || ((d: unknown) => (d as Record<string, unknown>)[defaultProp]);
     };
 
     const layer = new ArcLayer({
@@ -841,13 +843,13 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
-      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
-      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
+      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', (d: unknown) => (d as Record<string, unknown>).source || (d as Record<string, unknown>).from || (d as Record<string, unknown>).sourcePosition),
+      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', (d: unknown) => (d as Record<string, unknown>).target || (d as Record<string, unknown>).to || (d as Record<string, unknown>).targetPosition),
       getSourceColor: makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
       getTargetColor: makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
       getHeight: makeAccessor(kwargs.getHeight ?? kwargs.height, 'height', () => 1),
       greatCircle: kwargs.greatCircle as boolean ?? false,
-    });
+    } as unknown as Record<string, unknown>);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -872,10 +874,10 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     const id = kwargs.id as string || `pointcloud-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: unknown) => any): any => {
       if (typeof value === 'string') {
-        return (d: any) => d[value];
+        return (d: unknown) => (d as Record<string, unknown>)[value];
       }
       if (typeof value === 'function') {
         return value;
@@ -883,7 +885,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       if (value !== undefined && value !== null) {
         return value; // Return arrays/numbers directly
       }
-      return fallbackFn || ((d: any) => d[defaultProp]);
+      return fallbackFn || ((d: unknown) => (d as Record<string, unknown>)[defaultProp]);
     };
 
     const layerProps: Record<string, unknown> = {
@@ -892,7 +894,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       pointSize: kwargs.pointSize as number ?? 2,
-      getPosition: makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getPosition: makeAccessor(kwargs.getPosition, 'position', (d: unknown) => (d as Record<string, unknown>).position || (d as Record<string, unknown>).coordinates || [(d as Record<string, unknown>).x, (d as Record<string, unknown>).y, (d as Record<string, unknown>).z]),
       getNormal: makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
       getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
       sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
@@ -906,7 +908,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       layerProps.coordinateOrigin = kwargs.coordinateOrigin as [number, number, number];
     }
 
-    const layer = new PointCloudLayer(layerProps);
+    const layer = new PointCloudLayer(layerProps as unknown as Record<string, unknown>);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -948,25 +950,25 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     };
 
     // LidarControl works with both MapLibre and Mapbox GL JS
-    this.lidarControl = new LidarControl(options as Parameters<typeof LidarControl>[0]);
+    this.lidarControl = new LidarControl(options as LidarControlOptions);
     this.map.addControl(
       this.lidarControl as unknown as mapboxgl.IControl,
       options.position as ControlPosition
     );
 
     this.lidarControl.on('load', (event) => {
-      const info = event.pointCloudInfo;
-      if (info) {
-        this.lidarLayers.set(info.id, info.source);
+      const info = event.pointCloud as { id: string; name: string; pointCount: number; source?: string } | undefined;
+      if (info && 'name' in info) {
+        this.lidarLayers.set(info.id, info.source || '');
         this.sendEvent('lidar:load', { id: info.id, name: info.name, pointCount: info.pointCount });
       }
     });
 
     this.lidarControl.on('unload', (event) => {
-      const id = event.pointCloudId;
-      if (id) {
-        this.lidarLayers.delete(id);
-        this.sendEvent('lidar:unload', { id });
+      const pointCloud = event.pointCloud as { id: string } | undefined;
+      if (pointCloud) {
+        this.lidarLayers.delete(pointCloud.id);
+        this.sendEvent('lidar:unload', { id: pointCloud.id });
       }
     });
   }
@@ -994,29 +996,29 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
         pointBudget: (kwargs.pointBudget as number) || 1000000,
         pickable: kwargs.pickable !== false,
         autoZoom: kwargs.autoZoom !== false,
-      } as Parameters<typeof LidarControl>[0]);
+      } as LidarControlOptions);
 
       this.map.addControl(this.lidarControl as unknown as mapboxgl.IControl, 'top-right');
 
       this.lidarControl.on('load', (event) => {
-        const info = event.pointCloudInfo;
-        if (info) {
-          this.lidarLayers.set(info.id, info.source);
+        const info = event.pointCloud as { id: string; name: string; pointCount: number; source?: string } | undefined;
+        if (info && 'name' in info) {
+          this.lidarLayers.set(info.id, info.source || '');
           this.sendEvent('lidar:load', { id: info.id, name: info.name, pointCount: info.pointCount });
         }
       });
 
       this.lidarControl.on('unload', (event) => {
-        const id = event.pointCloudId;
-        if (id) {
-          this.lidarLayers.delete(id);
-          this.sendEvent('lidar:unload', { id });
+        const pointCloud = event.pointCloud as { id: string } | undefined;
+        if (pointCloud) {
+          this.lidarLayers.delete(pointCloud.id);
+          this.sendEvent('lidar:unload', { id: pointCloud.id });
         }
       });
     }
 
     if (kwargs.colorScheme) {
-      this.lidarControl.setColorScheme(kwargs.colorScheme as string);
+      this.lidarControl.setColorScheme(kwargs.colorScheme as LidarColorScheme);
     }
     if (kwargs.pointSize !== undefined) {
       this.lidarControl.setPointSize(kwargs.pointSize as number);
@@ -1043,16 +1045,16 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
 
       const streamingMode = kwargs.streamingMode !== false;
       if (streamingMode) {
-        this.lidarControl.loadPointCloudStreaming(arrayBuffer, loadOptions);
+        this.lidarControl.loadPointCloudStreaming(arrayBuffer, loadOptions as any);
       } else {
-        this.lidarControl.loadPointCloud(arrayBuffer, loadOptions);
+        this.lidarControl.loadPointCloud(arrayBuffer, loadOptions as any);
       }
     } else {
       const streamingMode = kwargs.streamingMode !== false;
       if (streamingMode) {
-        this.lidarControl.loadPointCloudStreaming(source, loadOptions);
+        this.lidarControl.loadPointCloudStreaming(source, loadOptions as any);
       } else {
-        this.lidarControl.loadPointCloud(source, loadOptions);
+        this.lidarControl.loadPointCloud(source, loadOptions as any);
       }
     }
 
@@ -1076,7 +1078,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     if (!this.lidarControl) return;
     const colorScheme = kwargs.colorScheme as string;
     if (colorScheme) {
-      this.lidarControl.setColorScheme(colorScheme);
+      this.lidarControl.setColorScheme(colorScheme as LidarColorScheme);
     }
   }
 

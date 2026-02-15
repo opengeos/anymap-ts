@@ -55,7 +55,7 @@ import { GeoEditorPlugin } from './plugins/GeoEditorPlugin';
 import { LayerControlPlugin } from './plugins/LayerControlPlugin';
 import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter } from './adapters';
 import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
-import type { LidarControlOptions, LidarLayerOptions } from '../types/lidar';
+import type { LidarControlOptions, LidarLayerOptions, LidarColorScheme } from '../types/lidar';
 
 // Import controls from maplibre-gl-components
 import {
@@ -74,7 +74,7 @@ import 'maplibre-gl-components/style.css';
 async function geoKeysParser(
   geoKeys: Record<string, unknown>,
 ): Promise<proj.ProjectionInfo> {
-  const projDefinition = toProj4(geoKeys as Parameters<typeof toProj4>[0]);
+  const projDefinition = toProj4(geoKeys as unknown as Parameters<typeof toProj4>[0]);
 
   return {
     def: projDefinition.proj4,
@@ -242,26 +242,28 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const bounds = this.map.getBounds();
       const zoom = this.map.getZoom();
 
-      this.model.set('current_center', [center.lng, center.lat]);
-      this.model.set('current_zoom', zoom);
-      this.model.set('current_bounds', [
-        bounds.getWest(),
-        bounds.getSouth(),
-        bounds.getEast(),
-        bounds.getNorth(),
-      ]);
-      this.model.save_changes();
-
-      this.sendEvent('moveend', {
-        center: [center.lng, center.lat],
-        zoom,
-        bounds: [
+      if (bounds) {
+        this.model.set('current_center', [center.lng, center.lat]);
+        this.model.set('current_zoom', zoom);
+        this.model.set('current_bounds', [
           bounds.getWest(),
           bounds.getSouth(),
           bounds.getEast(),
           bounds.getNorth(),
-        ],
-      });
+        ]);
+        this.model.save_changes();
+
+        this.sendEvent('moveend', {
+          center: [center.lng, center.lat],
+          zoom,
+          bounds: [
+            bounds.getWest(),
+            bounds.getSouth(),
+            bounds.getEast(),
+            bounds.getNorth(),
+          ],
+        });
+      }
     });
 
     // Zoom end event
@@ -425,7 +427,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private handleAddSource(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const [sourceId] = args as [string];
-    const config = kwargs as SourceConfig;
+    const config = kwargs as unknown as SourceConfig;
 
     if (this.map.getSource(sourceId)) {
       console.warn(`Source ${sourceId} already exists`);
@@ -454,7 +456,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
   private handleAddLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-    const config = kwargs as LayerConfig;
+    const config = kwargs as unknown as LayerConfig;
 
     if (this.map.getLayer(config.id)) {
       console.warn(`Layer ${config.id} already exists`);
@@ -629,7 +631,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         type: type as maplibregl.LayerSpecification['type'],
         source: sourceId,
         paint: layerPaint,
-      });
+      } as maplibregl.AddLayerObject);
     }
 
     // Fit bounds
@@ -971,12 +973,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
    */
   protected updateDeckOverlay(): void {
     if (this.deckOverlay) {
-      const layers = Array.from(this.deckLayers.values());
+      const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
       this.deckOverlay.setProps({ layers });
     }
   }
 
-  private handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
 
     // Initialize deck.gl overlay if needed
@@ -994,7 +996,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       debug: kwargs.debug as boolean ?? false,
       debugOpacity: kwargs.debugOpacity as number ?? 0.25,
       maxError: kwargs.maxError as number ?? 0.125,
-      beforeId: kwargs.beforeId as string | undefined,
       geoKeysParser,
       onGeoTIFFLoad: (tiff: unknown, options: { geographicBounds: { west: number; south: number; east: number; north: number } }) => {
         if (fitBounds && this.map) {
@@ -1005,7 +1006,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
           );
         }
       },
-    });
+    } as unknown as Record<string, unknown>);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1040,7 +1041,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const variable = kwargs.variable as string;
     const clim = kwargs.clim as [number, number] || [0, 100];
     const colormap = kwargs.colormap as string[] || ['#000000', '#ffffff'];
-    const selector = kwargs.selector as Record<string, unknown> || {};
+    const selector = kwargs.selector || {};
     const opacity = kwargs.opacity as number ?? 1;
 
     const layer = new ZarrLayer({
@@ -1049,7 +1050,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       variable,
       clim,
       colormap,
-      selector,
+      selector: selector as any,
       opacity,
       minzoom: kwargs.minzoom as number,
       maxzoom: kwargs.maxzoom as number,
@@ -1098,7 +1099,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // Arc layer handlers (deck.gl)
   // -------------------------------------------------------------------------
 
-  private handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
 
     // Initialize deck.gl overlay if needed
@@ -1108,7 +1109,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const data = kwargs.data as unknown[];
 
     // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
       if (typeof value === 'string') {
         return (d: any) => d[value];
       }
@@ -1160,7 +1161,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // PointCloud layer handlers (deck.gl)
   // -------------------------------------------------------------------------
 
-  private handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
 
     // Initialize deck.gl overlay if needed
@@ -1170,7 +1171,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const data = kwargs.data as unknown[];
 
     // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
       if (typeof value === 'string') {
         return (d: any) => d[value];
       }
@@ -1230,7 +1231,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // Additional deck.gl layer handlers
   // -------------------------------------------------------------------------
 
-  private handleAddScatterplotLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddScatterplotLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1252,7 +1253,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       getRadius: kwargs.getRadius ?? kwargs.radius ?? 5,
       getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 200],
       getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [255, 255, 255, 255],
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1262,7 +1263,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddPathLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddPathLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1279,7 +1280,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       getPath: kwargs.getPath ?? ((d: any) => d.path || d.coordinates),
       getColor: kwargs.getColor ?? kwargs.color ?? [51, 136, 255, 200],
       getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1289,7 +1290,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1311,7 +1312,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
       getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 255, 255],
       getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1321,7 +1322,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddHexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddHexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1337,7 +1338,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       radius: kwargs.radius as number ?? 1000,
       elevationScale: kwargs.elevationScale as number ?? 4,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      colorRange: kwargs.colorRange as number[][] ?? [
+      colorRange: kwargs.colorRange ?? [
         [1, 152, 189],
         [73, 227, 206],
         [216, 254, 181],
@@ -1345,7 +1346,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         [254, 173, 84],
         [209, 55, 78],
       ],
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1355,7 +1356,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddHeatmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddHeatmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1372,15 +1373,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       threshold: kwargs.threshold as number ?? 0.05,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
-      colorRange: kwargs.colorRange as number[][] ?? [
+      colorRange: (kwargs.colorRange ?? [
         [255, 255, 178, 25],
         [254, 217, 118, 85],
         [254, 178, 76, 127],
         [253, 141, 60, 170],
         [240, 59, 32, 212],
         [189, 0, 38, 255],
-      ],
-    });
+      ]) as any,
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1390,7 +1391,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1406,7 +1407,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       cellSize: kwargs.cellSize as number ?? 200,
       elevationScale: kwargs.elevationScale as number ?? 4,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      colorRange: kwargs.colorRange as number[][] ?? [
+      colorRange: kwargs.colorRange ?? [
         [1, 152, 189],
         [73, 227, 206],
         [216, 254, 181],
@@ -1414,7 +1415,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         [254, 173, 84],
         [209, 55, 78],
       ],
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1424,7 +1425,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddIconLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddIconLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1437,12 +1438,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       iconAtlas: kwargs.iconAtlas as string,
-      iconMapping: kwargs.iconMapping as Record<string, unknown>,
+      iconMapping: kwargs.iconMapping,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       getIcon: kwargs.getIcon ?? ((d: any) => d.icon || 'marker'),
       getSize: kwargs.getSize ?? kwargs.size ?? 20,
       getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255],
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1452,7 +1453,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddTextLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddTextLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1471,7 +1472,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       getAngle: kwargs.getAngle ?? 0,
       getTextAnchor: kwargs.getTextAnchor ?? 'middle',
       getAlignmentBaseline: kwargs.getAlignmentBaseline ?? 'center',
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1481,7 +1482,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddGeoJsonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddGeoJsonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1504,7 +1505,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
       getPointRadius: kwargs.getPointRadius ?? kwargs.pointRadius ?? 5,
       getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0,
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1514,7 +1515,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddContourLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddContourLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1534,7 +1535,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       ],
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1544,7 +1545,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddScreenGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddScreenGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1559,15 +1560,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       cellSizePixels: kwargs.cellSizePixels as number ?? 50,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
-      colorRange: kwargs.colorRange as number[][] ?? [
+      colorRange: (kwargs.colorRange ?? [
         [255, 255, 178, 25],
         [254, 217, 118, 85],
         [254, 178, 76, 127],
         [253, 141, 60, 170],
         [240, 59, 32, 212],
         [189, 0, 38, 255],
-      ],
-    });
+      ]) as any,
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1577,7 +1578,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1585,7 +1586,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const data = kwargs.data as unknown[];
 
     // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
       if (typeof value === 'string') {
         return (d: any) => d[value];
       }
@@ -1609,7 +1610,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       getPath: makeAccessor(kwargs.getPath, 'waypoints', (d: any) => d.waypoints || d.path || d.coordinates),
       getTimestamps: makeAccessor(kwargs.getTimestamps, 'timestamps', (d: any) => d.timestamps),
       getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [253, 128, 93]),
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1619,7 +1620,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     this.initializeDeckOverlay();
 
@@ -1627,7 +1628,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const data = kwargs.data as unknown[];
 
     // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any) => {
+    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
       if (typeof value === 'string') {
         return (d: any) => d[value];
       }
@@ -1650,7 +1651,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'targetPosition', (d: any) => d.targetPosition || d.target || d.to),
       getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
       getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
-    });
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1664,7 +1665,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
    * Generic handler for adding any deck.gl layer type.
    * Routes to specific handlers based on layerType.
    */
-  private handleAddDeckGLLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleAddDeckGLLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
 
     const layerType = kwargs.layerType as string;
@@ -1703,7 +1704,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   /**
    * Remove a deck.gl layer by ID.
    */
-  private handleRemoveDeckLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleRemoveDeckLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = (args[0] as string) || (kwargs.id as string);
     if (!id) return;
 
@@ -1718,7 +1719,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   /**
    * Set visibility of a deck.gl layer.
    */
-  private handleSetDeckLayerVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected handleSetDeckLayerVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = (args[0] as string) || (kwargs.id as string);
     const visible = (args[1] as boolean) ?? (kwargs.visible as boolean) ?? true;
 
@@ -1766,7 +1767,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     };
 
     // Create and add the LiDAR control
-    this.lidarControl = new LidarControl(options as Parameters<typeof LidarControl>[0]);
+    this.lidarControl = new LidarControl(options as LidarControlOptions);
     this.map.addControl(
       this.lidarControl as unknown as maplibregl.IControl,
       options.position as ControlPosition
@@ -1774,18 +1775,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Listen for load events to track loaded point clouds
     this.lidarControl.on('load', (event) => {
-      const info = event.pointCloudInfo;
-      if (info) {
-        this.lidarLayers.set(info.id, info.source);
+      const info = event.pointCloud as { id: string; name: string; pointCount: number; source?: string } | undefined;
+      if (info && 'name' in info) {
+        this.lidarLayers.set(info.id, info.source || '');
         this.sendEvent('lidar:load', { id: info.id, name: info.name, pointCount: info.pointCount });
       }
     });
 
     this.lidarControl.on('unload', (event) => {
-      const id = event.pointCloudId;
-      if (id) {
-        this.lidarLayers.delete(id);
-        this.sendEvent('lidar:unload', { id });
+      const pointCloud = event.pointCloud as { id: string } | undefined;
+      if (pointCloud) {
+        this.lidarLayers.delete(pointCloud.id);
+        this.sendEvent('lidar:unload', { id: pointCloud.id });
       }
     });
 
@@ -1839,24 +1840,24 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         pointBudget: (kwargs.pointBudget as number) || 1000000,
         pickable: kwargs.pickable !== false,
         autoZoom: kwargs.autoZoom !== false,
-      } as Parameters<typeof LidarControl>[0]);
+      } as LidarControlOptions);
 
       this.map.addControl(this.lidarControl as unknown as maplibregl.IControl, 'top-right');
 
       // Set up event listeners
       this.lidarControl.on('load', (event) => {
-        const info = event.pointCloudInfo;
-        if (info) {
-          this.lidarLayers.set(info.id, info.source);
+        const info = event.pointCloud as { id: string; name: string; pointCount: number; source?: string } | undefined;
+        if (info && 'name' in info) {
+          this.lidarLayers.set(info.id, info.source || '');
           this.sendEvent('lidar:load', { id: info.id, name: info.name, pointCount: info.pointCount });
         }
       });
 
       this.lidarControl.on('unload', (event) => {
-        const id = event.pointCloudId;
-        if (id) {
-          this.lidarLayers.delete(id);
-          this.sendEvent('lidar:unload', { id });
+        const pointCloud = event.pointCloud as { id: string } | undefined;
+        if (pointCloud) {
+          this.lidarLayers.delete(pointCloud.id);
+          this.sendEvent('lidar:unload', { id: pointCloud.id });
         }
       });
 
@@ -1866,7 +1867,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Apply styling options
     if (kwargs.colorScheme) {
-      this.lidarControl.setColorScheme(kwargs.colorScheme as string);
+      this.lidarControl.setColorScheme(kwargs.colorScheme as LidarColorScheme);
     }
     if (kwargs.pointSize !== undefined) {
       this.lidarControl.setPointSize(kwargs.pointSize as number);
@@ -1896,17 +1897,17 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       // Load from ArrayBuffer
       const streamingMode = kwargs.streamingMode !== false;
       if (streamingMode) {
-        this.lidarControl.loadPointCloudStreaming(arrayBuffer, loadOptions);
+        this.lidarControl.loadPointCloudStreaming(arrayBuffer, loadOptions as any);
       } else {
-        this.lidarControl.loadPointCloud(arrayBuffer, loadOptions);
+        this.lidarControl.loadPointCloud(arrayBuffer, loadOptions as any);
       }
     } else {
       // Load from URL
       const streamingMode = kwargs.streamingMode !== false;
       if (streamingMode) {
-        this.lidarControl.loadPointCloudStreaming(source, loadOptions);
+        this.lidarControl.loadPointCloudStreaming(source, loadOptions as any);
       } else {
-        this.lidarControl.loadPointCloud(source, loadOptions);
+        this.lidarControl.loadPointCloud(source, loadOptions as any);
       }
     }
 
@@ -1938,7 +1939,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (!this.lidarControl) return;
     const colorScheme = kwargs.colorScheme as string;
     if (colorScheme) {
-      this.lidarControl.setColorScheme(colorScheme);
+      this.lidarControl.setColorScheme(colorScheme as any);
     }
   }
 
@@ -2035,7 +2036,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       defaultUrl,
       loadDefaultUrl,
       defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
-      defaultColormap: kwargs.defaultColormap as string || 'viridis',
+      defaultColormap: (kwargs.defaultColormap as string || 'viridis') as any,
       defaultBands: kwargs.defaultBands as string || '1',
       defaultRescaleMin: (kwargs.defaultRescaleMin as number) ?? 0,
       defaultRescaleMax: (kwargs.defaultRescaleMax as number) ?? 255,

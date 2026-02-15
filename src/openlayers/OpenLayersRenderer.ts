@@ -21,20 +21,23 @@ import { defaults as defaultInteractions, DragRotateAndZoom } from 'ol/interacti
 import { createStringXY } from 'ol/coordinate';
 
 import { BaseMapRenderer } from '../core/BaseMapRenderer';
-import type { MapWidgetModel, JsCallMessage } from '../types/anywidget';
+import type { MapWidgetModel, JsCall } from '../types/anywidget';
 
 import 'ol/ol.css';
 
 type MethodHandler = (args: unknown[], kwargs: Record<string, unknown>) => void;
 
+// Alias Map to OLMap to avoid conflict with the native Map type
+type OLMap = Map;
+
 /**
  * OpenLayers map renderer.
  */
-export class OpenLayersRenderer extends BaseMapRenderer {
-  protected map: Map | null = null;
-  private methodHandlers: Record<string, MethodHandler> = {};
-  private layersMap: Map<string, TileLayer<any> | VectorLayer<any> | ImageLayer<any>> = new Map();
-  private controlsMap: Map<string, any> = new Map();
+export class OpenLayersRenderer extends BaseMapRenderer<OLMap> {
+  protected map: OLMap | null = null;
+  private olMethodHandlers: Record<string, MethodHandler> = {};
+  private layersMap: globalThis.Map<string, TileLayer<any> | VectorLayer<any> | ImageLayer<any>> = new globalThis.Map();
+  private controlsMap: globalThis.Map<string, any> = new globalThis.Map();
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -45,7 +48,7 @@ export class OpenLayersRenderer extends BaseMapRenderer {
    * Register a method handler.
    */
   protected registerMethod(name: string, handler: MethodHandler): void {
-    this.methodHandlers[name] = handler;
+    this.olMethodHandlers[name] = handler;
   }
 
   /**
@@ -116,10 +119,10 @@ export class OpenLayersRenderer extends BaseMapRenderer {
     });
 
     // Process any pending JS calls
-    const jsCalls = this.model.get('_js_calls') as JsCallMessage[];
+    const jsCalls = this.model.get('_js_calls') as JsCall[];
     if (jsCalls && jsCalls.length > 0) {
       for (const call of jsCalls) {
-        await this.executeMethod(call);
+        await this.executeOLMethod(call);
       }
     }
 
@@ -164,19 +167,19 @@ export class OpenLayersRenderer extends BaseMapRenderer {
    * Handle JS calls change.
    */
   private handleJsCallsChange(): void {
-    const jsCalls = this.model.get('_js_calls') as JsCallMessage[];
+    const jsCalls = this.model.get('_js_calls') as JsCall[];
     if (jsCalls && jsCalls.length > 0) {
       const lastCall = jsCalls[jsCalls.length - 1];
-      this.executeMethod(lastCall);
+      this.executeOLMethod(lastCall);
     }
   }
 
   /**
    * Execute a method from Python.
    */
-  private async executeMethod(call: JsCallMessage): Promise<void> {
+  private async executeOLMethod(call: JsCall): Promise<void> {
     const { method, args, kwargs } = call;
-    const handler = this.methodHandlers[method];
+    const handler = this.olMethodHandlers[method];
 
     if (handler) {
       try {
@@ -187,6 +190,54 @@ export class OpenLayersRenderer extends BaseMapRenderer {
     } else {
       console.warn(`Unknown method: ${method}`);
     }
+  }
+
+  /**
+   * Create the map instance.
+   */
+  protected createMap(): OLMap {
+    const center = this.model.get('center') as [number, number] || [0, 0];
+    const zoom = this.model.get('zoom') as number || 2;
+
+    const container = this.createMapContainer();
+
+    return new Map({
+      target: container,
+      view: new View({
+        center: fromLonLat(center),
+        zoom: zoom,
+      }),
+      controls: defaultControls({ attribution: false }),
+      interactions: defaultInteractions().extend([new DragRotateAndZoom()]),
+    });
+  }
+
+  /**
+   * Handle changes to the center trait.
+   */
+  protected onCenterChange(): void {
+    const newCenter = this.model.get('center') as [number, number];
+    if (this.map) {
+      this.map.getView().setCenter(fromLonLat(newCenter));
+    }
+  }
+
+  /**
+   * Handle changes to the zoom trait.
+   */
+  protected onZoomChange(): void {
+    const newZoom = this.model.get('zoom') as number;
+    if (this.map) {
+      this.map.getView().setZoom(newZoom);
+    }
+  }
+
+  /**
+   * Handle changes to the style trait.
+   */
+  protected onStyleChange(): void {
+    // OpenLayers doesn't have a built-in style concept like MapLibre
+    // Style changes would need to be handled differently
   }
 
   // -------------------------------------------------------------------------
@@ -274,10 +325,12 @@ export class OpenLayersRenderer extends BaseMapRenderer {
 
     if (fitBounds) {
       const extent = vectorSource.getExtent();
-      this.map.getView().fit(extent, {
-        padding: [50, 50, 50, 50],
-        duration: 500,
-      });
+      if (extent && extent.every(v => isFinite(v))) {
+        this.map.getView().fit(extent, {
+          padding: [50, 50, 50, 50],
+          duration: 500,
+        });
+      }
     }
   }
 
@@ -535,7 +588,7 @@ export class OpenLayersRenderer extends BaseMapRenderer {
     const color = kwargs.color as string || '#3388ff';
 
     // Create a vector source with a point feature
-    const feature = new GeoJSON().readFeature({
+    const featureResult = new GeoJSON().readFeature({
       type: 'Feature',
       geometry: {
         type: 'Point',
@@ -548,8 +601,9 @@ export class OpenLayersRenderer extends BaseMapRenderer {
       featureProjection: 'EPSG:3857',
     });
 
+    const features = Array.isArray(featureResult) ? featureResult : [featureResult];
     const vectorSource = new VectorSource({
-      features: [feature],
+      features,
     });
 
     const markerStyle = new Style({
@@ -574,12 +628,12 @@ export class OpenLayersRenderer extends BaseMapRenderer {
   // -------------------------------------------------------------------------
 
   destroy(): void {
+    this.removeModelListeners();
     if (this.map) {
       this.map.setTarget(undefined);
       this.map = null;
     }
     this.layersMap.clear();
     this.controlsMap.clear();
-    super.destroy();
   }
 }

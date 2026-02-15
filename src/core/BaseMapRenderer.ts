@@ -187,13 +187,13 @@ export abstract class BaseMapRenderer<TMap> {
     // Restore sources first
     const sources = this.model.get('_sources') || {};
     for (const [sourceId, sourceConfig] of Object.entries(sources)) {
-      this.executeMethod('addSource', [sourceId], sourceConfig as Record<string, unknown>);
+      this.executeMethod('addSource', [sourceId], sourceConfig as unknown as Record<string, unknown>);
     }
 
     // Then restore layers
     const layers = this.model.get('_layers') || {};
     for (const [layerId, layerConfig] of Object.entries(layers)) {
-      this.executeMethod('addLayer', [], layerConfig as Record<string, unknown>);
+      this.executeMethod('addLayer', [], layerConfig as unknown as Record<string, unknown>);
     }
   }
 
