@@ -53,6 +53,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   private popupsMap: globalThis.Map<string, Popup> = new globalThis.Map();
   private controlsMap: globalThis.Map<string, mapboxgl.IControl> = new globalThis.Map();
   private resizeObserver: ResizeObserver | null = null;
+  private resizeDebounceTimer: number | null = null;
 
   // Deck.gl overlay for COG layers
   private deckOverlay: MapboxOverlay | null = null;
@@ -117,7 +118,16 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
 
     this.resizeObserver = new ResizeObserver(() => {
       if (this.map) {
-        this.map.resize();
+        // Debounce resize to prevent flickering during window resize
+        if (this.resizeDebounceTimer !== null) {
+          window.clearTimeout(this.resizeDebounceTimer);
+        }
+        this.resizeDebounceTimer = window.setTimeout(() => {
+          if (this.map) {
+            this.map.resize();
+          }
+          this.resizeDebounceTimer = null;
+        }, 100);
       }
     });
 
@@ -1117,6 +1127,11 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
 
   destroy(): void {
     this.removeModelListeners();
+
+    if (this.resizeDebounceTimer !== null) {
+      window.clearTimeout(this.resizeDebounceTimer);
+      this.resizeDebounceTimer = null;
+    }
 
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
