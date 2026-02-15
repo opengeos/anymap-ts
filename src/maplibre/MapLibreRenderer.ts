@@ -166,12 +166,23 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   /**
    * Set up resize observer to handle container size changes.
    */
+  private resizeDebounceTimer: number | null = null;
+
   private setupResizeObserver(): void {
     if (!this.mapContainer || !this.map) return;
 
     this.resizeObserver = new ResizeObserver(() => {
       if (this.map) {
-        this.map.resize();
+        // Debounce resize to prevent flickering during window resize
+        if (this.resizeDebounceTimer !== null) {
+          window.clearTimeout(this.resizeDebounceTimer);
+        }
+        this.resizeDebounceTimer = window.setTimeout(() => {
+          if (this.map) {
+            this.map.resize();
+          }
+          this.resizeDebounceTimer = null;
+        }, 100);
       }
     });
 
@@ -2351,6 +2362,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   destroy(): void {
     // Remove model listeners
     this.removeModelListeners();
+
+    // Clear resize debounce timer
+    if (this.resizeDebounceTimer !== null) {
+      window.clearTimeout(this.resizeDebounceTimer);
+      this.resizeDebounceTimer = null;
+    }
 
     // Disconnect resize observer
     if (this.resizeObserver) {

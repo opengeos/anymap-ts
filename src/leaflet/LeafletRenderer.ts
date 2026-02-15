@@ -34,6 +34,7 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
   private popupsMap: globalThis.Map<string, Popup> = new globalThis.Map();
   private controlsMap: globalThis.Map<string, Control> = new globalThis.Map();
   private resizeObserver: ResizeObserver | null = null;
+  private resizeDebounceTimer: number | null = null;
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -74,7 +75,16 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
 
     this.resizeObserver = new ResizeObserver(() => {
       if (this.map) {
-        this.map.invalidateSize();
+        // Debounce resize to prevent flickering during window resize
+        if (this.resizeDebounceTimer !== null) {
+          window.clearTimeout(this.resizeDebounceTimer);
+        }
+        this.resizeDebounceTimer = window.setTimeout(() => {
+          if (this.map) {
+            this.map.invalidateSize();
+          }
+          this.resizeDebounceTimer = null;
+        }, 100);
       }
     });
 
@@ -580,6 +590,11 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
 
   destroy(): void {
     this.removeModelListeners();
+
+    if (this.resizeDebounceTimer !== null) {
+      window.clearTimeout(this.resizeDebounceTimer);
+      this.resizeDebounceTimer = null;
+    }
 
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
