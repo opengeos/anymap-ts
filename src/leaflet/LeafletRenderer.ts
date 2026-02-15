@@ -117,7 +117,7 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
     if (!this.map) return;
 
     // Click event
-    this.map.on('click', (e) => {
+    this.map.on('click', (e: L.LeafletMouseEvent) => {
       this.model.set('clicked', {
         lng: e.latlng.lng,
         lat: e.latlng.lat,
@@ -328,7 +328,7 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
 
     // Create GeoJSON layer
     const geoJsonLayer = L.geoJSON(geojson as any, {
-      style: (feature) => {
+      style: (feature: GeoJSON.Feature | undefined) => {
         if (style) {
           return style;
         }
@@ -336,7 +336,7 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
         const geomType = feature?.geometry?.type || 'Point';
         return this.getDefaultStyle(geomType);
       },
-      pointToLayer: (feature, latlng) => {
+      pointToLayer: (feature: GeoJSON.Feature, latlng: L.LatLng) => {
         const s = style || this.getDefaultStyle('Point');
         return L.circleMarker(latlng, s as any);
       },

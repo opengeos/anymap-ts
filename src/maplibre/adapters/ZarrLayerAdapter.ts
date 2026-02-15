@@ -8,10 +8,12 @@ import type { ZarrLayer } from '@carbonplan/zarr-layer';
 
 /**
  * Extended ZarrLayer interface with internal properties.
+ * Uses Record type to access internal properties without type conflicts.
  */
-interface ZarrLayerInternal extends ZarrLayer {
+interface ZarrLayerInternal {
   _originalOpacity?: number;
   opacity?: number;
+  setOpacity(opacity: number): void;
 }
 
 /**
@@ -42,7 +44,7 @@ export class ZarrLayerAdapter implements CustomLayerAdapter {
    * Get the state of a Zarr layer.
    */
   getLayerState(layerId: string): LayerState | null {
-    const layer = this.zarrLayers.get(layerId) as ZarrLayerInternal | undefined;
+    const layer = this.zarrLayers.get(layerId) as unknown as ZarrLayerInternal | undefined;
     if (!layer) return null;
 
     const visible = this.layerVisibility.get(layerId) ?? true;
@@ -60,7 +62,7 @@ export class ZarrLayerAdapter implements CustomLayerAdapter {
    * Uses opacity trick since ZarrLayer doesn't have setVisible.
    */
   setVisibility(layerId: string, visible: boolean): void {
-    const layer = this.zarrLayers.get(layerId) as ZarrLayerInternal | undefined;
+    const layer = this.zarrLayers.get(layerId) as unknown as ZarrLayerInternal | undefined;
     if (!layer) return;
 
     this.layerVisibility.set(layerId, visible);
@@ -85,7 +87,7 @@ export class ZarrLayerAdapter implements CustomLayerAdapter {
    * Set opacity of a Zarr layer.
    */
   setOpacity(layerId: string, opacity: number): void {
-    const layer = this.zarrLayers.get(layerId) as ZarrLayerInternal | undefined;
+    const layer = this.zarrLayers.get(layerId) as unknown as ZarrLayerInternal | undefined;
     if (!layer) return;
 
     // Store as original opacity

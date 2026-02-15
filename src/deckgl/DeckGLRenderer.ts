@@ -27,7 +27,7 @@ import type { DeckGLLayerConfig, COGLayerProps } from '../types/deckgl';
 async function geoKeysParser(
   geoKeys: Record<string, unknown>,
 ): Promise<proj.ProjectionInfo> {
-  const projDefinition = toProj4(geoKeys as Parameters<typeof toProj4>[0]);
+  const projDefinition = toProj4(geoKeys as unknown as Parameters<typeof toProj4>[0]);
 
   return {
     def: projDefinition.proj4,
@@ -55,8 +55,8 @@ interface TripsLayerConfig {
 }
 
 export class DeckGLRenderer extends MapLibreRenderer {
-  private deckOverlay: MapboxOverlay | null = null;
-  private deckLayers: Map<string, unknown> = new Map();
+  protected deckOverlay: MapboxOverlay | null = null;
+  protected deckLayers: globalThis.Map<string, unknown> = new globalThis.Map();
   private tripsLayerConfigs: Map<string, TripsLayerConfig> = new Map();
   private tripsAnimations: Map<string, {
     frameId: number;
@@ -114,7 +114,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.registerMethod('addColumnLayer', this.handleAddColumnLayer.bind(this));
     this.registerMethod('addGridCellLayer', this.handleAddGridCellLayer.bind(this));
     this.registerMethod('addSolidPolygonLayer', this.handleAddSolidPolygonLayer.bind(this));
-    this.registerMethod('addTileLayer', this.handleAddTileLayer.bind(this));
+    this.registerMethod('addTileLayer', this.handleAddDeckTileLayer.bind(this));
     this.registerMethod('addMVTLayer', this.handleAddMVTLayer.bind(this));
     this.registerMethod('addTile3DLayer', this.handleAddTile3DLayer.bind(this));
     this.registerMethod('addTerrainLayer', this.handleAddTerrainLayer.bind(this));
@@ -137,16 +137,17 @@ export class DeckGLRenderer extends MapLibreRenderer {
   /**
    * Update deck.gl layers.
    */
-  private updateDeckOverlay(): void {
+  protected override updateDeckOverlay(): void {
     if (this.deckOverlay) {
-      const layers = Array.from(this.deckLayers.values());
+      const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
       this.deckOverlay.setProps({ layers });
     }
   }
 
-  private makeAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): unknown {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private makeAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: unknown) => any): any {
     if (typeof value === 'string') {
-      return (d: any) => d[value];
+      return (d: unknown) => (d as Record<string, unknown>)[value];
     }
     if (typeof value === 'function') {
       return value;
@@ -154,7 +155,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     if (value !== undefined && value !== null) {
       return value;
     }
-    return fallbackFn || ((d: any) => d[defaultProp]);
+    return fallbackFn || ((d: unknown) => (d as Record<string, unknown>)[defaultProp]);
   }
 
   private normalizeTimestampValues(value: unknown): number[] {
@@ -239,7 +240,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
         getPath: cfg.getPath,
         getTimestamps: cfg.getTimestamps,
         getColor: cfg.getColor,
-      });
+      } as any);
 
       this.deckLayers.set(layerId, updatedLayer);
       this.updateDeckOverlay();
@@ -262,7 +263,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
   // DeckGL Layer Handlers
   // -------------------------------------------------------------------------
 
-  private handleAddScatterplotLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddScatterplotLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `scatterplot-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -291,7 +292,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `arc-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -311,7 +312,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddPathLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddPathLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `path-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -331,7 +332,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `polygon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -356,7 +357,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddHexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddHexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `hexagon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -373,21 +374,21 @@ export class DeckGLRenderer extends MapLibreRenderer {
         'coordinates',
         (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
       ),
-      colorRange: kwargs.colorRange as number[][] ?? [
+      colorRange: kwargs.colorRange as unknown as undefined ?? [
         [1, 152, 189],
         [73, 227, 206],
         [216, 254, 181],
         [254, 237, 177],
         [254, 173, 84],
         [209, 55, 78],
-      ],
-    });
+      ] as unknown as undefined,
+    } as unknown as Record<string, unknown>);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
 
-  private handleAddHeatmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddHeatmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `heatmap-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -405,21 +406,21 @@ export class DeckGLRenderer extends MapLibreRenderer {
         (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
       ),
       getWeight: this.makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
-      colorRange: kwargs.colorRange as number[][] ?? [
+      colorRange: kwargs.colorRange as unknown as undefined ?? [
         [255, 255, 178, 25],
         [254, 217, 118, 85],
         [254, 178, 76, 127],
         [253, 141, 60, 170],
         [240, 59, 32, 212],
         [189, 0, 38, 255],
-      ],
-    });
+      ] as unknown as undefined,
+    } as unknown as Record<string, unknown>);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
 
-  private handleAddGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `grid-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -436,21 +437,21 @@ export class DeckGLRenderer extends MapLibreRenderer {
         'coordinates',
         (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
       ),
-      colorRange: kwargs.colorRange as number[][] ?? [
+      colorRange: (kwargs.colorRange ?? [
         [1, 152, 189],
         [73, 227, 206],
         [216, 254, 181],
         [254, 237, 177],
         [254, 173, 84],
         [209, 55, 78],
-      ],
+      ]) as any,
     });
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
 
-  private handleAddIconLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddIconLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `icon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -460,7 +461,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       iconAtlas: kwargs.iconAtlas as string,
-      iconMapping: kwargs.iconMapping as Record<string, unknown>,
+      iconMapping: kwargs.iconMapping as any,
       getPosition: this.makeAccessor(
         kwargs.getPosition,
         'coordinates',
@@ -475,7 +476,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddTextLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddTextLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `text-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -493,21 +494,21 @@ export class DeckGLRenderer extends MapLibreRenderer {
       getSize: this.makeAccessor(kwargs.getSize ?? kwargs.size, 'size', () => 12),
       getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [0, 0, 0, 255]),
       getAngle: this.makeAccessor(kwargs.getAngle, 'angle', () => 0),
-      getTextAnchor: kwargs.getTextAnchor ?? 'middle',
-      getAlignmentBaseline: kwargs.getAlignmentBaseline ?? 'center',
+      getTextAnchor: (kwargs.getTextAnchor ?? 'middle') as any,
+      getAlignmentBaseline: (kwargs.getAlignmentBaseline ?? 'center') as any,
     });
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
 
-  private handleAddGeoJsonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddGeoJsonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `geojson-${Date.now()}`;
-    const data = kwargs.data as unknown;
+    const data = kwargs.data;
 
     const layer = new GeoJsonLayer({
       id,
-      data,
+      data: data as any,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       stroked: kwargs.stroked !== false,
@@ -527,7 +528,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddContourLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddContourLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `contour-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -554,7 +555,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddScreenGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddScreenGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `screengrid-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -570,21 +571,21 @@ export class DeckGLRenderer extends MapLibreRenderer {
         (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
       ),
       getWeight: this.makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
-      colorRange: kwargs.colorRange as number[][] ?? [
+      colorRange: kwargs.colorRange as unknown as undefined ?? [
         [255, 255, 178, 25],
         [254, 217, 118, 85],
         [254, 178, 76, 127],
         [253, 141, 60, 170],
         [240, 59, 32, 212],
         [189, 0, 38, 255],
-      ],
-    });
+      ] as unknown as undefined,
+    } as unknown as Record<string, unknown>);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
 
-  private handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `pointcloud-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -614,7 +615,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `trips-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -679,7 +680,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     }
   }
 
-  private handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `line-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -716,8 +717,8 @@ export class DeckGLRenderer extends MapLibreRenderer {
       visible: kwargs.visible !== false,
       pickable: kwargs.pickable as boolean ?? false,
       desaturate: kwargs.desaturate as number ?? 0,
-      transparentColor: kwargs.transparentColor as number[] ?? [0, 0, 0, 0],
-      tintColor: kwargs.tintColor as number[] ?? [255, 255, 255],
+      transparentColor: (kwargs.transparentColor ?? [0, 0, 0, 0]) as any,
+      tintColor: (kwargs.tintColor ?? [255, 255, 255]) as any,
     });
 
     this.deckLayers.set(id, layer);
@@ -804,7 +805,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddTileLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleAddDeckTileLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `tile-${Date.now()}`;
     const data = kwargs.data as string | string[];
 
@@ -1170,7 +1171,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
    * Generic handler for adding any deck.gl layer type.
    * Routes to specific handlers based on layerType.
    */
-  private handleAddDeckGLLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddDeckGLLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const layerType = kwargs.layerType as string;
     if (!layerType) {
       console.warn('addDeckGLLayer called without layerType');
@@ -1199,7 +1200,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
       'ColumnLayer': this.handleAddColumnLayer.bind(this),
       'GridCellLayer': this.handleAddGridCellLayer.bind(this),
       'SolidPolygonLayer': this.handleAddSolidPolygonLayer.bind(this),
-      'TileLayer': this.handleAddTileLayer.bind(this),
+      'TileLayer': this.handleAddDeckTileLayer.bind(this),
       'MVTLayer': this.handleAddMVTLayer.bind(this),
       'Tile3DLayer': this.handleAddTile3DLayer.bind(this),
       'TerrainLayer': this.handleAddTerrainLayer.bind(this),
@@ -1222,7 +1223,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     }
   }
 
-  private handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `cog-${Date.now()}`;
     const geotiff = kwargs.geotiff as string;
     const fitBounds = kwargs.fitBounds !== false;
@@ -1235,7 +1236,6 @@ export class DeckGLRenderer extends MapLibreRenderer {
       debug: kwargs.debug as boolean ?? false,
       debugOpacity: kwargs.debugOpacity as number ?? 0.25,
       maxError: kwargs.maxError as number ?? 0.125,
-      beforeId: kwargs.beforeId as string | undefined,
       geoKeysParser,
       onGeoTIFFLoad: (tiff: unknown, options: { geographicBounds: { west: number; south: number; east: number; north: number } }) => {
         if (fitBounds && this.map) {
@@ -1246,7 +1246,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
           );
         }
       },
-    });
+    } as unknown as Record<string, unknown>);
 
     // Ensure the deck.gl overlay is initialized before adding the layer.
     if (!this.deckOverlay) {
@@ -1260,7 +1260,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
   // Layer Management
   // -------------------------------------------------------------------------
 
-  private handleRemoveDeckLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleRemoveDeckLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
     this.stopTripsAnimation(id);
     this.tripsLayerConfigs.delete(id);
@@ -1273,7 +1273,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     // To update, we need to create a new layer with the same type
     // This is a simplified version - full implementation would need to track layer types
     const existingLayer = this.deckLayers.get(id);
-    if (existingLayer && 'clone' in existingLayer) {
+    if (existingLayer && typeof existingLayer === 'object' && existingLayer !== null && 'clone' in (existingLayer as object)) {
       // Update the layer with new props
       const updatedLayer = (existingLayer as any).clone(kwargs);
       this.deckLayers.set(id, updatedLayer);
@@ -1281,7 +1281,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     }
   }
 
-  private handleSetDeckLayerVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleSetDeckLayerVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id, visible] = args as [string, boolean];
     const layer = this.deckLayers.get(id);
     if (layer) {

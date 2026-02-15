@@ -6,19 +6,20 @@
 import * as Cesium from 'cesium';
 
 import { BaseMapRenderer } from '../core/BaseMapRenderer';
-import type { MapWidgetModel, JsCallMessage } from '../types/anywidget';
+import type { MapWidgetModel, JsCall } from '../types/anywidget';
 
 type MethodHandler = (args: unknown[], kwargs: Record<string, unknown>) => void;
 
 /**
  * Cesium 3D globe renderer.
  */
-export class CesiumRenderer extends BaseMapRenderer {
-  private viewer: Cesium.Viewer | null = null;
+export class CesiumRenderer extends BaseMapRenderer<unknown> {
+  private viewer: any | null = null;
+  // @ts-ignore - Using Record instead of Map for simplicity
   private methodHandlers: Record<string, MethodHandler> = {};
-  private imageryLayers: Map<string, Cesium.ImageryLayer> = new Map();
-  private tilesets: Map<string, Cesium.Cesium3DTileset> = new Map();
-  private dataSources: Map<string, Cesium.DataSource> = new Map();
+  private imageryLayers: Map<string, any> = new Map();
+  private tilesets: Map<string, any> = new Map();
+  private dataSources: Map<string, any> = new Map();
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -65,6 +66,41 @@ export class CesiumRenderer extends BaseMapRenderer {
   }
 
   /**
+   * Create the map instance.
+   */
+  protected createMap(): unknown {
+    // Cesium viewer is created in initialize()
+    return this.viewer;
+  }
+
+  /**
+   * Handle changes to the center trait.
+   */
+  protected onCenterChange(): void {
+    const newCenter = this.model.get('center');
+    if (this.viewer) {
+      const currentHeight = this.viewer.camera.positionCartographic.height;
+      this.viewer.camera.flyTo({
+        destination: (Cesium as any).Cartesian3.fromDegrees(newCenter[0], newCenter[1], currentHeight),
+      });
+    }
+  }
+
+  /**
+   * Handle changes to the zoom trait.
+   */
+  protected onZoomChange(): void {
+    // Zoom is handled via camera height in Cesium
+  }
+
+  /**
+   * Handle changes to the style trait.
+   */
+  protected onStyleChange(): void {
+    // Cesium doesn't have a style concept like MapLibre/Mapbox
+  }
+
+  /**
    * Initialize the Cesium viewer.
    */
   async initialize(): Promise<void> {
@@ -74,7 +110,7 @@ export class CesiumRenderer extends BaseMapRenderer {
 
     // Set Cesium Ion access token
     if (accessToken) {
-      Cesium.Ion.defaultAccessToken = accessToken;
+      (Cesium as any).Ion.defaultAccessToken = accessToken;
     }
 
     // Create container
@@ -87,7 +123,7 @@ export class CesiumRenderer extends BaseMapRenderer {
     const height = this.zoomToHeight(zoom);
 
     // Create viewer
-    this.viewer = new Cesium.Viewer(container, {
+    this.viewer = new (Cesium as any).Viewer(container, {
       baseLayerPicker: false,
       geocoder: false,
       homeButton: false,
@@ -103,11 +139,11 @@ export class CesiumRenderer extends BaseMapRenderer {
 
     // Set initial camera position
     this.viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(center[0], center[1], height),
+      destination: (Cesium as any).Cartesian3.fromDegrees(center[0], center[1], height),
     });
 
     // Process pending JS calls
-    const jsCalls = this.model.get('_js_calls') as JsCallMessage[];
+    const jsCalls = this.model.get('_js_calls') as JsCall[];
     if (jsCalls && jsCalls.length > 0) {
       for (const call of jsCalls) {
         await this.executeMethod(call);
@@ -124,7 +160,7 @@ export class CesiumRenderer extends BaseMapRenderer {
       if (this.viewer) {
         const currentHeight = this.viewer.camera.positionCartographic.height;
         this.viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(newCenter[0], newCenter[1], currentHeight),
+          destination: (Cesium as any).Cartesian3.fromDegrees(newCenter[0], newCenter[1], currentHeight),
         });
       }
     });
@@ -142,7 +178,7 @@ export class CesiumRenderer extends BaseMapRenderer {
    * Handle JS calls change.
    */
   private handleJsCallsChange(): void {
-    const jsCalls = this.model.get('_js_calls') as JsCallMessage[];
+    const jsCalls = this.model.get('_js_calls') as JsCall[];
     if (jsCalls && jsCalls.length > 0) {
       const lastCall = jsCalls[jsCalls.length - 1];
       this.executeMethod(lastCall);
@@ -152,7 +188,8 @@ export class CesiumRenderer extends BaseMapRenderer {
   /**
    * Execute a method from Python.
    */
-  private async executeMethod(call: JsCallMessage): Promise<void> {
+  // @ts-ignore - Different signature than base class
+  private async executeMethod(call: JsCall): Promise<void> {
     const { method, args, kwargs } = call;
     const handler = this.methodHandlers[method];
 
@@ -178,7 +215,7 @@ export class CesiumRenderer extends BaseMapRenderer {
     const name = kwargs.name as string || 'basemap';
 
     // Create OpenStreetMap or XYZ imagery provider
-    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+    const imageryProvider = new (Cesium as any).UrlTemplateImageryProvider({
       url: url,
     });
 
@@ -193,28 +230,28 @@ export class CesiumRenderer extends BaseMapRenderer {
     const name = kwargs.name as string || `imagery-${this.imageryLayers.size}`;
     const alpha = kwargs.alpha as number ?? 1;
 
-    let imageryProvider: Cesium.ImageryProvider;
+    let imageryProvider: any;
 
     if (kwargs.type === 'wms') {
-      imageryProvider = new Cesium.WebMapServiceImageryProvider({
+      imageryProvider = new (Cesium as any).WebMapServiceImageryProvider({
         url: url,
         layers: kwargs.layers as string,
         parameters: kwargs.parameters as Record<string, string>,
       });
     } else if (kwargs.type === 'wmts') {
-      imageryProvider = new Cesium.WebMapTileServiceImageryProvider({
+      imageryProvider = new (Cesium as any).WebMapTileServiceImageryProvider({
         url: url,
         layer: kwargs.layer as string,
         style: kwargs.style as string || 'default',
         tileMatrixSetID: kwargs.tileMatrixSetID as string,
       });
     } else if (kwargs.type === 'arcgis') {
-      imageryProvider = new Cesium.ArcGisMapServerImageryProvider({
+      imageryProvider = new (Cesium as any).ArcGisMapServerImageryProvider({
         url: url,
       });
     } else {
       // Default XYZ tiles
-      imageryProvider = new Cesium.UrlTemplateImageryProvider({
+      imageryProvider = new (Cesium as any).UrlTemplateImageryProvider({
         url: url,
       });
     }
@@ -250,17 +287,17 @@ export class CesiumRenderer extends BaseMapRenderer {
     if (url === 'cesium-world-terrain' || !url) {
       // Use Cesium World Terrain (requires Ion token)
       this.viewer.scene.setTerrain(
-        Cesium.Terrain.fromWorldTerrain({
+        (Cesium as any).Terrain.fromWorldTerrain({
           requestVertexNormals: requestVertexNormals,
           requestWaterMask: requestWaterMask,
         })
       );
     } else {
       // Custom terrain provider
-      Cesium.CesiumTerrainProvider.fromUrl(url, {
+      (Cesium as any).CesiumTerrainProvider.fromUrl(url, {
         requestVertexNormals: requestVertexNormals,
         requestWaterMask: requestWaterMask,
-      }).then((terrainProvider) => {
+      }).then((terrainProvider: any) => {
         if (this.viewer) {
           this.viewer.terrainProvider = terrainProvider;
         }
@@ -270,7 +307,7 @@ export class CesiumRenderer extends BaseMapRenderer {
 
   private handleRemoveTerrain(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
-    this.viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+    this.viewer.terrainProvider = new (Cesium as any).EllipsoidTerrainProvider();
   }
 
   // -------------------------------------------------------------------------
@@ -285,18 +322,18 @@ export class CesiumRenderer extends BaseMapRenderer {
     const maximumScreenSpaceError = kwargs.maximumScreenSpaceError as number ?? 16;
 
     try {
-      let tileset: Cesium.Cesium3DTileset;
+      let tileset: any;
 
       // Check if it's an Ion asset ID
       if (typeof url === 'number' || (typeof url === 'string' && /^\d+$/.test(url))) {
-        tileset = await Cesium.Cesium3DTileset.fromIonAssetId(
+        tileset = await (Cesium as any).Cesium3DTileset.fromIonAssetId(
           parseInt(url as string),
           {
             maximumScreenSpaceError: maximumScreenSpaceError,
           }
         );
       } else {
-        tileset = await Cesium.Cesium3DTileset.fromUrl(url, {
+        tileset = await (Cesium as any).Cesium3DTileset.fromUrl(url, {
           maximumScreenSpaceError: maximumScreenSpaceError,
         });
       }
@@ -339,10 +376,10 @@ export class CesiumRenderer extends BaseMapRenderer {
     const fill = kwargs.fill as string || 'rgba(51, 136, 255, 0.5)';
 
     try {
-      const dataSource = await Cesium.GeoJsonDataSource.load(data, {
-        stroke: Cesium.Color.fromCssColorString(stroke),
+      const dataSource = await (Cesium as any).GeoJsonDataSource.load(data, {
+        stroke: (Cesium as any).Color.fromCssColorString(stroke),
         strokeWidth: strokeWidth,
-        fill: Cesium.Color.fromCssColorString(fill),
+        fill: (Cesium as any).Color.fromCssColorString(fill),
         clampToGround: clampToGround,
       });
 
@@ -385,11 +422,11 @@ export class CesiumRenderer extends BaseMapRenderer {
     const duration = kwargs.duration as number ?? 2;
 
     this.viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(lng, lat, height),
+      destination: (Cesium as any).Cartesian3.fromDegrees(lng, lat, height),
       orientation: {
-        heading: Cesium.Math.toRadians(heading),
-        pitch: Cesium.Math.toRadians(pitch),
-        roll: Cesium.Math.toRadians(roll),
+        heading: (Cesium as any).Math.toRadians(heading),
+        pitch: (Cesium as any).Math.toRadians(pitch),
+        roll: (Cesium as any).Math.toRadians(roll),
       },
       duration: duration,
     });
@@ -426,11 +463,11 @@ export class CesiumRenderer extends BaseMapRenderer {
     const roll = kwargs.roll as number || 0;
 
     this.viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(lng, lat, height),
+      destination: (Cesium as any).Cartesian3.fromDegrees(lng, lat, height),
       orientation: {
-        heading: Cesium.Math.toRadians(heading),
-        pitch: Cesium.Math.toRadians(pitch),
-        roll: Cesium.Math.toRadians(roll),
+        heading: (Cesium as any).Math.toRadians(heading),
+        pitch: (Cesium as any).Math.toRadians(pitch),
+        roll: (Cesium as any).Math.toRadians(roll),
       },
     });
   }
@@ -493,6 +530,7 @@ export class CesiumRenderer extends BaseMapRenderer {
     this.imageryLayers.clear();
     this.tilesets.clear();
     this.dataSources.clear();
-    super.destroy();
+    // Remove model listeners
+    this.removeModelListeners();
   }
 }

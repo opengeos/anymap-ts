@@ -109,9 +109,14 @@ export interface MapWidgetModel extends AnyModel {
 
   // Methods
   save_changes(): void;
-  on(event: string, callback: () => void): void;
-  off(event: string, callback?: () => void): void;
+  on(event: string, callback: (...args: any[]) => void): void;
+  off(event: string, callback?: (...args: any[]) => void): void;
 }
+
+/**
+ * Alias for JsCall for backwards compatibility.
+ */
+export type JsCallMessage = JsCall;
 
 /**
  * Render context provided by anywidget.

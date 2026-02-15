@@ -120,7 +120,7 @@ export class COGLayerAdapter implements CustomLayerAdapter {
 
   private updateOverlay(): void {
     const layers = Array.from(this.deckLayers.values());
-    this.deckOverlay.setProps({ layers });
+    this.deckOverlay.setProps({ layers: layers as any });
     this.map.triggerRepaint();
   }
 }
