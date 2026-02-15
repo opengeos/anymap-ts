@@ -301,7 +301,6 @@ class CesiumWidget {
  */
 interface ModelWithWidget extends CesiumModel {
   _cesiumWidget?: CesiumWidget;
-  _cesiumInitialized?: boolean;
   _cesiumCleanupScheduled?: boolean;
 }
 
@@ -325,44 +324,36 @@ async function render({ model, el }: { model: CesiumModel; el: HTMLElement }): P
   // Cancel any scheduled cleanup since we're rendering again
   extModel._cesiumCleanupScheduled = false;
 
-  if (extModel._cesiumWidget && extModel._cesiumInitialized) {
+  if (extModel._cesiumWidget) {
     const widget = extModel._cesiumWidget;
     const viewer = widget.getViewer();
     const container = widget.getContainer();
 
-    if (viewer && container) {
-      if (!el.contains(container)) {
-        while (el.firstChild) {
-          el.removeChild(el.firstChild);
-        }
-        el.appendChild(container);
-      }
+    // Only reuse if container is already in el (same host element)
+    if (viewer && container && el.contains(container)) {
       viewer.resize();
       return () => {
         extModel._cesiumCleanupScheduled = true;
         setTimeout(() => {
-          if (extModel._cesiumCleanupScheduled && extModel._cesiumWidget) {
-            extModel._cesiumWidget.destroy();
+          if (extModel._cesiumCleanupScheduled && extModel._cesiumWidget === widget) {
+            widget.destroy();
             delete extModel._cesiumWidget;
-            delete extModel._cesiumInitialized;
             delete extModel._cesiumCleanupScheduled;
           }
         }, 100);
       };
     }
 
+    // Different host element or no viewer yet - destroy existing widget
     widget.destroy();
     delete extModel._cesiumWidget;
-    delete extModel._cesiumInitialized;
   }
 
   const widget = new CesiumWidget(model as CesiumModel, el);
   extModel._cesiumWidget = widget;
-  extModel._cesiumInitialized = false;
 
   try {
     await widget.initialize();
-    extModel._cesiumInitialized = true;
   } catch (error) {
     console.error('Failed to initialize Cesium viewer:', error);
   }
@@ -370,10 +361,9 @@ async function render({ model, el }: { model: CesiumModel; el: HTMLElement }): P
   return () => {
     extModel._cesiumCleanupScheduled = true;
     setTimeout(() => {
-      if (extModel._cesiumCleanupScheduled && extModel._cesiumWidget) {
-        extModel._cesiumWidget.destroy();
+      if (extModel._cesiumCleanupScheduled && extModel._cesiumWidget === widget) {
+        widget.destroy();
         delete extModel._cesiumWidget;
-        delete extModel._cesiumInitialized;
         delete extModel._cesiumCleanupScheduled;
       }
     }, 100);

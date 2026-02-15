@@ -15,7 +15,6 @@ import 'maplibre-gl-lidar/style.css';
  */
 interface ModelWithRenderer extends AnyModel {
   _mapboxRenderer?: MapboxRenderer;
-  _mapboxInitialized?: boolean;
   _mapboxCleanupScheduled?: boolean;
 }
 
@@ -29,55 +28,45 @@ function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void
   extModel._mapboxCleanupScheduled = false;
 
   // Check if we already have a renderer stored on the model
-  if (extModel._mapboxRenderer && extModel._mapboxInitialized) {
+  if (extModel._mapboxRenderer) {
     const renderer = extModel._mapboxRenderer;
     const map = renderer.getMap();
     const mapContainer = renderer.getMapContainer();
 
-    if (map && mapContainer) {
-      if (!el.contains(mapContainer)) {
-        while (el.firstChild) {
-          el.removeChild(el.firstChild);
-        }
-        el.appendChild(mapContainer);
-      }
+    // Only reuse if container is already in el (same host element)
+    if (map && mapContainer && el.contains(mapContainer)) {
       map.resize();
       return () => {
         extModel._mapboxCleanupScheduled = true;
         setTimeout(() => {
-          if (extModel._mapboxCleanupScheduled && extModel._mapboxRenderer) {
-            extModel._mapboxRenderer.destroy();
+          if (extModel._mapboxCleanupScheduled && extModel._mapboxRenderer === renderer) {
+            renderer.destroy();
             delete extModel._mapboxRenderer;
-            delete extModel._mapboxInitialized;
             delete extModel._mapboxCleanupScheduled;
           }
         }, 100);
       };
     }
 
+    // Different host element or no map yet - destroy existing renderer
     renderer.destroy();
     delete extModel._mapboxRenderer;
-    delete extModel._mapboxInitialized;
   }
 
   // Create new renderer
   const renderer = new MapboxRenderer(model as any, el);
   extModel._mapboxRenderer = renderer;
-  extModel._mapboxInitialized = false;
 
-  renderer.initialize().then(() => {
-    extModel._mapboxInitialized = true;
-  }).catch((error) => {
+  renderer.initialize().catch((error) => {
     console.error('Failed to initialize Mapbox map:', error);
   });
 
   return () => {
     extModel._mapboxCleanupScheduled = true;
     setTimeout(() => {
-      if (extModel._mapboxCleanupScheduled && extModel._mapboxRenderer) {
-        extModel._mapboxRenderer.destroy();
+      if (extModel._mapboxCleanupScheduled && extModel._mapboxRenderer === renderer) {
+        renderer.destroy();
         delete extModel._mapboxRenderer;
-        delete extModel._mapboxInitialized;
         delete extModel._mapboxCleanupScheduled;
       }
     }, 100);

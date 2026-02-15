@@ -26,7 +26,6 @@ addProtocol('pmtiles', pmtilesProtocol.tile);
  */
 interface ModelWithRenderer extends AnyModel {
   _maplibreRenderer?: MapLibreRenderer;
-  _maplibreInitialized?: boolean;
   _maplibreCleanupScheduled?: boolean;
 }
 
@@ -41,12 +40,13 @@ function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void
   extModel._maplibreCleanupScheduled = false;
 
   // Check if we already have a renderer stored on the model
-  if (extModel._maplibreRenderer && extModel._maplibreInitialized) {
+  if (extModel._maplibreRenderer) {
     const renderer = extModel._maplibreRenderer;
     const map = renderer.getMap();
     const mapContainer = renderer.getMapContainer();
 
-    // If the map container exists and is already within this el, just resize and reuse
+    // Only reuse if container is already in el (same host element)
+    // If el has changed, we must destroy and recreate to update ResizeObserver
     if (map && mapContainer && el.contains(mapContainer)) {
       map.resize();
       return () => {
@@ -54,29 +54,29 @@ function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void
         // This allows a subsequent render() call to cancel it
         extModel._maplibreCleanupScheduled = true;
         setTimeout(() => {
-          if (extModel._maplibreCleanupScheduled && extModel._maplibreRenderer) {
-            extModel._maplibreRenderer.destroy();
+          if (extModel._maplibreCleanupScheduled && extModel._maplibreRenderer === renderer) {
+            renderer.destroy();
             delete extModel._maplibreRenderer;
-            delete extModel._maplibreInitialized;
             delete extModel._maplibreCleanupScheduled;
           }
         }, 100);
       };
     }
 
-    // Fallback: destroy existing and create new
+    // Different host element or no map yet - destroy existing renderer
     renderer.destroy();
     delete extModel._maplibreRenderer;
-    delete extModel._maplibreInitialized;
   }
 
   // Create new renderer
   const renderer = new MapLibreRenderer(model as any, el);
   extModel._maplibreRenderer = renderer;
-  extModel._maplibreInitialized = false;
 
   renderer.initialize().then(() => {
-    extModel._maplibreInitialized = true;
+    // Only mark as ready if this renderer is still the current one
+    if (extModel._maplibreRenderer === renderer) {
+      // Renderer is ready for reuse
+    }
   }).catch((error) => {
     console.error('Failed to initialize map:', error);
   });
@@ -85,10 +85,9 @@ function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void
   return () => {
     extModel._maplibreCleanupScheduled = true;
     setTimeout(() => {
-      if (extModel._maplibreCleanupScheduled && extModel._maplibreRenderer) {
-        extModel._maplibreRenderer.destroy();
+      if (extModel._maplibreCleanupScheduled && extModel._maplibreRenderer === renderer) {
+        renderer.destroy();
         delete extModel._maplibreRenderer;
-        delete extModel._maplibreInitialized;
         delete extModel._maplibreCleanupScheduled;
       }
     }, 100);

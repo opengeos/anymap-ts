@@ -13,7 +13,6 @@ import 'leaflet/dist/leaflet.css';
  */
 interface ModelWithRenderer extends AnyModel {
   _leafletRenderer?: LeafletRenderer;
-  _leafletInitialized?: boolean;
   _leafletCleanupScheduled?: boolean;
 }
 
@@ -26,54 +25,44 @@ function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void
   // Cancel any scheduled cleanup since we're rendering again
   extModel._leafletCleanupScheduled = false;
 
-  if (extModel._leafletRenderer && extModel._leafletInitialized) {
+  if (extModel._leafletRenderer) {
     const renderer = extModel._leafletRenderer;
     const map = renderer.getMap();
     const mapContainer = renderer.getMapContainer();
 
-    if (map && mapContainer) {
-      if (!el.contains(mapContainer)) {
-        while (el.firstChild) {
-          el.removeChild(el.firstChild);
-        }
-        el.appendChild(mapContainer);
-      }
+    // Only reuse if container is already in el (same host element)
+    if (map && mapContainer && el.contains(mapContainer)) {
       map.invalidateSize();
       return () => {
         extModel._leafletCleanupScheduled = true;
         setTimeout(() => {
-          if (extModel._leafletCleanupScheduled && extModel._leafletRenderer) {
-            extModel._leafletRenderer.destroy();
+          if (extModel._leafletCleanupScheduled && extModel._leafletRenderer === renderer) {
+            renderer.destroy();
             delete extModel._leafletRenderer;
-            delete extModel._leafletInitialized;
             delete extModel._leafletCleanupScheduled;
           }
         }, 100);
       };
     }
 
+    // Different host element or no map yet - destroy existing renderer
     renderer.destroy();
     delete extModel._leafletRenderer;
-    delete extModel._leafletInitialized;
   }
 
   const renderer = new LeafletRenderer(model as any, el);
   extModel._leafletRenderer = renderer;
-  extModel._leafletInitialized = false;
 
-  renderer.initialize().then(() => {
-    extModel._leafletInitialized = true;
-  }).catch((error) => {
+  renderer.initialize().catch((error) => {
     console.error('Failed to initialize Leaflet map:', error);
   });
 
   return () => {
     extModel._leafletCleanupScheduled = true;
     setTimeout(() => {
-      if (extModel._leafletCleanupScheduled && extModel._leafletRenderer) {
-        extModel._leafletRenderer.destroy();
+      if (extModel._leafletCleanupScheduled && extModel._leafletRenderer === renderer) {
+        renderer.destroy();
         delete extModel._leafletRenderer;
-        delete extModel._leafletInitialized;
         delete extModel._leafletCleanupScheduled;
       }
     }, 100);
