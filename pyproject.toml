@@ -99,11 +99,11 @@ ensured-targets = [
 ]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
-npm = ["npm"]
+npm = ["npm", "--legacy-peer-deps"]
 build_cmd = "build:prod"
 
 [tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
-npm = ["npm"]
+npm = ["npm", "--legacy-peer-deps"]
 build_cmd = "build:all"
 source_dir = "src"
 build_dir = "anymap_ts/static"
