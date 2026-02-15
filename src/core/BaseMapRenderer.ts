@@ -64,13 +64,21 @@ export abstract class BaseMapRenderer<TMap> {
    * Create the map container element.
    */
   protected createMapContainer(): HTMLDivElement {
+    const width = this.model.get('width') || '100%';
+    const height = this.model.get('height') || '400px';
+
     // Ensure parent element takes full width
     this.el.style.width = '100%';
     this.el.style.display = 'block';
 
+    // If height is percentage-based, parent must also have explicit height
+    if (height.endsWith('%')) {
+      this.el.style.height = '100%';
+    }
+
     const container = document.createElement('div');
-    container.style.width = this.model.get('width') || '100%';
-    container.style.height = this.model.get('height') || '400px';
+    container.style.width = width;
+    container.style.height = height;
     container.style.position = 'relative';
     container.style.minWidth = '200px';
     this.el.appendChild(container);
