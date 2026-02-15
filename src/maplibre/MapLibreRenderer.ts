@@ -126,6 +126,21 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   }
 
   /**
+   * Refresh container dimensions and trigger map resize.
+   * Used when host frameworks re-invoke render during layout changes.
+   */
+  refreshLayout(): void {
+    if (this.mapContainer) {
+      this.mapContainer.style.width = this.model.get('width') || '100%';
+      this.mapContainer.style.height = this.model.get('height') || '100%';
+    }
+
+    if (this.map) {
+      this.map.resize();
+    }
+  }
+
+  /**
    * Initialize the MapLibre map.
    */
   async initialize(): Promise<void> {

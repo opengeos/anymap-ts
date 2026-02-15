@@ -27,6 +27,7 @@ addProtocol('pmtiles', pmtilesProtocol.tile);
 declare global {
   interface HTMLElement {
     _mapRenderer?: MapLibreRenderer;
+    _mapRendererCleanupTimer?: number;
   }
 }
 
@@ -35,27 +36,46 @@ declare global {
  * Using synchronous function with internal promise handling for better compatibility.
  */
 function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void {
-  // Clean up previous instance if exists
+  if (el._mapRendererCleanupTimer) {
+    clearTimeout(el._mapRendererCleanupTimer);
+    delete el._mapRendererCleanupTimer;
+  }
+
+  // Reuse existing renderer when possible to avoid flicker/state loss
+  if (el._mapRenderer && el._mapRenderer.getModel() === model) {
+    el._mapRenderer.refreshLayout();
+    const existingRenderer = el._mapRenderer;
+    return () => {
+      el._mapRendererCleanupTimer = window.setTimeout(() => {
+        if (el._mapRenderer === existingRenderer) {
+          existingRenderer.destroy();
+          delete el._mapRenderer;
+        }
+        delete el._mapRendererCleanupTimer;
+      }, 120);
+    };
+  }
+
   if (el._mapRenderer) {
     el._mapRenderer.destroy();
     delete el._mapRenderer;
   }
 
-  // Create new renderer
   const renderer = new MapLibreRenderer(model as any, el);
   el._mapRenderer = renderer;
 
-  // Initialize asynchronously (don't await - let it run in background)
   renderer.initialize().catch((error) => {
     console.error('Failed to initialize map:', error);
   });
 
-  // Return cleanup function
   return () => {
-    if (el._mapRenderer) {
-      el._mapRenderer.destroy();
-      delete el._mapRenderer;
-    }
+    el._mapRendererCleanupTimer = window.setTimeout(() => {
+      if (el._mapRenderer === renderer) {
+        renderer.destroy();
+        delete el._mapRenderer;
+      }
+      delete el._mapRendererCleanupTimer;
+    }, 120);
   };
 }
 
