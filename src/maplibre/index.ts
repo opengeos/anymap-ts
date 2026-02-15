@@ -46,15 +46,8 @@ function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void
     const map = renderer.getMap();
     const mapContainer = renderer.getMapContainer();
 
-    // If the map container exists, move it to el and resize
-    if (map && mapContainer) {
-      // Only move if not already a child of el
-      if (!el.contains(mapContainer)) {
-        while (el.firstChild) {
-          el.removeChild(el.firstChild);
-        }
-        el.appendChild(mapContainer);
-      }
+    // If the map container exists and is already within this el, just resize and reuse
+    if (map && mapContainer && el.contains(mapContainer)) {
       map.resize();
       return () => {
         // Schedule cleanup but don't execute immediately
