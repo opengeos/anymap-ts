@@ -13,7 +13,7 @@ jobs:
             - name: Set up Node.js
               uses: actions/setup-node@v6
               with:
-                  node-version: "18"
+                  node-version: "24"
             - name: Set up Python
               uses: actions/setup-python@v6
               with:
@@ -29,4 +29,4 @@ jobs:
                   TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
               run: |
                   python -m build
-                  twine upload dist/*
+                  twine upload --skip-existing dist/*
