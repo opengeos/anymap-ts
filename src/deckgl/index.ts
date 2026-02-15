@@ -8,36 +8,71 @@ import { DeckGLRenderer } from './DeckGLRenderer';
 import type { RenderContext } from '../types/anywidget';
 
 /**
- * Store renderer reference on element for cleanup and multi-cell support.
+ * Extended model interface with renderer storage.
  */
-declare global {
-  interface HTMLElement {
-    _deckRenderer?: DeckGLRenderer;
-  }
+interface ModelWithRenderer extends RenderContext['model'] {
+  _deckglRenderer?: DeckGLRenderer;
+  _deckglInitialized?: boolean;
+  _deckglCleanupScheduled?: boolean;
 }
 
 function render({ model, el }: RenderContext): () => void {
-  // Clean up previous instance if exists
-  if (el._deckRenderer) {
-    el._deckRenderer.destroy();
-    delete el._deckRenderer;
+  const extModel = model as ModelWithRenderer;
+
+  // Cancel any scheduled cleanup since we're rendering again
+  extModel._deckglCleanupScheduled = false;
+
+  if (extModel._deckglRenderer && extModel._deckglInitialized) {
+    const renderer = extModel._deckglRenderer;
+    const map = renderer.getMap();
+    const mapContainer = renderer.getMapContainer();
+
+    if (map && mapContainer) {
+      if (!el.contains(mapContainer)) {
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
+        }
+        el.appendChild(mapContainer);
+      }
+      map.resize();
+      return () => {
+        extModel._deckglCleanupScheduled = true;
+        setTimeout(() => {
+          if (extModel._deckglCleanupScheduled && extModel._deckglRenderer) {
+            extModel._deckglRenderer.destroy();
+            delete extModel._deckglRenderer;
+            delete extModel._deckglInitialized;
+            delete extModel._deckglCleanupScheduled;
+          }
+        }, 100);
+      };
+    }
+
+    renderer.destroy();
+    delete extModel._deckglRenderer;
+    delete extModel._deckglInitialized;
   }
 
-  // Create new renderer
   const renderer = new DeckGLRenderer(model, el);
-  el._deckRenderer = renderer;
+  extModel._deckglRenderer = renderer;
+  extModel._deckglInitialized = false;
 
-  // Initialize the map
-  renderer.initialize().catch((error) => {
+  renderer.initialize().then(() => {
+    extModel._deckglInitialized = true;
+  }).catch((error) => {
     console.error('Failed to initialize DeckGL map:', error);
   });
 
-  // Return cleanup function
   return () => {
-    if (el._deckRenderer) {
-      el._deckRenderer.destroy();
-      delete el._deckRenderer;
-    }
+    extModel._deckglCleanupScheduled = true;
+    setTimeout(() => {
+      if (extModel._deckglCleanupScheduled && extModel._deckglRenderer) {
+        extModel._deckglRenderer.destroy();
+        delete extModel._deckglRenderer;
+        delete extModel._deckglInitialized;
+        delete extModel._deckglCleanupScheduled;
+      }
+    }, 100);
   };
 }
 

@@ -22,12 +22,12 @@ const pmtilesProtocol = new Protocol();
 addProtocol('pmtiles', pmtilesProtocol.tile);
 
 /**
- * Store renderer reference on element for cleanup and multi-cell support.
+ * Extended model interface with renderer storage.
  */
-declare global {
-  interface HTMLElement {
-    _mapRenderer?: MapLibreRenderer;
-  }
+interface ModelWithRenderer extends AnyModel {
+  _maplibreRenderer?: MapLibreRenderer;
+  _maplibreInitialized?: boolean;
+  _maplibreCleanupScheduled?: boolean;
 }
 
 /**
@@ -35,27 +35,70 @@ declare global {
  * Using synchronous function with internal promise handling for better compatibility.
  */
 function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void {
-  // Clean up previous instance if exists
-  if (el._mapRenderer) {
-    el._mapRenderer.destroy();
-    delete el._mapRenderer;
+  const extModel = model as ModelWithRenderer;
+
+  // Cancel any scheduled cleanup since we're rendering again
+  extModel._maplibreCleanupScheduled = false;
+
+  // Check if we already have a renderer stored on the model
+  if (extModel._maplibreRenderer && extModel._maplibreInitialized) {
+    const renderer = extModel._maplibreRenderer;
+    const map = renderer.getMap();
+    const mapContainer = renderer.getMapContainer();
+
+    // If the map container exists, move it to el and resize
+    if (map && mapContainer) {
+      // Only move if not already a child of el
+      if (!el.contains(mapContainer)) {
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
+        }
+        el.appendChild(mapContainer);
+      }
+      map.resize();
+      return () => {
+        // Schedule cleanup but don't execute immediately
+        // This allows a subsequent render() call to cancel it
+        extModel._maplibreCleanupScheduled = true;
+        setTimeout(() => {
+          if (extModel._maplibreCleanupScheduled && extModel._maplibreRenderer) {
+            extModel._maplibreRenderer.destroy();
+            delete extModel._maplibreRenderer;
+            delete extModel._maplibreInitialized;
+            delete extModel._maplibreCleanupScheduled;
+          }
+        }, 100);
+      };
+    }
+
+    // Fallback: destroy existing and create new
+    renderer.destroy();
+    delete extModel._maplibreRenderer;
+    delete extModel._maplibreInitialized;
   }
 
   // Create new renderer
   const renderer = new MapLibreRenderer(model as any, el);
-  el._mapRenderer = renderer;
+  extModel._maplibreRenderer = renderer;
+  extModel._maplibreInitialized = false;
 
-  // Initialize asynchronously (don't await - let it run in background)
-  renderer.initialize().catch((error) => {
+  renderer.initialize().then(() => {
+    extModel._maplibreInitialized = true;
+  }).catch((error) => {
     console.error('Failed to initialize map:', error);
   });
 
   // Return cleanup function
   return () => {
-    if (el._mapRenderer) {
-      el._mapRenderer.destroy();
-      delete el._mapRenderer;
-    }
+    extModel._maplibreCleanupScheduled = true;
+    setTimeout(() => {
+      if (extModel._maplibreCleanupScheduled && extModel._maplibreRenderer) {
+        extModel._maplibreRenderer.destroy();
+        delete extModel._maplibreRenderer;
+        delete extModel._maplibreInitialized;
+        delete extModel._maplibreCleanupScheduled;
+      }
+    }, 100);
   };
 }
 

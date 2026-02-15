@@ -205,6 +205,13 @@ export abstract class BaseMapRenderer<TMap> {
   }
 
   /**
+   * Get the map container element.
+   */
+  getMapContainer(): HTMLDivElement | null {
+    return this.mapContainer;
+  }
+
+  /**
    * Check if map is ready.
    */
   getIsMapReady(): boolean {

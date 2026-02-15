@@ -9,39 +9,74 @@ import type { AnyModel } from '@anywidget/types';
 import 'leaflet/dist/leaflet.css';
 
 /**
- * Store renderer reference on element for cleanup and multi-cell support.
+ * Extended model interface with renderer storage.
  */
-declare global {
-  interface HTMLElement {
-    _leafletRenderer?: LeafletRenderer;
-  }
+interface ModelWithRenderer extends AnyModel {
+  _leafletRenderer?: LeafletRenderer;
+  _leafletInitialized?: boolean;
+  _leafletCleanupScheduled?: boolean;
 }
 
 /**
  * anywidget render function.
  */
 function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void {
-  // Clean up previous instance if exists
-  if (el._leafletRenderer) {
-    el._leafletRenderer.destroy();
-    delete el._leafletRenderer;
+  const extModel = model as ModelWithRenderer;
+
+  // Cancel any scheduled cleanup since we're rendering again
+  extModel._leafletCleanupScheduled = false;
+
+  if (extModel._leafletRenderer && extModel._leafletInitialized) {
+    const renderer = extModel._leafletRenderer;
+    const map = renderer.getMap();
+    const mapContainer = renderer.getMapContainer();
+
+    if (map && mapContainer) {
+      if (!el.contains(mapContainer)) {
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
+        }
+        el.appendChild(mapContainer);
+      }
+      map.invalidateSize();
+      return () => {
+        extModel._leafletCleanupScheduled = true;
+        setTimeout(() => {
+          if (extModel._leafletCleanupScheduled && extModel._leafletRenderer) {
+            extModel._leafletRenderer.destroy();
+            delete extModel._leafletRenderer;
+            delete extModel._leafletInitialized;
+            delete extModel._leafletCleanupScheduled;
+          }
+        }, 100);
+      };
+    }
+
+    renderer.destroy();
+    delete extModel._leafletRenderer;
+    delete extModel._leafletInitialized;
   }
 
-  // Create new renderer
   const renderer = new LeafletRenderer(model as any, el);
-  el._leafletRenderer = renderer;
+  extModel._leafletRenderer = renderer;
+  extModel._leafletInitialized = false;
 
-  // Initialize asynchronously
-  renderer.initialize().catch((error) => {
+  renderer.initialize().then(() => {
+    extModel._leafletInitialized = true;
+  }).catch((error) => {
     console.error('Failed to initialize Leaflet map:', error);
   });
 
-  // Return cleanup function
   return () => {
-    if (el._leafletRenderer) {
-      el._leafletRenderer.destroy();
-      delete el._leafletRenderer;
-    }
+    extModel._leafletCleanupScheduled = true;
+    setTimeout(() => {
+      if (extModel._leafletCleanupScheduled && extModel._leafletRenderer) {
+        extModel._leafletRenderer.destroy();
+        delete extModel._leafletRenderer;
+        delete extModel._leafletInitialized;
+        delete extModel._leafletCleanupScheduled;
+      }
+    }, 100);
   };
 }
 

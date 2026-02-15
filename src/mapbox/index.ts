@@ -11,39 +11,76 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import 'maplibre-gl-lidar/style.css';
 
 /**
- * Store renderer reference on element for cleanup and multi-cell support.
+ * Extended model interface with renderer storage.
  */
-declare global {
-  interface HTMLElement {
-    _mapboxRenderer?: MapboxRenderer;
-  }
+interface ModelWithRenderer extends AnyModel {
+  _mapboxRenderer?: MapboxRenderer;
+  _mapboxInitialized?: boolean;
+  _mapboxCleanupScheduled?: boolean;
 }
 
 /**
  * anywidget render function.
  */
 function render({ model, el }: { model: AnyModel; el: HTMLElement }): () => void {
-  // Clean up previous instance if exists
-  if (el._mapboxRenderer) {
-    el._mapboxRenderer.destroy();
-    delete el._mapboxRenderer;
+  const extModel = model as ModelWithRenderer;
+
+  // Cancel any scheduled cleanup since we're rendering again
+  extModel._mapboxCleanupScheduled = false;
+
+  // Check if we already have a renderer stored on the model
+  if (extModel._mapboxRenderer && extModel._mapboxInitialized) {
+    const renderer = extModel._mapboxRenderer;
+    const map = renderer.getMap();
+    const mapContainer = renderer.getMapContainer();
+
+    if (map && mapContainer) {
+      if (!el.contains(mapContainer)) {
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
+        }
+        el.appendChild(mapContainer);
+      }
+      map.resize();
+      return () => {
+        extModel._mapboxCleanupScheduled = true;
+        setTimeout(() => {
+          if (extModel._mapboxCleanupScheduled && extModel._mapboxRenderer) {
+            extModel._mapboxRenderer.destroy();
+            delete extModel._mapboxRenderer;
+            delete extModel._mapboxInitialized;
+            delete extModel._mapboxCleanupScheduled;
+          }
+        }, 100);
+      };
+    }
+
+    renderer.destroy();
+    delete extModel._mapboxRenderer;
+    delete extModel._mapboxInitialized;
   }
 
   // Create new renderer
   const renderer = new MapboxRenderer(model as any, el);
-  el._mapboxRenderer = renderer;
+  extModel._mapboxRenderer = renderer;
+  extModel._mapboxInitialized = false;
 
-  // Initialize asynchronously
-  renderer.initialize().catch((error) => {
+  renderer.initialize().then(() => {
+    extModel._mapboxInitialized = true;
+  }).catch((error) => {
     console.error('Failed to initialize Mapbox map:', error);
   });
 
-  // Return cleanup function
   return () => {
-    if (el._mapboxRenderer) {
-      el._mapboxRenderer.destroy();
-      delete el._mapboxRenderer;
-    }
+    extModel._mapboxCleanupScheduled = true;
+    setTimeout(() => {
+      if (extModel._mapboxCleanupScheduled && extModel._mapboxRenderer) {
+        extModel._mapboxRenderer.destroy();
+        delete extModel._mapboxRenderer;
+        delete extModel._mapboxInitialized;
+        delete extModel._mapboxCleanupScheduled;
+      }
+    }, 100);
   };
 }
 

@@ -274,6 +274,14 @@ class CesiumWidget {
     }
   }
 
+  getViewer(): any {
+    return this.viewer;
+  }
+
+  getContainer(): HTMLDivElement | null {
+    return this.container;
+  }
+
   destroy(): void {
     if (this.viewer) {
       this.viewer.destroy();
@@ -288,7 +296,14 @@ class CesiumWidget {
   }
 }
 
-let widget: CesiumWidget | null = null;
+/**
+ * Extended model interface with widget storage.
+ */
+interface ModelWithWidget extends CesiumModel {
+  _cesiumWidget?: CesiumWidget;
+  _cesiumInitialized?: boolean;
+  _cesiumCleanupScheduled?: boolean;
+}
 
 /**
  * anywidget render function.
@@ -305,22 +320,63 @@ async function render({ model, el }: { model: CesiumModel; el: HTMLElement }): P
     return () => {};
   }
 
-  // Create widget
-  widget = new CesiumWidget(model as CesiumModel, el);
+  const extModel = model as ModelWithWidget;
 
-  // Initialize
+  // Cancel any scheduled cleanup since we're rendering again
+  extModel._cesiumCleanupScheduled = false;
+
+  if (extModel._cesiumWidget && extModel._cesiumInitialized) {
+    const widget = extModel._cesiumWidget;
+    const viewer = widget.getViewer();
+    const container = widget.getContainer();
+
+    if (viewer && container) {
+      if (!el.contains(container)) {
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
+        }
+        el.appendChild(container);
+      }
+      viewer.resize();
+      return () => {
+        extModel._cesiumCleanupScheduled = true;
+        setTimeout(() => {
+          if (extModel._cesiumCleanupScheduled && extModel._cesiumWidget) {
+            extModel._cesiumWidget.destroy();
+            delete extModel._cesiumWidget;
+            delete extModel._cesiumInitialized;
+            delete extModel._cesiumCleanupScheduled;
+          }
+        }, 100);
+      };
+    }
+
+    widget.destroy();
+    delete extModel._cesiumWidget;
+    delete extModel._cesiumInitialized;
+  }
+
+  const widget = new CesiumWidget(model as CesiumModel, el);
+  extModel._cesiumWidget = widget;
+  extModel._cesiumInitialized = false;
+
   try {
     await widget.initialize();
+    extModel._cesiumInitialized = true;
   } catch (error) {
     console.error('Failed to initialize Cesium viewer:', error);
   }
 
-  // Return cleanup function
   return () => {
-    if (widget) {
-      widget.destroy();
-      widget = null;
-    }
+    extModel._cesiumCleanupScheduled = true;
+    setTimeout(() => {
+      if (extModel._cesiumCleanupScheduled && extModel._cesiumWidget) {
+        extModel._cesiumWidget.destroy();
+        delete extModel._cesiumWidget;
+        delete extModel._cesiumInitialized;
+        delete extModel._cesiumCleanupScheduled;
+      }
+    }, 100);
   };
 }
 
