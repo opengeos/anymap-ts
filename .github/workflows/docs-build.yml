@@ -23,7 +23,7 @@ jobs:
 
             - name: Build TypeScript examples
               run: |
-                  npm install --no-package-lock
+                  npm install --no-package-lock --legacy-peer-deps
                   npm run build:examples
 
             # - name: Install GDAL system dependencies
