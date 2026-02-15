@@ -27,6 +27,7 @@ jobs:
               env:
                   TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
                   TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+                  NPM_CONFIG_LEGACY_PEER_DEPS: "true"
               run: |
                   python -m build
                   twine upload --skip-existing dist/*
