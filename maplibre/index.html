@@ -3477,19 +3477,13 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">geojson</span> <span class="o">=</span> <span class="n">to_geojson</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-        <span class="c1"># Handle URL data</span>
-        <span class="k">if</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;url&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_geojson</span><span class="p">(</span>
-                <span class="n">geojson</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span>
-                <span class="n">layer_type</span><span class="o">=</span><span class="n">layer_type</span><span class="p">,</span>
-                <span class="n">paint</span><span class="o">=</span><span class="n">paint</span><span class="p">,</span>
-                <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-                <span class="n">fit_bounds</span><span class="o">=</span><span class="n">fit_bounds</span><span class="p">,</span>
-                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">return</span>
-
         <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;vector-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Handle URL data - fetch GeoJSON to get bounds and infer layer type</span>
+        <span class="k">if</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;url&quot;</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">geojson</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">]</span>
+            <span class="c1"># Fetch the actual GeoJSON data from URL</span>
+            <span class="n">geojson</span> <span class="o">=</span> <span class="n">fetch_geojson</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 
         <span class="c1"># Infer layer type if not specified</span>
         <span class="k">if</span> <span class="n">layer_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -3499,8 +3493,8 @@ full bidirectional communication through anywidget.</p>
         <span class="k">if</span> <span class="n">paint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">paint</span> <span class="o">=</span> <span class="n">get_default_paint</span><span class="p">(</span><span class="n">layer_type</span><span class="p">)</span>
 
-        <span class="c1"># Get bounds</span>
-        <span class="n">bounds</span> <span class="o">=</span> <span class="n">get_bounds</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">if</span> <span class="n">fit_bounds</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="c1"># Get bounds (use geojson dict, not original data which may be a URL)</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="n">get_bounds</span><span class="p">(</span><span class="n">geojson</span><span class="p">)</span> <span class="k">if</span> <span class="n">fit_bounds</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="c1"># Call JavaScript</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
@@ -8769,19 +8763,13 @@ Supports both STAC item URLs and pystac Item objects.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">geojson</span> <span class="o">=</span> <span class="n">to_geojson</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-    <span class="c1"># Handle URL data</span>
-    <span class="k">if</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;url&quot;</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_geojson</span><span class="p">(</span>
-            <span class="n">geojson</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span>
-            <span class="n">layer_type</span><span class="o">=</span><span class="n">layer_type</span><span class="p">,</span>
-            <span class="n">paint</span><span class="o">=</span><span class="n">paint</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-            <span class="n">fit_bounds</span><span class="o">=</span><span class="n">fit_bounds</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">return</span>
-
     <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;vector-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Handle URL data - fetch GeoJSON to get bounds and infer layer type</span>
+    <span class="k">if</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;url&quot;</span><span class="p">:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">geojson</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">]</span>
+        <span class="c1"># Fetch the actual GeoJSON data from URL</span>
+        <span class="n">geojson</span> <span class="o">=</span> <span class="n">fetch_geojson</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 
     <span class="c1"># Infer layer type if not specified</span>
     <span class="k">if</span> <span class="n">layer_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -8791,8 +8779,8 @@ Supports both STAC item URLs and pystac Item objects.</p>
     <span class="k">if</span> <span class="n">paint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">paint</span> <span class="o">=</span> <span class="n">get_default_paint</span><span class="p">(</span><span class="n">layer_type</span><span class="p">)</span>
 
-    <span class="c1"># Get bounds</span>
-    <span class="n">bounds</span> <span class="o">=</span> <span class="n">get_bounds</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">if</span> <span class="n">fit_bounds</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="c1"># Get bounds (use geojson dict, not original data which may be a URL)</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="n">get_bounds</span><span class="p">(</span><span class="n">geojson</span><span class="p">)</span> <span class="k">if</span> <span class="n">fit_bounds</span> <span class="k">else</span> <span class="kc">None</span>
 
     <span class="c1"># Call JavaScript</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
