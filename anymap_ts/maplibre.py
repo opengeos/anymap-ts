@@ -198,15 +198,12 @@ class MapLibreMap(MapWidget):
             )
         return position
 
-    def _remove_layer_internal(
-        self, layer_id: str, js_method: str, category: Optional[str] = None
-    ) -> None:
+    def _remove_layer_internal(self, layer_id: str, js_method: str) -> None:
         """Internal helper to remove a layer.
 
         Args:
             layer_id: The layer identifier to remove.
             js_method: The JavaScript method to call for removal.
-            category: Optional category for layer dict removal.
         """
         if layer_id in self._layers:
             layers = dict(self._layers)
@@ -2002,9 +1999,7 @@ class MapLibreMap(MapWidget):
             >>> m.set_paint_property("my-layer", "fill-color", "#ff0000")
             >>> m.set_paint_property("my-layer", "fill-opacity", 0.5)
         """
-        self.call_js_method(
-            "setPaintProperty", layerId=layer_id, property=property_name, value=value
-        )
+        self.call_js_method("setPaintProperty", layer_id, property_name, value)
 
     def set_layout_property(
         self, layer_id: str, property_name: str, value: Any
@@ -2019,9 +2014,7 @@ class MapLibreMap(MapWidget):
         Example:
             >>> m.set_layout_property("my-layer", "visibility", "none")
         """
-        self.call_js_method(
-            "setLayoutProperty", layerId=layer_id, property=property_name, value=value
-        )
+        self.call_js_method("setLayoutProperty", layer_id, property_name, value)
 
     def move_layer(self, layer_id: str, before_id: Optional[str] = None) -> None:
         """Move a layer in the layer stack.
@@ -2034,7 +2027,7 @@ class MapLibreMap(MapWidget):
             >>> m.move_layer("my-layer", "other-layer")  # Move before other-layer
             >>> m.move_layer("my-layer")  # Move to top
         """
-        self.call_js_method("moveLayer", layerId=layer_id, beforeId=before_id)
+        self.call_js_method("moveLayer", layer_id, before_id)
 
     def get_layer(self, layer_id: str) -> Optional[Dict]:
         """Get layer configuration by ID.
@@ -2147,6 +2140,7 @@ class MapLibreMap(MapWidget):
         transparent: bool = True,
         version: str = "1.1.1",
         attribution: str = "",
+        extra_params: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> None:
         """Add a WMS (Web Map Service) layer.
@@ -2161,7 +2155,8 @@ class MapLibreMap(MapWidget):
             transparent: Whether to request transparent images.
             version: WMS version (e.g., '1.1.1', '1.3.0').
             attribution: Attribution text.
-            **kwargs: Additional WMS parameters.
+            extra_params: Additional WMS request parameters.
+            **kwargs: Additional tile layer options (passed to addTileLayer).
 
         Example:
             >>> from anymap_ts import Map
@@ -2174,7 +2169,7 @@ class MapLibreMap(MapWidget):
         """
         layer_id = name or f"wms-{len(self._layers)}"
 
-        # Build WMS tile URL
+        # Build WMS tile URL parameters
         wms_params = {
             "SERVICE": "WMS",
             "VERSION": version,
@@ -2186,11 +2181,16 @@ class MapLibreMap(MapWidget):
             "HEIGHT": "256",
             "CRS" if version >= "1.3.0" else "SRS": "EPSG:3857",
             "BBOX": "{bbox-epsg-3857}",
-            **kwargs,
         }
 
-        query_string = "&".join(f"{k}={v}" for k, v in wms_params.items())
-        tile_url = f"{url}?{query_string}"
+        # Add any extra WMS parameters
+        if extra_params:
+            wms_params.update(extra_params)
+
+        # Use urlencode with safe parameter to preserve {bbox-epsg-3857} placeholder
+        query_string = urlencode(wms_params, safe="{}-")
+        separator = "&" if "?" in url else "?"
+        tile_url = f"{url}{separator}{query_string}"
 
         self.call_js_method(
             "addTileLayer",
@@ -2379,9 +2379,7 @@ class MapLibreMap(MapWidget):
             raise ValueError("Number of labels must match number of colors")
 
         # Validate position
-        valid_positions = ["top-left", "top-right", "bottom-left", "bottom-right"]
-        if position not in valid_positions:
-            raise ValueError(f"Position must be one of: {', '.join(valid_positions)}")
+        self._validate_position(position)
 
         # Validate colors (basic hex color check)
         for i, color in enumerate(colors):
