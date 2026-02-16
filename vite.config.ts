@@ -20,7 +20,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     rollupOptions: {
-      external: ['@duckdb/duckdb-wasm', 'shpjs'],
       input: {
         main: resolve(__dirname, 'examples/index.html'),
         // MapLibre examples
