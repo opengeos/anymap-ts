@@ -36,6 +36,7 @@
         const addedLayers = [];
         let layerControlConfig = null;
         let drawControlConfig = null;
+        let controlGridConfig = null;
         let controlGridAdded = false;
         let layerControlAdded = false;
 
@@ -65,16 +66,16 @@
                 }
             }
 
-            // Add layer control if configured and not already added
+            // Add layer control first (so it appears on top)
             if (!layerControlAdded && (layerControlConfig || (state.controls && state.controls['layer-control']))) {
                 const config = layerControlConfig || state.controls['layer-control'];
                 createLayerControl(config);
                 layerControlAdded = true;
             }
 
-            // Add control grid if configured and not already added via js_calls
-            if (!controlGridAdded && state.controls && state.controls['control-grid']) {
-                const config = state.controls['control-grid'];
+            // Add control grid below layer control
+            if (!controlGridAdded && (controlGridConfig || (state.controls && state.controls['control-grid']))) {
+                const config = controlGridConfig || state.controls['control-grid'];
                 addControlGrid(map, {
                     position: config.position || 'top-right',
                     defaultControls: config.defaultControls,
@@ -215,18 +216,8 @@
                 }
 
                 case 'addControlGrid': {
-                    // Mark as added to prevent duplicate from state.controls
-                    controlGridAdded = true;
-
-                    // Use addControlGrid from maplibre-gl-components
-                    addControlGrid(map, {
-                        position: kwargs.position || 'top-right',
-                        defaultControls: kwargs.defaultControls,
-                        exclude: kwargs.exclude,
-                        rows: kwargs.rows,
-                        columns: kwargs.columns,
-                        collapsed: kwargs.collapsed !== false
-                    });
+                    // Store config for later (add after layer control)
+                    controlGridConfig = kwargs;
                     break;
                 }
 
