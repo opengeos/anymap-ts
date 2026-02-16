@@ -95,7 +95,8 @@ def fetch_geojson(url: str) -> Dict:
     """
     try:
         with urlopen(url, timeout=30) as response:
-            data = response.read().decode("utf-8")
+            charset = response.headers.get_content_charset() or "utf-8"
+            data = response.read().decode(charset)
             return json.loads(data)
     except URLError as e:
         raise ValueError(f"Failed to fetch GeoJSON from URL: {e}") from e
