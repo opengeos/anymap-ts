@@ -537,13 +537,13 @@
             const collapsed = config.collapsed !== false;
 
             // Basic layer control implementation
+            // Use addedLayers if config.layers is empty or not provided
             const configLayers = config.layers;
-            const layers = configLayers && configLayers.length > 0
+            const layers = (configLayers && configLayers.length > 0)
                 ? configLayers
                 : addedLayers.map(l => l.id);
 
             if (layers.length === 0) {
-                console.log('No layers to show in layer control');
                 return;
             }
 
