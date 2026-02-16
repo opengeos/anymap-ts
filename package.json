@@ -30,6 +30,9 @@
     "clean": "rm -rf anymap_ts/static/*.js anymap_ts/static/*.css anymap_ts/static/*.map"
   },
   "dependencies": {
+    "@turf/along": "^7.0.0",
+    "@turf/length": "^7.0.0",
+    "@turf/helpers": "^7.0.0",
     "@carbonplan/zarr-layer": "^0.3.1",
     "@duckdb/duckdb-wasm": "^1.29.0",
     "@deck.gl/aggregation-layers": "9.2.6",

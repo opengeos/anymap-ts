@@ -2618,6 +2618,563 @@ class MapLibreMap(MapWidget):
         gdf.to_file(filepath, driver=driver)
 
     # -------------------------------------------------------------------------
+    # GeoJSON Clustering
+    # -------------------------------------------------------------------------
+
+    def add_cluster_layer(
+        self,
+        data: Any,
+        cluster_radius: int = 50,
+        cluster_max_zoom: int = 14,
+        cluster_colors: Optional[List[str]] = None,
+        cluster_steps: Optional[List[int]] = None,
+        cluster_min_radius: int = 15,
+        cluster_max_radius: int = 30,
+        unclustered_color: str = "#11b4da",
+        unclustered_radius: int = 8,
+        show_cluster_count: bool = True,
+        name: Optional[str] = None,
+        zoom_on_click: bool = True,
+        fit_bounds: bool = True,
+        **kwargs,
+    ) -> str:
+        """Add a clustered point layer with automatic grouping.
+
+        Creates a point layer that automatically clusters nearby points at
+        lower zoom levels. Clicking on clusters zooms in to expand them.
+
+        Args:
+            data: Point data - GeoJSON, GeoDataFrame, file path, or URL.
+            cluster_radius: Radius of each cluster when grouping points (pixels).
+            cluster_max_zoom: Max zoom level to cluster points (above this, all
+                points are shown individually).
+            cluster_colors: List of colors for cluster circles by size.
+                Default: ["#51bbd6", "#f1f075", "#f28cb1"].
+            cluster_steps: Point count thresholds for color changes.
+                Default: [100, 750]. Must have len(cluster_colors) - 1 values.
+            cluster_min_radius: Minimum cluster circle radius in pixels.
+            cluster_max_radius: Maximum cluster circle radius in pixels.
+            unclustered_color: Color for individual (unclustered) points.
+            unclustered_radius: Radius for individual points in pixels.
+            show_cluster_count: Whether to show point count in clusters.
+            name: Layer identifier. If None, auto-generated.
+            zoom_on_click: Whether clicking clusters zooms in to expand them.
+            fit_bounds: Whether to fit map to data bounds.
+            **kwargs: Additional options.
+
+        Returns:
+            The layer identifier.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> m.add_cluster_layer(
+            ...     "earthquakes.geojson",
+            ...     cluster_radius=80,
+            ...     cluster_colors=["#00ff00", "#ffff00", "#ff0000"],
+            ...     cluster_steps=[50, 500],
+            ... )
+        """
+        layer_id = name or f"cluster-{len(self._layers)}"
+
+        # Default colors and steps
+        if cluster_colors is None:
+            cluster_colors = ["#51bbd6", "#f1f075", "#f28cb1"]
+        if cluster_steps is None:
+            cluster_steps = [100, 750]
+
+        # Validate steps vs colors
+        if len(cluster_steps) != len(cluster_colors) - 1:
+            raise ValueError(
+                f"cluster_steps must have {len(cluster_colors) - 1} values "
+                f"(one less than cluster_colors), got {len(cluster_steps)}"
+            )
+
+        # Convert data to GeoJSON
+        geojson = to_geojson(data)
+
+        # Handle URL data - fetch GeoJSON
+        if geojson.get("type") == "url":
+            url = geojson["url"]
+            geojson = fetch_geojson(url)
+
+        # Get bounds
+        bounds = get_bounds(geojson) if fit_bounds else None
+
+        self.call_js_method(
+            "addClusterLayer",
+            data=geojson,
+            name=layer_id,
+            clusterRadius=cluster_radius,
+            clusterMaxZoom=cluster_max_zoom,
+            clusterColors=cluster_colors,
+            clusterSteps=cluster_steps,
+            clusterMinRadius=cluster_min_radius,
+            clusterMaxRadius=cluster_max_radius,
+            unclusteredColor=unclustered_color,
+            unclusteredRadius=unclustered_radius,
+            showClusterCount=show_cluster_count,
+            zoomOnClick=zoom_on_click,
+            fitBounds=fit_bounds,
+            bounds=bounds,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "cluster",
+                "source": f"{layer_id}-source",
+            },
+        }
+        self._add_to_layer_dict(layer_id, "Vector")
+        return layer_id
+
+    def remove_cluster_layer(self, layer_id: str) -> None:
+        """Remove a cluster layer and all its sublayers.
+
+        Args:
+            layer_id: Layer identifier to remove.
+        """
+        self._remove_layer_internal(layer_id, "removeClusterLayer")
+
+    # -------------------------------------------------------------------------
+    # Choropleth Maps
+    # -------------------------------------------------------------------------
+
+    def add_choropleth(
+        self,
+        data: Any,
+        column: str,
+        cmap: str = "viridis",
+        classification: str = "quantile",
+        k: int = 5,
+        breaks: Optional[List[float]] = None,
+        fill_opacity: float = 0.7,
+        line_color: str = "#000000",
+        line_width: float = 1,
+        legend: bool = True,
+        legend_title: Optional[str] = None,
+        hover: bool = True,
+        layer_id: Optional[str] = None,
+        fit_bounds: bool = True,
+        **kwargs,
+    ) -> None:
+        """Add a choropleth (thematic) map layer with automatic classification.
+
+        Choropleth maps use color gradients to visualize data values across
+        geographic areas. This method automatically classifies data and applies
+        appropriate colors.
+
+        Args:
+            data: Polygon data - GeoJSON, GeoDataFrame, file path, or URL.
+            column: Property name to visualize (must be numeric).
+            cmap: Colormap name. Any matplotlib colormap is supported when
+                matplotlib is installed. Common options include:
+                - Sequential: 'viridis', 'plasma', 'inferno', 'magma', 'cividis',
+                  'Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys'
+                - Diverging: 'RdBu', 'RdYlGn', 'RdYlBu', 'Spectral', 'coolwarm'
+                - Qualitative: 'Set1', 'Set2', 'Set3', 'Paired', 'tab10', 'tab20'
+                See: https://matplotlib.org/stable/gallery/color/colormap_reference.html
+            classification: Classification method:
+                - 'quantile': Equal number of features per class
+                - 'equal_interval': Equal value ranges
+                - 'natural_breaks': Jenks natural breaks (requires jenkspy)
+                - 'manual': Use custom breaks
+            k: Number of classes (ignored if classification='manual').
+            breaks: Custom break values for 'manual' classification.
+                Must have k+1 values defining class boundaries.
+            fill_opacity: Polygon fill opacity (0-1).
+            line_color: Polygon outline color.
+            line_width: Polygon outline width.
+            legend: Whether to add a legend.
+            legend_title: Legend title. Defaults to column name.
+            hover: Whether to enable hover highlight effect.
+            layer_id: Layer identifier. If None, auto-generated.
+            fit_bounds: Whether to fit map to data bounds.
+            **kwargs: Additional layer options.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> m.add_choropleth(
+            ...     "us_states.geojson",
+            ...     column="population",
+            ...     cmap="YlOrRd",
+            ...     classification="quantile",
+            ...     k=5,
+            ...     legend_title="Population"
+            ... )
+        """
+        from .utils import (
+            get_choropleth_colors,
+            compute_breaks,
+            build_step_expression,
+        )
+
+        layer_name = layer_id or f"choropleth-{len(self._layers)}"
+
+        # Convert data to GeoJSON
+        geojson = to_geojson(data)
+
+        # Handle URL data - fetch GeoJSON
+        if geojson.get("type") == "url":
+            url = geojson["url"]
+            geojson = fetch_geojson(url)
+
+        # Extract values for classification
+        features = geojson.get("features", [])
+        values = []
+        for feature in features:
+            props = feature.get("properties", {})
+            val = props.get(column)
+            if val is not None:
+                try:
+                    values.append(float(val))
+                except (TypeError, ValueError):
+                    pass
+
+        if not values:
+            raise ValueError(f"No valid numeric values found for column '{column}'")
+
+        # Compute breaks
+        computed_breaks = compute_breaks(values, classification, k, breaks)
+
+        # Get colors
+        colors = get_choropleth_colors(cmap, k)
+
+        # Build step expression for MapLibre
+        step_expr = build_step_expression(column, computed_breaks, colors)
+
+        # Get bounds
+        bounds = get_bounds(geojson) if fit_bounds else None
+
+        self.call_js_method(
+            "addChoropleth",
+            data=geojson,
+            name=layer_name,
+            column=column,
+            stepExpression=step_expr,
+            fillOpacity=fill_opacity,
+            lineColor=line_color,
+            lineWidth=line_width,
+            hover=hover,
+            fitBounds=fit_bounds,
+            bounds=bounds,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_name: {
+                "id": layer_name,
+                "type": "choropleth",
+                "source": f"{layer_name}-source",
+                "column": column,
+            },
+        }
+        self._add_to_layer_dict(layer_name, "Vector")
+
+        # Add legend
+        if legend:
+            title = legend_title or column
+            # Create labels from breaks
+            labels = []
+            for i in range(len(computed_breaks) - 1):
+                low = computed_breaks[i]
+                high = computed_breaks[i + 1]
+                if i == len(computed_breaks) - 2:
+                    labels.append(f"{low:.1f} - {high:.1f}")
+                else:
+                    labels.append(f"{low:.1f} - {high:.1f}")
+
+            self.add_legend(
+                title=title,
+                labels=labels,
+                colors=colors,
+                position="bottom-right",
+            )
+
+    # -------------------------------------------------------------------------
+    # 3D Buildings
+    # -------------------------------------------------------------------------
+
+    def add_3d_buildings(
+        self,
+        source: str = "openmaptiles",
+        min_zoom: float = 14,
+        fill_extrusion_color: str = "#aaa",
+        fill_extrusion_opacity: float = 0.6,
+        height_property: str = "render_height",
+        base_property: str = "render_min_height",
+        layer_id: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Add 3D building extrusions from vector tiles.
+
+        Creates 3D building visualizations using fill-extrusion layers.
+        Works best with vector tile styles that include building data.
+
+        Note:
+            This feature requires a map style with vector tile building data.
+            Recommended styles:
+            - MapTiler styles (requires API key)
+            - OpenFreeMap: "https://tiles.openfreemap.org/styles/liberty"
+            - Protomaps styles
+
+            CartoDB raster styles (Positron, DarkMatter) do NOT have building
+            data. For those, the method will attempt to add OpenFreeMap tiles
+            as a source, but results may vary.
+
+        Args:
+            source: Building source identifier. Usually auto-detected from
+                the map style.
+            min_zoom: Minimum zoom level to show buildings (default: 14).
+            fill_extrusion_color: Building color as hex string.
+            fill_extrusion_opacity: Building opacity (0-1).
+            height_property: Property name for building height in the
+                vector tiles (default: 'render_height').
+            base_property: Property name for building base height
+                (default: 'render_min_height').
+            layer_id: Layer identifier. If None, uses '3d-buildings'.
+            **kwargs: Additional layer options.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> # Use a vector style with building data
+            >>> m = Map(
+            ...     center=[-74.0060, 40.7128],
+            ...     zoom=15,
+            ...     pitch=60,
+            ...     style="https://tiles.openfreemap.org/styles/liberty"
+            ... )
+            >>> m.add_3d_buildings(
+            ...     fill_extrusion_color="#4682B4",
+            ...     fill_extrusion_opacity=0.8
+            ... )
+        """
+        layer_name = layer_id or "3d-buildings"
+
+        self.call_js_method(
+            "add3DBuildings",
+            source=source,
+            minZoom=min_zoom,
+            fillExtrusionColor=fill_extrusion_color,
+            fillExtrusionOpacity=fill_extrusion_opacity,
+            heightProperty=height_property,
+            baseProperty=base_property,
+            layerId=layer_name,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_name: {
+                "id": layer_name,
+                "type": "fill-extrusion",
+            },
+        }
+        self._add_to_layer_dict(layer_name, "Vector")
+
+    # -------------------------------------------------------------------------
+    # Route Animation
+    # -------------------------------------------------------------------------
+
+    def animate_along_route(
+        self,
+        route: Any,
+        duration: int = 10000,
+        loop: bool = True,
+        marker_color: str = "#3388ff",
+        marker_size: float = 1.0,
+        show_trail: bool = False,
+        trail_color: str = "#3388ff",
+        trail_width: float = 3,
+        animation_id: Optional[str] = None,
+        **kwargs,
+    ) -> str:
+        """Animate a marker along a route.
+
+        Creates an animated marker that moves along the specified route line.
+
+        Args:
+            route: Route data - LineString GeoJSON, list of coordinates,
+                GeoDataFrame, or file path.
+            duration: Animation duration in milliseconds.
+            loop: Whether to loop the animation.
+            marker_color: Marker color.
+            marker_size: Marker size multiplier.
+            show_trail: Whether to show a trail behind the marker.
+            trail_color: Trail line color.
+            trail_width: Trail line width.
+            animation_id: Animation identifier. If None, auto-generated.
+            **kwargs: Additional animation options.
+
+        Returns:
+            The animation identifier.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> coords = [[-122.4, 37.8], [-122.3, 37.7], [-122.2, 37.8]]
+            >>> anim_id = m.animate_along_route(coords, duration=5000, loop=True)
+        """
+        anim_id = animation_id or f"animation-{len(self._layers)}"
+
+        # Convert route to coordinates list
+        if isinstance(route, list) and len(route) > 0:
+            if isinstance(route[0], (list, tuple)):
+                # Already a list of coordinates
+                coordinates = route
+            else:
+                raise ValueError("Route list must contain coordinate pairs")
+        elif isinstance(route, dict):
+            # GeoJSON
+            if route.get("type") == "LineString":
+                coordinates = route.get("coordinates", [])
+            elif route.get("type") == "Feature":
+                geometry = route.get("geometry", {})
+                if geometry.get("type") == "LineString":
+                    coordinates = geometry.get("coordinates", [])
+                else:
+                    raise ValueError("Feature geometry must be LineString")
+            elif route.get("type") == "FeatureCollection":
+                features = route.get("features", [])
+                if (
+                    features
+                    and features[0].get("geometry", {}).get("type") == "LineString"
+                ):
+                    coordinates = features[0]["geometry"]["coordinates"]
+                else:
+                    raise ValueError(
+                        "FeatureCollection must contain LineString features"
+                    )
+            else:
+                raise ValueError(
+                    "GeoJSON must be LineString, Feature, or FeatureCollection"
+                )
+        else:
+            # Try to convert using to_geojson
+            geojson = to_geojson(route)
+            if geojson.get("type") == "url":
+                geojson = fetch_geojson(geojson["url"])
+            # Extract coordinates from the converted geojson
+            if geojson.get("type") == "FeatureCollection":
+                features = geojson.get("features", [])
+                if features:
+                    coordinates = features[0].get("geometry", {}).get("coordinates", [])
+                else:
+                    raise ValueError("No features found in data")
+            elif geojson.get("type") == "Feature":
+                coordinates = geojson.get("geometry", {}).get("coordinates", [])
+            else:
+                coordinates = geojson.get("coordinates", [])
+
+        if len(coordinates) < 2:
+            raise ValueError("Route must have at least 2 points")
+
+        self.call_js_method(
+            "animateAlongRoute",
+            id=anim_id,
+            coordinates=coordinates,
+            duration=duration,
+            loop=loop,
+            markerColor=marker_color,
+            markerSize=marker_size,
+            showTrail=show_trail,
+            trailColor=trail_color,
+            trailWidth=trail_width,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            anim_id: {
+                "id": anim_id,
+                "type": "animation",
+            },
+        }
+        return anim_id
+
+    def stop_animation(self, animation_id: str) -> None:
+        """Stop a running animation.
+
+        Args:
+            animation_id: Animation identifier to stop.
+        """
+        self.call_js_method("stopAnimation", animation_id)
+        if animation_id in self._layers:
+            layers = dict(self._layers)
+            del layers[animation_id]
+            self._layers = layers
+
+    def pause_animation(self, animation_id: str) -> None:
+        """Pause a running animation.
+
+        Args:
+            animation_id: Animation identifier to pause.
+        """
+        self.call_js_method("pauseAnimation", animation_id)
+
+    def resume_animation(self, animation_id: str) -> None:
+        """Resume a paused animation.
+
+        Args:
+            animation_id: Animation identifier to resume.
+        """
+        self.call_js_method("resumeAnimation", animation_id)
+
+    def set_animation_speed(self, animation_id: str, speed: float) -> None:
+        """Set animation speed multiplier.
+
+        Args:
+            animation_id: Animation identifier.
+            speed: Speed multiplier (1.0 = normal, 2.0 = double speed, etc.).
+        """
+        self.call_js_method("setAnimationSpeed", animation_id, speed)
+
+    # -------------------------------------------------------------------------
+    # Feature Hover Effect
+    # -------------------------------------------------------------------------
+
+    def add_hover_effect(
+        self,
+        layer_id: str,
+        highlight_color: Optional[str] = None,
+        highlight_opacity: Optional[float] = None,
+        highlight_outline_width: float = 2,
+        **kwargs,
+    ) -> None:
+        """Add hover highlight effect to an existing layer.
+
+        When the mouse hovers over a feature, it will be highlighted with
+        the specified styles.
+
+        Args:
+            layer_id: Layer identifier to add hover effect to.
+            highlight_color: Override fill/line color on hover. If None,
+                the original color is kept but opacity/outline changes.
+            highlight_opacity: Override opacity on hover.
+            highlight_outline_width: Outline width on hover.
+            **kwargs: Additional hover effect options.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> m.add_geojson("states.geojson", name="states")
+            >>> m.add_hover_effect("states", highlight_opacity=0.9)
+        """
+        self.call_js_method(
+            "addHoverEffect",
+            layerId=layer_id,
+            highlightColor=highlight_color,
+            highlightOpacity=highlight_opacity,
+            highlightOutlineWidth=highlight_outline_width,
+            **kwargs,
+        )
+
+    # -------------------------------------------------------------------------
     # HTML Export
     # -------------------------------------------------------------------------
 
