@@ -11,7 +11,7 @@ import traitlets
 
 from .base import MapWidget
 from .basemaps import get_basemap_url, get_maplibre_style
-from .utils import to_geojson, get_bounds, infer_layer_type, get_default_paint
+from .utils import to_geojson, get_bounds, infer_layer_type, get_default_paint, fetch_geojson
 
 # Path to bundled static assets
 STATIC_DIR = Path(__file__).parent / "static"
@@ -213,19 +213,13 @@ class MapLibreMap(MapWidget):
         """
         geojson = to_geojson(data)
 
-        # Handle URL data
-        if geojson.get("type") == "url":
-            self.add_geojson(
-                geojson["url"],
-                layer_type=layer_type,
-                paint=paint,
-                name=name,
-                fit_bounds=fit_bounds,
-                **kwargs,
-            )
-            return
-
         layer_id = name or f"vector-{len(self._layers)}"
+
+        # Handle URL data - fetch GeoJSON to get bounds and infer layer type
+        if geojson.get("type") == "url":
+            url = geojson["url"]
+            # Fetch the actual GeoJSON data from URL
+            geojson = fetch_geojson(url)
 
         # Infer layer type if not specified
         if layer_type is None:
@@ -235,8 +229,8 @@ class MapLibreMap(MapWidget):
         if paint is None:
             paint = get_default_paint(layer_type)
 
-        # Get bounds
-        bounds = get_bounds(data) if fit_bounds else None
+        # Get bounds (use geojson dict, not original data which may be a URL)
+        bounds = get_bounds(geojson) if fit_bounds else None
 
         # Call JavaScript
         self.call_js_method(

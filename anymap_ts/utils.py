@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from urllib.request import urlopen
+from urllib.error import URLError
 
 # Check for optional dependencies
 try:
@@ -77,6 +79,28 @@ def to_geojson(data: Any) -> Dict:
         return geo
 
     raise ValueError(f"Cannot convert {type(data)} to GeoJSON")
+
+
+def fetch_geojson(url: str) -> Dict:
+    """Fetch GeoJSON data from a URL.
+
+    Args:
+        url: URL to fetch GeoJSON from
+
+    Returns:
+        GeoJSON dict
+
+    Raises:
+        ValueError: If the URL cannot be fetched or parsed
+    """
+    try:
+        with urlopen(url) as response:
+            data = response.read().decode("utf-8")
+            return json.loads(data)
+    except URLError as e:
+        raise ValueError(f"Failed to fetch GeoJSON from URL: {e}") from e
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON at URL: {e}") from e
 
 
 def get_bounds(data: Any) -> Optional[List[float]]:
