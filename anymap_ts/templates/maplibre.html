@@ -432,8 +432,7 @@
             const position = config.position || 'top-right';
             const collapsed = config.collapsed !== false;
 
-            // Build layer IDs and states from addedLayers
-            const layerIds = addedLayers.map(layer => layer.id);
+            // Build layerStates with custom names for added layers
             const layerStates = {};
             for (const layer of addedLayers) {
                 layerStates[layer.id] = {
@@ -443,10 +442,11 @@
                 };
             }
 
-            // Use maplibre-gl-layer-control with explicit layers
+            // Use maplibre-gl-layer-control - auto-detect all layers
+            // layerStates provides custom names for added layers
+            // Background group is preserved for basemap layers
             const layerControl = new LayerControl({
                 collapsed: collapsed,
-                layers: layerIds,
                 layerStates: layerStates
             });
             map.addControl(layerControl, position);
