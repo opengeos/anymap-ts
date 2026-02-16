@@ -9,6 +9,9 @@
     <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
     <!-- PMTiles -->
     <script src="https://unpkg.com/pmtiles@3.0.8/dist/pmtiles.js"></script>
+    <!-- maplibre-gl-components for control grid and layer control -->
+    <script src="https://unpkg.com/maplibre-gl-components@0.14.0/dist/maplibre-gl-components.umd.js"></script>
+    <link href="https://unpkg.com/maplibre-gl-components@0.14.0/dist/style.css" rel="stylesheet" />
     <!-- Geoman for drawing -->
     <script src="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.umd.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.css" rel="stylesheet" />
@@ -100,6 +103,21 @@
             if (layerControlConfig || (state.controls && state.controls['layer-control'])) {
                 const config = layerControlConfig || state.controls['layer-control'];
                 createLayerControl(config);
+            }
+
+            // Add control grid if configured
+            if (state.controls && state.controls['control-grid']) {
+                const config = state.controls['control-grid'];
+                if (typeof MaplibreGlComponents !== 'undefined' && MaplibreGlComponents.addControlGrid) {
+                    MaplibreGlComponents.addControlGrid(map, {
+                        position: config.position || 'top-right',
+                        defaultControls: config.defaultControls,
+                        exclude: config.exclude,
+                        rows: config.rows,
+                        columns: config.columns,
+                        collapsed: config.collapsed !== false
+                    });
+                }
             }
 
             // Add draw control if configured
@@ -227,6 +245,30 @@
                 case 'addDrawControl': {
                     // Store config for later (after map is fully loaded)
                     drawControlConfig = kwargs;
+                    break;
+                }
+
+                case 'addControlGrid': {
+                    // Add control grid using maplibre-gl-components
+                    if (typeof MaplibreGlComponents !== 'undefined' && MaplibreGlComponents.addControlGrid) {
+                        const position = kwargs.position || 'top-right';
+                        const defaultControls = kwargs.defaultControls;
+                        const exclude = kwargs.exclude;
+                        const rows = kwargs.rows;
+                        const columns = kwargs.columns;
+                        const collapsed = kwargs.collapsed !== false;
+
+                        MaplibreGlComponents.addControlGrid(map, {
+                            position,
+                            defaultControls,
+                            exclude,
+                            rows,
+                            columns,
+                            collapsed
+                        });
+                    } else {
+                        console.warn('maplibre-gl-components not loaded. Control grid not available.');
+                    }
                     break;
                 }
 
@@ -439,6 +481,18 @@
 
         function createLayerControl(config) {
             const position = config.position || 'top-right';
+            const collapsed = config.collapsed !== false;
+
+            // Try to use maplibre-gl-layer-control from maplibre-gl-components
+            if (typeof MaplibreGlComponents !== 'undefined' && MaplibreGlComponents.LayerControl) {
+                const layerControl = new MaplibreGlComponents.LayerControl({
+                    collapsed: collapsed
+                });
+                map.addControl(layerControl, position);
+                return;
+            }
+
+            // Fallback to basic layer control
             const configLayers = config.layers;
             const layers = configLayers && configLayers.length > 0
                 ? configLayers
