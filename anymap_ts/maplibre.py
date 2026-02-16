@@ -159,6 +159,63 @@ class MapLibreMap(MapWidget):
         self._layer_dict = new_dict
 
     # -------------------------------------------------------------------------
+    # Validation Helpers
+    # -------------------------------------------------------------------------
+
+    def _validate_opacity(self, opacity: float, param_name: str = "opacity") -> float:
+        """Validate opacity value is between 0 and 1.
+
+        Args:
+            opacity: The opacity value to validate.
+            param_name: Name of the parameter for error messages.
+
+        Returns:
+            The validated opacity value.
+
+        Raises:
+            ValueError: If opacity is not between 0 and 1.
+        """
+        if not 0 <= opacity <= 1:
+            raise ValueError(f"{param_name} must be between 0 and 1, got {opacity}")
+        return opacity
+
+    def _validate_position(self, position: str) -> str:
+        """Validate control position is valid.
+
+        Args:
+            position: The position string to validate.
+
+        Returns:
+            The validated position string.
+
+        Raises:
+            ValueError: If position is not valid.
+        """
+        valid_positions = ["top-left", "top-right", "bottom-left", "bottom-right"]
+        if position not in valid_positions:
+            raise ValueError(
+                f"Position must be one of: {', '.join(valid_positions)}, got '{position}'"
+            )
+        return position
+
+    def _remove_layer_internal(
+        self, layer_id: str, js_method: str, category: Optional[str] = None
+    ) -> None:
+        """Internal helper to remove a layer.
+
+        Args:
+            layer_id: The layer identifier to remove.
+            js_method: The JavaScript method to call for removal.
+            category: Optional category for layer dict removal.
+        """
+        if layer_id in self._layers:
+            layers = dict(self._layers)
+            del layers[layer_id]
+            self._layers = layers
+        self._remove_from_layer_dict(layer_id)
+        self.call_js_method(js_method, layer_id)
+
+    # -------------------------------------------------------------------------
     # Basemap Methods
     # -------------------------------------------------------------------------
 
@@ -291,6 +348,298 @@ class MapLibreMap(MapWidget):
         )
 
     # -------------------------------------------------------------------------
+    # Marker Methods
+    # -------------------------------------------------------------------------
+
+    def add_marker(
+        self,
+        lng: float,
+        lat: float,
+        popup: Optional[str] = None,
+        color: str = "#3388ff",
+        draggable: bool = False,
+        name: Optional[str] = None,
+        **kwargs,
+    ) -> str:
+        """Add a single marker to the map.
+
+        Args:
+            lng: Longitude of the marker.
+            lat: Latitude of the marker.
+            popup: Optional popup HTML content.
+            color: Marker color as hex string.
+            draggable: Whether the marker can be dragged.
+            name: Marker identifier. If None, auto-generated.
+            **kwargs: Additional marker options.
+
+        Returns:
+            The marker identifier.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map(center=[-122.4, 37.8], zoom=10)
+            >>> m.add_marker(-122.4, 37.8, popup="San Francisco")
+        """
+        marker_id = name or f"marker-{len(self._layers)}"
+
+        self.call_js_method(
+            "addMarker",
+            id=marker_id,
+            lngLat=[lng, lat],
+            popup=popup,
+            color=color,
+            draggable=draggable,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            marker_id: {
+                "id": marker_id,
+                "type": "marker",
+                "lngLat": [lng, lat],
+            },
+        }
+        self._add_to_layer_dict(marker_id, "Markers")
+        return marker_id
+
+    def add_markers(
+        self,
+        data: Any,
+        lng_column: Optional[str] = None,
+        lat_column: Optional[str] = None,
+        popup_column: Optional[str] = None,
+        color: str = "#3388ff",
+        name: Optional[str] = None,
+        **kwargs,
+    ) -> str:
+        """Add multiple markers from data.
+
+        Args:
+            data: Data source - can be:
+                - List of dicts with 'lng'/'lon'/'longitude' and 'lat'/'latitude' keys
+                - GeoDataFrame with Point geometries
+                - GeoJSON FeatureCollection with Point features
+            lng_column: Column name for longitude (auto-detected if None).
+            lat_column: Column name for latitude (auto-detected if None).
+            popup_column: Column name for popup content.
+            color: Marker color as hex string.
+            name: Layer identifier. If None, auto-generated.
+            **kwargs: Additional marker options.
+
+        Returns:
+            The layer identifier.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> cities = [
+            ...     {"name": "SF", "lng": -122.4, "lat": 37.8},
+            ...     {"name": "NYC", "lng": -74.0, "lat": 40.7},
+            ... ]
+            >>> m.add_markers(cities, popup_column="name")
+        """
+        layer_id = name or f"markers-{len(self._layers)}"
+        markers = []
+
+        # Handle GeoDataFrame
+        if hasattr(data, "geometry"):
+            for _, row in data.iterrows():
+                geom = row.geometry
+                if geom.geom_type == "Point":
+                    marker = {"lngLat": [geom.x, geom.y]}
+                    if popup_column and popup_column in row:
+                        marker["popup"] = str(row[popup_column])
+                    markers.append(marker)
+        # Handle GeoJSON
+        elif isinstance(data, dict) and data.get("type") == "FeatureCollection":
+            for feature in data.get("features", []):
+                geom = feature.get("geometry", {})
+                if geom.get("type") == "Point":
+                    coords = geom.get("coordinates", [])
+                    marker = {"lngLat": coords[:2]}
+                    props = feature.get("properties", {})
+                    if popup_column and popup_column in props:
+                        marker["popup"] = str(props[popup_column])
+                    markers.append(marker)
+        # Handle list of dicts
+        elif isinstance(data, list):
+            lng_keys = ["lng", "lon", "longitude", "x"]
+            lat_keys = ["lat", "latitude", "y"]
+
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+
+                # Find lng/lat values
+                lng_val = None
+                lat_val = None
+
+                if lng_column and lng_column in item:
+                    lng_val = item[lng_column]
+                else:
+                    for key in lng_keys:
+                        if key in item:
+                            lng_val = item[key]
+                            break
+
+                if lat_column and lat_column in item:
+                    lat_val = item[lat_column]
+                else:
+                    for key in lat_keys:
+                        if key in item:
+                            lat_val = item[key]
+                            break
+
+                if lng_val is not None and lat_val is not None:
+                    marker = {"lngLat": [float(lng_val), float(lat_val)]}
+                    if popup_column and popup_column in item:
+                        marker["popup"] = str(item[popup_column])
+                    markers.append(marker)
+
+        if not markers:
+            raise ValueError("No valid point data found in input")
+
+        self.call_js_method(
+            "addMarkers",
+            id=layer_id,
+            markers=markers,
+            color=color,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "markers",
+                "count": len(markers),
+            },
+        }
+        self._add_to_layer_dict(layer_id, "Markers")
+        return layer_id
+
+    def remove_marker(self, marker_id: str) -> None:
+        """Remove a marker from the map.
+
+        Args:
+            marker_id: Marker identifier to remove.
+        """
+        self._remove_layer_internal(marker_id, "removeMarker")
+
+    # -------------------------------------------------------------------------
+    # Heatmap Methods
+    # -------------------------------------------------------------------------
+
+    def add_heatmap(
+        self,
+        data: Any,
+        weight_property: Optional[str] = None,
+        radius: int = 20,
+        intensity: float = 1.0,
+        colormap: Optional[List] = None,
+        opacity: float = 0.8,
+        name: Optional[str] = None,
+        fit_bounds: bool = True,
+        **kwargs,
+    ) -> None:
+        """Add a heatmap layer to the map.
+
+        Creates a heatmap visualization from point data using MapLibre's
+        native heatmap layer type.
+
+        Args:
+            data: Point data - can be GeoJSON, GeoDataFrame, or file path.
+            weight_property: Property name to use for point weights.
+                If None, all points have equal weight.
+            radius: Radius of influence for each point in pixels.
+            intensity: Intensity multiplier for the heatmap.
+            colormap: Color gradient as list of [stop, color] pairs.
+                Example: [[0, "blue"], [0.5, "yellow"], [1, "red"]]
+                Default: blue-yellow-red gradient.
+            opacity: Layer opacity (0-1).
+            name: Layer identifier. If None, auto-generated.
+            fit_bounds: Whether to fit map to data bounds.
+            **kwargs: Additional heatmap layer options.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> m.add_heatmap(
+            ...     "earthquakes.geojson",
+            ...     weight_property="magnitude",
+            ...     radius=30,
+            ...     colormap=[[0, "blue"], [0.5, "lime"], [1, "red"]]
+            ... )
+        """
+        self._validate_opacity(opacity)
+        layer_id = name or f"heatmap-{len(self._layers)}"
+
+        # Convert data to GeoJSON
+        geojson = to_geojson(data)
+
+        # Handle URL data - fetch GeoJSON
+        if geojson.get("type") == "url":
+            url = geojson["url"]
+            geojson = fetch_geojson(url)
+
+        # Default colormap
+        if colormap is None:
+            colormap = [
+                [0, "rgba(33,102,172,0)"],
+                [0.2, "rgb(103,169,207)"],
+                [0.4, "rgb(209,229,240)"],
+                [0.6, "rgb(253,219,199)"],
+                [0.8, "rgb(239,138,98)"],
+                [1, "rgb(178,24,43)"],
+            ]
+
+        # Build heatmap paint properties
+        paint = {
+            "heatmap-radius": radius,
+            "heatmap-intensity": intensity,
+            "heatmap-opacity": opacity,
+            "heatmap-color": [
+                "interpolate",
+                ["linear"],
+                ["heatmap-density"],
+            ],
+        }
+
+        # Add colormap stops
+        for stop, color in colormap:
+            paint["heatmap-color"].extend([stop, color])
+
+        # Add weight if specified
+        if weight_property:
+            paint["heatmap-weight"] = ["get", weight_property]
+
+        # Get bounds
+        bounds = get_bounds(geojson) if fit_bounds else None
+
+        self.call_js_method(
+            "addGeoJSON",
+            data=geojson,
+            name=layer_id,
+            layerType="heatmap",
+            paint=paint,
+            fitBounds=fit_bounds,
+            bounds=bounds,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "heatmap",
+                "source": f"{layer_id}-source",
+                "paint": paint,
+            },
+        }
+        self._add_to_layer_dict(layer_id, "Heatmap")
+
+    # -------------------------------------------------------------------------
     # Raster Data Methods
     # -------------------------------------------------------------------------
 
@@ -331,18 +680,19 @@ class MapLibreMap(MapWidget):
 
         client = TileClient(source)
 
-        # Build tile URL with parameters
-        tile_url = client.get_tile_url()
+        # Build parameters dict and pass all at once
+        tile_params = {}
         if indexes:
-            tile_url = client.get_tile_url(indexes=indexes)
+            tile_params["indexes"] = indexes
         if colormap:
-            tile_url = client.get_tile_url(colormap=colormap)
+            tile_params["colormap"] = colormap
         if vmin is not None or vmax is not None:
-            tile_url = client.get_tile_url(
-                vmin=vmin or client.min, vmax=vmax or client.max
-            )
+            tile_params["vmin"] = vmin if vmin is not None else client.min
+            tile_params["vmax"] = vmax if vmax is not None else client.max
         if nodata is not None:
-            tile_url = client.get_tile_url(nodata=nodata)
+            tile_params["nodata"] = nodata
+
+        tile_url = client.get_tile_url(**tile_params)
 
         layer_name = name or Path(source).stem
 
@@ -602,11 +952,7 @@ class MapLibreMap(MapWidget):
         Args:
             layer_id: Layer identifier to remove.
         """
-        if layer_id in self._layers:
-            layers = dict(self._layers)
-            del layers[layer_id]
-            self._layers = layers
-        self.call_js_method("removeCOGLayer", layer_id)
+        self._remove_layer_internal(layer_id, "removeCOGLayer")
 
     # -------------------------------------------------------------------------
     # Zarr Layer (@carbonplan/zarr-layer)
@@ -704,11 +1050,7 @@ class MapLibreMap(MapWidget):
         Args:
             layer_id: Layer identifier to remove.
         """
-        if layer_id in self._layers:
-            layers = dict(self._layers)
-            del layers[layer_id]
-            self._layers = layers
-        self.call_js_method("removeZarrLayer", layer_id)
+        self._remove_layer_internal(layer_id, "removeZarrLayer")
 
     def update_zarr_layer(
         self,
@@ -830,11 +1172,7 @@ class MapLibreMap(MapWidget):
         Args:
             layer_id: Layer identifier to remove.
         """
-        if layer_id in self._layers:
-            layers = dict(self._layers)
-            del layers[layer_id]
-            self._layers = layers
-        self.call_js_method("removePMTilesLayer", layer_id)
+        self._remove_layer_internal(layer_id, "removePMTilesLayer")
 
     # -------------------------------------------------------------------------
     # Arc Layer (deck.gl)
@@ -922,11 +1260,7 @@ class MapLibreMap(MapWidget):
         Args:
             layer_id: Layer identifier to remove.
         """
-        if layer_id in self._layers:
-            layers = dict(self._layers)
-            del layers[layer_id]
-            self._layers = layers
-        self.call_js_method("removeArcLayer", layer_id)
+        self._remove_layer_internal(layer_id, "removeArcLayer")
 
     # -------------------------------------------------------------------------
     # PointCloud Layer (deck.gl)
@@ -1017,11 +1351,7 @@ class MapLibreMap(MapWidget):
         Args:
             layer_id: Layer identifier to remove.
         """
-        if layer_id in self._layers:
-            layers = dict(self._layers)
-            del layers[layer_id]
-            self._layers = layers
-        self.call_js_method("removePointCloudLayer", layer_id)
+        self._remove_layer_internal(layer_id, "removePointCloudLayer")
 
     # -------------------------------------------------------------------------
     # LiDAR Layers (maplibre-gl-lidar)
@@ -1657,7 +1987,291 @@ class MapLibreMap(MapWidget):
             layer_id: Layer identifier
             opacity: Opacity value between 0 and 1
         """
+        self._validate_opacity(opacity)
         self.call_js_method("setOpacity", layer_id, opacity)
+
+    def set_paint_property(self, layer_id: str, property_name: str, value: Any) -> None:
+        """Set a paint property for a layer.
+
+        Args:
+            layer_id: Layer identifier.
+            property_name: Name of the paint property (e.g., 'fill-color').
+            value: New value for the property.
+
+        Example:
+            >>> m.set_paint_property("my-layer", "fill-color", "#ff0000")
+            >>> m.set_paint_property("my-layer", "fill-opacity", 0.5)
+        """
+        self.call_js_method(
+            "setPaintProperty", layerId=layer_id, property=property_name, value=value
+        )
+
+    def set_layout_property(
+        self, layer_id: str, property_name: str, value: Any
+    ) -> None:
+        """Set a layout property for a layer.
+
+        Args:
+            layer_id: Layer identifier.
+            property_name: Name of the layout property (e.g., 'visibility').
+            value: New value for the property.
+
+        Example:
+            >>> m.set_layout_property("my-layer", "visibility", "none")
+        """
+        self.call_js_method(
+            "setLayoutProperty", layerId=layer_id, property=property_name, value=value
+        )
+
+    def move_layer(self, layer_id: str, before_id: Optional[str] = None) -> None:
+        """Move a layer in the layer stack.
+
+        Args:
+            layer_id: Layer identifier to move.
+            before_id: ID of layer to move before. If None, moves to top.
+
+        Example:
+            >>> m.move_layer("my-layer", "other-layer")  # Move before other-layer
+            >>> m.move_layer("my-layer")  # Move to top
+        """
+        self.call_js_method("moveLayer", layerId=layer_id, beforeId=before_id)
+
+    def get_layer(self, layer_id: str) -> Optional[Dict]:
+        """Get layer configuration by ID.
+
+        Args:
+            layer_id: Layer identifier.
+
+        Returns:
+            Layer configuration dict or None if not found.
+        """
+        return self._layers.get(layer_id)
+
+    def get_layer_ids(self) -> List[str]:
+        """Get list of all layer IDs.
+
+        Returns:
+            List of layer identifiers.
+        """
+        return list(self._layers.keys())
+
+    def add_popup(
+        self,
+        layer_id: str,
+        properties: Optional[List[str]] = None,
+        template: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Add popup on click for a layer.
+
+        Configures a layer to show a popup when features are clicked.
+
+        Args:
+            layer_id: Layer identifier to add popup to.
+            properties: List of property names to display. If None, shows all.
+            template: Custom HTML template for popup content. Use {property_name}
+                placeholders for values. If None, auto-generates table.
+            **kwargs: Additional popup options (maxWidth, closeButton, etc.).
+
+        Example:
+            >>> m.add_vector(geojson, name="cities")
+            >>> m.add_popup("cities", properties=["name", "population"])
+            >>> # Or with custom template:
+            >>> m.add_popup("cities", template="<h3>{name}</h3><p>Pop: {population}</p>")
+        """
+        self.call_js_method(
+            "addPopup",
+            layerId=layer_id,
+            properties=properties,
+            template=template,
+            **kwargs,
+        )
+
+    # -------------------------------------------------------------------------
+    # Terrain and Image Overlay Methods
+    # -------------------------------------------------------------------------
+
+    def add_3d_terrain(
+        self,
+        source: str = "terrarium",
+        exaggeration: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Enable 3D terrain visualization.
+
+        MapLibre GL JS supports 3D terrain rendering using elevation data
+        from various terrain tile sources.
+
+        Args:
+            source: Terrain source - 'terrarium' (AWS terrain tiles) or
+                'mapbox' (requires Mapbox token) or custom terrain URL.
+            exaggeration: Vertical exaggeration factor. Default 1.0.
+            **kwargs: Additional terrain options.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map(center=[-122.4, 37.8], zoom=12, pitch=60)
+            >>> m.add_3d_terrain(exaggeration=1.5)
+        """
+        # Define terrain sources
+        terrain_sources = {
+            "terrarium": {
+                "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+                "encoding": "terrarium",
+            },
+            "mapbox": {
+                "url": "mapbox://mapbox.mapbox-terrain-dem-v1",
+                "encoding": "mapbox",
+            },
+        }
+
+        if source in terrain_sources:
+            terrain_config = terrain_sources[source]
+        else:
+            # Assume it's a custom URL
+            terrain_config = {"url": source, "encoding": "terrarium"}
+
+        self.call_js_method(
+            "addTerrain",
+            source=terrain_config,
+            exaggeration=exaggeration,
+            **kwargs,
+        )
+
+    def add_wms_layer(
+        self,
+        url: str,
+        layers: str,
+        name: Optional[str] = None,
+        format: str = "image/png",
+        transparent: bool = True,
+        version: str = "1.1.1",
+        attribution: str = "",
+        **kwargs,
+    ) -> None:
+        """Add a WMS (Web Map Service) layer.
+
+        WMS is a standard protocol for serving georeferenced map images.
+
+        Args:
+            url: Base URL of the WMS service.
+            layers: Comma-separated list of WMS layer names.
+            name: Layer identifier. If None, auto-generated.
+            format: Image format (e.g., 'image/png', 'image/jpeg').
+            transparent: Whether to request transparent images.
+            version: WMS version (e.g., '1.1.1', '1.3.0').
+            attribution: Attribution text.
+            **kwargs: Additional WMS parameters.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> m.add_wms_layer(
+            ...     url="https://ows.terrestris.de/osm/service",
+            ...     layers="OSM-WMS",
+            ...     name="osm-wms"
+            ... )
+        """
+        layer_id = name or f"wms-{len(self._layers)}"
+
+        # Build WMS tile URL
+        wms_params = {
+            "SERVICE": "WMS",
+            "VERSION": version,
+            "REQUEST": "GetMap",
+            "LAYERS": layers,
+            "FORMAT": format,
+            "TRANSPARENT": str(transparent).lower(),
+            "WIDTH": "256",
+            "HEIGHT": "256",
+            "CRS" if version >= "1.3.0" else "SRS": "EPSG:3857",
+            "BBOX": "{bbox-epsg-3857}",
+            **kwargs,
+        }
+
+        query_string = "&".join(f"{k}={v}" for k, v in wms_params.items())
+        tile_url = f"{url}?{query_string}"
+
+        self.call_js_method(
+            "addTileLayer",
+            tile_url,
+            name=layer_id,
+            attribution=attribution,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "wms",
+                "url": url,
+                "wms_layers": layers,
+            },
+        }
+        self._add_to_layer_dict(layer_id, "WMS")
+
+    def add_image_layer(
+        self,
+        url: str,
+        coordinates: List[List[float]],
+        name: Optional[str] = None,
+        opacity: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Add a georeferenced image overlay.
+
+        Overlays an image on the map at specified geographic coordinates.
+
+        Args:
+            url: URL to the image file.
+            coordinates: Four corner coordinates as [[lng, lat], ...] in order:
+                top-left, top-right, bottom-right, bottom-left.
+            name: Layer identifier. If None, auto-generated.
+            opacity: Layer opacity (0-1).
+            **kwargs: Additional layer options.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map()
+            >>> m.add_image_layer(
+            ...     url="https://example.com/overlay.png",
+            ...     coordinates=[
+            ...         [-80.425, 46.437],  # top-left
+            ...         [-71.516, 46.437],  # top-right
+            ...         [-71.516, 37.936],  # bottom-right
+            ...         [-80.425, 37.936],  # bottom-left
+            ...     ]
+            ... )
+        """
+        self._validate_opacity(opacity)
+        layer_id = name or f"image-{len(self._layers)}"
+
+        if len(coordinates) != 4:
+            raise ValueError(
+                "coordinates must have exactly 4 corner points "
+                "[top-left, top-right, bottom-right, bottom-left]"
+            )
+
+        self.call_js_method(
+            "addImageLayer",
+            id=layer_id,
+            url=url,
+            coordinates=coordinates,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "image",
+                "url": url,
+                "coordinates": coordinates,
+            },
+        }
+        self._add_to_layer_dict(layer_id, "Raster")
 
     # -------------------------------------------------------------------------
     # Controls
@@ -1822,15 +2436,20 @@ class MapLibreMap(MapWidget):
             legend_id: Legend identifier to remove. If None, removes all legends.
         """
         if legend_id is None:
-            # Remove all legends
+            # Remove all legends - create a copy of keys before iterating
             legend_keys = [k for k in self._controls.keys() if k.startswith("legend")]
             for key in legend_keys:
                 self.call_js_method("removeLegend", key)
-                del self._controls[key]
+            # Rebuild controls dict without legend keys
+            self._controls = {
+                k: v for k, v in self._controls.items() if not k.startswith("legend")
+            }
         else:
-            if legend_id in self._controls:
-                del self._controls[legend_id]
             self.call_js_method("removeLegend", legend_id)
+            if legend_id in self._controls:
+                controls = dict(self._controls)
+                del controls[legend_id]
+                self._controls = controls
 
     def update_legend(
         self,
