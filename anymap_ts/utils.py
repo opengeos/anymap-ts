@@ -264,3 +264,207 @@ def get_default_paint(layer_type: str) -> Dict[str, Any]:
         },
     }
     return defaults.get(layer_type, {})
+
+
+# -------------------------------------------------------------------------
+# Choropleth Utilities
+# -------------------------------------------------------------------------
+
+# Check for matplotlib
+try:
+    import matplotlib.pyplot as plt
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+    plt = None  # type: ignore
+
+# Fallback colormaps when matplotlib is not available
+_FALLBACK_COLORMAPS = {
+    "viridis": ["#440154", "#31688e", "#26838f", "#6cce5a", "#fde725"],
+    "Blues": ["#f7fbff", "#9ecae1", "#4292c6", "#2171b5", "#08306b"],
+    "Reds": ["#fff5f0", "#fc9272", "#ef3b2c", "#cb181d", "#67000d"],
+    "YlOrRd": ["#ffffcc", "#feb24c", "#fc4e2a", "#bd0026", "#800026"],
+}
+
+
+def _rgb_to_hex(rgb: tuple) -> str:
+    """Convert RGB tuple (0-1 range) to hex color string.
+
+    Args:
+        rgb: Tuple of (r, g, b) or (r, g, b, a) values in 0-1 range.
+
+    Returns:
+        Hex color string like '#ff0000'.
+    """
+    r, g, b = rgb[:3]
+    return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255))
+
+
+def get_choropleth_colors(cmap: str, k: int) -> List[str]:
+    """Get colors for a choropleth map using matplotlib colormaps.
+
+    Uses matplotlib colormaps when available, falling back to a small
+    set of built-in colormaps if matplotlib is not installed.
+
+    Args:
+        cmap: Colormap name. Any matplotlib colormap is supported when
+            matplotlib is installed. Common options include:
+            - Sequential: 'viridis', 'plasma', 'inferno', 'magma', 'cividis',
+              'Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys'
+            - Diverging: 'RdBu', 'RdYlGn', 'RdYlBu', 'Spectral', 'coolwarm',
+              'bwr', 'seismic'
+            - Qualitative: 'Set1', 'Set2', 'Set3', 'Paired', 'tab10', 'tab20'
+            - Perceptually uniform: 'viridis', 'plasma', 'inferno', 'magma'
+        k: Number of classes/colors to generate.
+
+    Returns:
+        List of k hex color strings.
+
+    Raises:
+        ValueError: If colormap is not found.
+
+    Example:
+        >>> colors = get_choropleth_colors('viridis', 5)
+        >>> colors
+        ['#440154', '#3b528b', '#21918c', '#5ec962', '#fde725']
+    """
+    if HAS_MATPLOTLIB:
+        try:
+            # Get the colormap from matplotlib
+            colormap = plt.get_cmap(cmap)
+
+            # Sample k colors evenly from the colormap
+            colors = []
+            for i in range(k):
+                # Sample at evenly spaced points
+                position = i / (k - 1) if k > 1 else 0.5
+                rgba = colormap(position)
+                colors.append(_rgb_to_hex(rgba))
+
+            return colors
+
+        except ValueError:
+            raise ValueError(
+                f"Unknown colormap '{cmap}'. See matplotlib colormap documentation "
+                "for available options: https://matplotlib.org/stable/gallery/color/colormap_reference.html"
+            )
+    else:
+        # Fallback to built-in colormaps
+        if cmap not in _FALLBACK_COLORMAPS:
+            available = ", ".join(sorted(_FALLBACK_COLORMAPS.keys()))
+            raise ValueError(
+                f"Colormap '{cmap}' not available. Without matplotlib, only these "
+                f"colormaps are available: {available}. "
+                "Install matplotlib for full colormap support: pip install matplotlib"
+            )
+
+        full_colors = _FALLBACK_COLORMAPS[cmap]
+
+        if k <= len(full_colors):
+            # Sample evenly from the colormap
+            step = len(full_colors) / k
+            indices = [int(i * step) for i in range(k)]
+            return [full_colors[i] for i in indices]
+        else:
+            # Interpolate if we need more colors than available
+            # For simplicity, just repeat the last colors
+            colors = full_colors[:]
+            while len(colors) < k:
+                colors.append(colors[-1])
+            return colors[:k]
+
+
+def compute_breaks(
+    values: List[float],
+    classification: str,
+    k: int,
+    manual_breaks: Optional[List[float]] = None,
+) -> List[float]:
+    """Compute classification breaks for choropleth maps.
+
+    Args:
+        values: List of numeric values to classify.
+        classification: Classification method ('quantile', 'equal_interval',
+            'natural_breaks', 'manual').
+        k: Number of classes.
+        manual_breaks: Custom break values for 'manual' classification.
+
+    Returns:
+        List of break values (k+1 values defining class boundaries).
+
+    Raises:
+        ValueError: If classification method is invalid or breaks are incorrect.
+    """
+    if classification == "manual":
+        if manual_breaks is None:
+            raise ValueError("manual_breaks required for 'manual' classification")
+        if len(manual_breaks) != k + 1:
+            raise ValueError(f"manual_breaks must have {k + 1} values for {k} classes")
+        return manual_breaks
+
+    sorted_values = sorted(values)
+    min_val = sorted_values[0]
+    max_val = sorted_values[-1]
+
+    if classification == "quantile":
+        # Equal number of features per class
+        breaks = [min_val]
+        for i in range(1, k):
+            idx = int(len(sorted_values) * i / k)
+            breaks.append(sorted_values[idx])
+        breaks.append(max_val)
+        return breaks
+
+    elif classification == "equal_interval":
+        # Equal value ranges
+        interval = (max_val - min_val) / k
+        breaks = [min_val + i * interval for i in range(k + 1)]
+        return breaks
+
+    elif classification == "natural_breaks":
+        # Jenks natural breaks - requires jenkspy
+        try:
+            import jenkspy
+
+            breaks = jenkspy.jenks_breaks(values, n_classes=k)
+            return breaks
+        except ImportError:
+            raise ImportError(
+                "jenkspy is required for natural_breaks classification. "
+                "Install with: pip install jenkspy"
+            )
+
+    else:
+        raise ValueError(
+            f"Unknown classification method '{classification}'. "
+            "Options: 'quantile', 'equal_interval', 'natural_breaks', 'manual'"
+        )
+
+
+def build_step_expression(column: str, breaks: List[float], colors: List[str]) -> List:
+    """Build a MapLibre step expression for choropleth styling.
+
+    Args:
+        column: Property name to style by.
+        breaks: Break values (k+1 values for k classes).
+        colors: List of k colors for each class.
+
+    Returns:
+        MapLibre step expression as a list.
+    """
+    # MapLibre step expression format:
+    # ["step", ["get", "property"], color0, break1, color1, break2, color2, ...]
+    expr = ["step", ["get", column], colors[0]]
+
+    # Add breaks and colors (skip the first break which is the minimum)
+    for i in range(1, len(breaks) - 1):
+        expr.append(breaks[i])
+        expr.append(colors[i])
+
+    # Handle the last class
+    if len(colors) > len(breaks) - 1:
+        expr.append(breaks[-1])
+        expr.append(colors[-1])
+
+    return expr

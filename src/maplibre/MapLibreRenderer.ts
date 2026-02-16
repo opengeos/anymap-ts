@@ -33,6 +33,9 @@ import {
   ScreenGridLayer,
 } from '@deck.gl/aggregation-layers';
 import { TripsLayer } from '@deck.gl/geo-layers';
+import along from '@turf/along';
+import length from '@turf/length';
+import { lineString } from '@turf/helpers';
 import { proj } from '@developmentseed/deck.gl-geotiff';
 import { COGLayerWithOpacity as COGLayer } from './layers/COGLayerWithOpacity';
 import { toProj4 } from 'geotiff-geokeys-to-proj4';
@@ -118,6 +121,25 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   protected zarrLayerUiControl: ZarrLayerControl | null = null;
   protected addVectorControl: AddVectorControl | null = null;
   protected controlGrid: ControlGrid | null = null;
+
+  // Route animations
+  protected animations: globalThis.Map<string, {
+    animationId: number;
+    marker: Marker;
+    isPaused: boolean;
+    speed: number;
+    startTime: number;
+    pausedAt: number;
+    duration: number;
+    coordinates: [number, number][];
+    loop: boolean;
+    trailSourceId?: string;
+    trailLayerId?: string;
+  }> = new globalThis.Map();
+
+  // Feature hover state tracking
+  protected hoveredFeatureId: string | number | null = null;
+  protected hoveredLayerId: string | null = null;
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -384,6 +406,26 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addZarrControl', this.handleAddZarrControl.bind(this));
     this.registerMethod('addVectorControl', this.handleAddVectorControl.bind(this));
     this.registerMethod('addControlGrid', this.handleAddControlGrid.bind(this));
+
+    // Clustering
+    this.registerMethod('addClusterLayer', this.handleAddClusterLayer.bind(this));
+    this.registerMethod('removeClusterLayer', this.handleRemoveClusterLayer.bind(this));
+
+    // Choropleth
+    this.registerMethod('addChoropleth', this.handleAddChoropleth.bind(this));
+
+    // 3D Buildings
+    this.registerMethod('add3DBuildings', this.handleAdd3DBuildings.bind(this));
+
+    // Route Animation
+    this.registerMethod('animateAlongRoute', this.handleAnimateAlongRoute.bind(this));
+    this.registerMethod('stopAnimation', this.handleStopAnimation.bind(this));
+    this.registerMethod('pauseAnimation', this.handlePauseAnimation.bind(this));
+    this.registerMethod('resumeAnimation', this.handleResumeAnimation.bind(this));
+    this.registerMethod('setAnimationSpeed', this.handleSetAnimationSpeed.bind(this));
+
+    // Feature Hover
+    this.registerMethod('addHoverEffect', this.handleAddHoverEffect.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -774,7 +816,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.map.addSource(sourceId, {
         type: 'image',
         url: url,
-        coordinates: coordinates,
+        coordinates: coordinates as [[number, number], [number, number], [number, number], [number, number]],
       });
     }
 
@@ -2583,6 +2625,716 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   }
 
   // -------------------------------------------------------------------------
+  // Clustering handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddClusterLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const geojson = kwargs.data as GeoJSON.FeatureCollection;
+    const name = kwargs.name as string;
+    const clusterRadius = (kwargs.clusterRadius as number) || 50;
+    const clusterMaxZoom = (kwargs.clusterMaxZoom as number) || 14;
+    const clusterColors = (kwargs.clusterColors as string[]) || ['#51bbd6', '#f1f075', '#f28cb1'];
+    const clusterSteps = (kwargs.clusterSteps as number[]) || [100, 750];
+    const clusterMinRadius = (kwargs.clusterMinRadius as number) || 15;
+    const clusterMaxRadius = (kwargs.clusterMaxRadius as number) || 30;
+    const unclusteredColor = (kwargs.unclusteredColor as string) || '#11b4da';
+    const unclusteredRadius = (kwargs.unclusteredRadius as number) || 8;
+    const showClusterCount = kwargs.showClusterCount !== false;
+    const zoomOnClick = kwargs.zoomOnClick !== false;
+    const fitBounds = kwargs.fitBounds !== false;
+
+    const sourceId = `${name}-source`;
+
+    // Add source with clustering enabled
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, {
+        type: 'geojson',
+        data: geojson,
+        cluster: true,
+        clusterMaxZoom: clusterMaxZoom,
+        clusterRadius: clusterRadius,
+      });
+      this.stateManager.addSource(sourceId, {
+        type: 'geojson',
+        data: geojson,
+        cluster: true,
+        clusterMaxZoom,
+        clusterRadius,
+      } as unknown as SourceConfig);
+    }
+
+    // Build step expression for cluster colors
+    const colorExpr: unknown[] = ['step', ['get', 'point_count'], clusterColors[0]];
+    for (let i = 0; i < clusterSteps.length; i++) {
+      colorExpr.push(clusterSteps[i]);
+      colorExpr.push(clusterColors[i + 1]);
+    }
+
+    // Build step expression for cluster radius
+    const radiusExpr: unknown[] = ['step', ['get', 'point_count'], clusterMinRadius];
+    const radiusStep = (clusterMaxRadius - clusterMinRadius) / clusterSteps.length;
+    for (let i = 0; i < clusterSteps.length; i++) {
+      radiusExpr.push(clusterSteps[i]);
+      radiusExpr.push(clusterMinRadius + radiusStep * (i + 1));
+    }
+
+    // Layer for cluster circles
+    const clusterLayerId = `${name}-clusters`;
+    if (!this.map.getLayer(clusterLayerId)) {
+      this.map.addLayer({
+        id: clusterLayerId,
+        type: 'circle',
+        source: sourceId,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': colorExpr as maplibregl.ExpressionSpecification,
+          'circle-radius': radiusExpr as maplibregl.ExpressionSpecification,
+        },
+      });
+      this.stateManager.addLayer(clusterLayerId, {
+        id: clusterLayerId,
+        type: 'circle',
+        source: sourceId,
+        filter: ['has', 'point_count'],
+      } as unknown as LayerConfig);
+    }
+
+    // Layer for cluster count labels
+    if (showClusterCount) {
+      const countLayerId = `${name}-cluster-count`;
+      if (!this.map.getLayer(countLayerId)) {
+        this.map.addLayer({
+          id: countLayerId,
+          type: 'symbol',
+          source: sourceId,
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': '{point_count_abbreviated}',
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': 12,
+          },
+          paint: {
+            'text-color': '#ffffff',
+          },
+        });
+        this.stateManager.addLayer(countLayerId, {
+          id: countLayerId,
+          type: 'symbol',
+          source: sourceId,
+          filter: ['has', 'point_count'],
+        } as unknown as LayerConfig);
+      }
+    }
+
+    // Layer for unclustered points
+    const unclusteredLayerId = `${name}-unclustered`;
+    if (!this.map.getLayer(unclusteredLayerId)) {
+      this.map.addLayer({
+        id: unclusteredLayerId,
+        type: 'circle',
+        source: sourceId,
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': unclusteredColor,
+          'circle-radius': unclusteredRadius,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#fff',
+        },
+      });
+      this.stateManager.addLayer(unclusteredLayerId, {
+        id: unclusteredLayerId,
+        type: 'circle',
+        source: sourceId,
+        filter: ['!', ['has', 'point_count']],
+      } as unknown as LayerConfig);
+    }
+
+    // Add click handler for zoom-to-cluster
+    if (zoomOnClick) {
+      this.map.on('click', clusterLayerId, (e) => {
+        if (!this.map) return;
+        const features = this.map.queryRenderedFeatures(e.point, {
+          layers: [clusterLayerId],
+        });
+        if (!features.length) return;
+
+        const clusterId = features[0].properties?.cluster_id;
+        const source = this.map.getSource(sourceId) as maplibregl.GeoJSONSource;
+        source.getClusterExpansionZoom(clusterId).then((zoom: number) => {
+          if (!this.map) return;
+          const coordinates = (features[0].geometry as GeoJSON.Point).coordinates;
+          this.map.easeTo({
+            center: coordinates as [number, number],
+            zoom: zoom ?? this.map.getZoom() + 2,
+          });
+        }).catch(() => {
+          // Ignore errors
+        });
+      });
+
+      // Change cursor on cluster hover
+      this.map.on('mouseenter', clusterLayerId, () => {
+        if (this.map) this.map.getCanvas().style.cursor = 'pointer';
+      });
+      this.map.on('mouseleave', clusterLayerId, () => {
+        if (this.map) this.map.getCanvas().style.cursor = '';
+      });
+    }
+
+    // Fit bounds
+    if (fitBounds && kwargs.bounds) {
+      const bounds = kwargs.bounds as [number, number, number, number];
+      this.map.fitBounds(
+        [[bounds[0], bounds[1]], [bounds[2], bounds[3]]],
+        { padding: 50 }
+      );
+    }
+  }
+
+  private handleRemoveClusterLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const [layerId] = args as [string];
+    const sourceId = `${layerId}-source`;
+
+    // Remove all sublayers
+    const layerIds = [
+      `${layerId}-clusters`,
+      `${layerId}-cluster-count`,
+      `${layerId}-unclustered`,
+    ];
+
+    for (const id of layerIds) {
+      if (this.map.getLayer(id)) {
+        this.map.removeLayer(id);
+        this.stateManager.removeLayer(id);
+      }
+    }
+
+    if (this.map.getSource(sourceId)) {
+      this.map.removeSource(sourceId);
+      this.stateManager.removeSource(sourceId);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Choropleth handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddChoropleth(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const geojson = kwargs.data as GeoJSON.FeatureCollection;
+    const name = kwargs.name as string;
+    const stepExpression = kwargs.stepExpression as unknown[];
+    const fillOpacity = (kwargs.fillOpacity as number) ?? 0.7;
+    const lineColor = (kwargs.lineColor as string) || '#000000';
+    const lineWidth = (kwargs.lineWidth as number) ?? 1;
+    const hover = kwargs.hover !== false;
+    const fitBounds = kwargs.fitBounds !== false;
+
+    const sourceId = `${name}-source`;
+    const fillLayerId = name;
+    const lineLayerId = `${name}-outline`;
+
+    // Add source
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, {
+        type: 'geojson',
+        data: geojson,
+        generateId: true, // Required for feature-state hover
+      });
+      this.stateManager.addSource(sourceId, {
+        type: 'geojson',
+        data: geojson,
+        generateId: true,
+      } as unknown as SourceConfig);
+    }
+
+    // Add fill layer with choropleth colors
+    if (!this.map.getLayer(fillLayerId)) {
+      const fillPaint: maplibregl.FillLayerSpecification['paint'] = {
+        'fill-color': stepExpression as maplibregl.ExpressionSpecification,
+        'fill-opacity': [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          Math.min(fillOpacity + 0.2, 1),
+          fillOpacity,
+        ],
+      };
+
+      this.map.addLayer({
+        id: fillLayerId,
+        type: 'fill',
+        source: sourceId,
+        paint: fillPaint,
+      });
+      this.stateManager.addLayer(fillLayerId, {
+        id: fillLayerId,
+        type: 'fill',
+        source: sourceId,
+      } as unknown as LayerConfig);
+    }
+
+    // Add outline layer
+    if (!this.map.getLayer(lineLayerId)) {
+      this.map.addLayer({
+        id: lineLayerId,
+        type: 'line',
+        source: sourceId,
+        paint: {
+          'line-color': lineColor,
+          'line-width': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            lineWidth * 2,
+            lineWidth,
+          ],
+        },
+      });
+      this.stateManager.addLayer(lineLayerId, {
+        id: lineLayerId,
+        type: 'line',
+        source: sourceId,
+      } as unknown as LayerConfig);
+    }
+
+    // Add hover effect
+    if (hover) {
+      this.setupHoverEffect(fillLayerId, sourceId);
+    }
+
+    // Fit bounds
+    if (fitBounds && kwargs.bounds) {
+      const bounds = kwargs.bounds as [number, number, number, number];
+      this.map.fitBounds(
+        [[bounds[0], bounds[1]], [bounds[2], bounds[3]]],
+        { padding: 50 }
+      );
+    }
+  }
+
+  private setupHoverEffect(layerId: string, sourceId: string): void {
+    if (!this.map) return;
+
+    this.map.on('mousemove', layerId, (e) => {
+      if (!this.map || e.features?.length === 0) return;
+
+      // Clear previous hover state
+      if (this.hoveredFeatureId !== null && this.hoveredLayerId) {
+        this.map.setFeatureState(
+          { source: sourceId, id: this.hoveredFeatureId },
+          { hover: false }
+        );
+      }
+
+      const feature = e.features![0];
+      this.hoveredFeatureId = feature.id ?? null;
+      this.hoveredLayerId = layerId;
+
+      if (this.hoveredFeatureId !== null) {
+        this.map.setFeatureState(
+          { source: sourceId, id: this.hoveredFeatureId },
+          { hover: true }
+        );
+      }
+
+      this.map.getCanvas().style.cursor = 'pointer';
+    });
+
+    this.map.on('mouseleave', layerId, () => {
+      if (!this.map) return;
+
+      if (this.hoveredFeatureId !== null) {
+        this.map.setFeatureState(
+          { source: sourceId, id: this.hoveredFeatureId },
+          { hover: false }
+        );
+      }
+      this.hoveredFeatureId = null;
+      this.hoveredLayerId = null;
+      this.map.getCanvas().style.cursor = '';
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // 3D Buildings handlers
+  // -------------------------------------------------------------------------
+
+  private handleAdd3DBuildings(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const source = (kwargs.source as string) || 'openmaptiles';
+    const minZoom = (kwargs.minZoom as number) ?? 14;
+    const fillExtrusionColor = (kwargs.fillExtrusionColor as string) || '#aaa';
+    const fillExtrusionOpacity = (kwargs.fillExtrusionOpacity as number) ?? 0.6;
+    const heightProperty = (kwargs.heightProperty as string) || 'render_height';
+    const baseProperty = (kwargs.baseProperty as string) || 'render_min_height';
+    const layerId = (kwargs.layerId as string) || '3d-buildings';
+
+    // Check if the style has a building source
+    const style = this.map.getStyle();
+    let buildingSourceId: string | null = null;
+    let sourceLayerName = 'building';
+
+    // Try to find a building-related vector source in the existing style
+    if (style.sources) {
+      for (const [id, src] of Object.entries(style.sources)) {
+        const srcObj = src as { type?: string };
+        if (srcObj.type === 'vector') {
+          // Check for common vector tile sources with buildings
+          if (id.includes('openmaptiles') || id.includes('maptiler') ||
+              id.includes('carto') || id === source || id === 'composite') {
+            buildingSourceId = id;
+            break;
+          }
+        }
+      }
+    }
+
+    // If no suitable source found, add OpenFreeMap vector tiles source
+    if (!buildingSourceId) {
+      buildingSourceId = 'buildings-source';
+      if (!this.map.getSource(buildingSourceId)) {
+        // Use OpenFreeMap tiles which are free and have building data
+        this.map.addSource(buildingSourceId, {
+          type: 'vector',
+          url: 'https://tiles.openfreemap.org/planet',
+        });
+      }
+    }
+
+    // Add 3D buildings layer
+    if (!this.map.getLayer(layerId)) {
+      try {
+        this.map.addLayer({
+          id: layerId,
+          source: buildingSourceId,
+          'source-layer': sourceLayerName,
+          filter: ['all',
+            ['==', ['geometry-type'], 'Polygon'],
+            ['has', 'render_height']
+          ],
+          type: 'fill-extrusion',
+          minzoom: minZoom,
+          paint: {
+            'fill-extrusion-color': fillExtrusionColor,
+            'fill-extrusion-height': [
+              'coalesce',
+              ['get', heightProperty],
+              ['get', 'height'],
+              10
+            ],
+            'fill-extrusion-base': [
+              'coalesce',
+              ['get', baseProperty],
+              0
+            ],
+            'fill-extrusion-opacity': fillExtrusionOpacity,
+          },
+        });
+      } catch (e) {
+        // If filter fails, try simpler filter
+        console.warn('3D buildings: trying simpler filter');
+        this.map.addLayer({
+          id: layerId,
+          source: buildingSourceId,
+          'source-layer': sourceLayerName,
+          type: 'fill-extrusion',
+          minzoom: minZoom,
+          paint: {
+            'fill-extrusion-color': fillExtrusionColor,
+            'fill-extrusion-height': [
+              'coalesce',
+              ['get', heightProperty],
+              ['get', 'height'],
+              10
+            ],
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': fillExtrusionOpacity,
+          },
+        });
+      }
+      this.stateManager.addLayer(layerId, {
+        id: layerId,
+        type: 'fill-extrusion',
+        source: buildingSourceId,
+      } as unknown as LayerConfig);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Route Animation handlers
+  // -------------------------------------------------------------------------
+
+  private handleAnimateAlongRoute(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const id = kwargs.id as string;
+    const coordinates = kwargs.coordinates as [number, number][];
+    const duration = (kwargs.duration as number) || 10000;
+    const loop = kwargs.loop !== false;
+    const markerColor = (kwargs.markerColor as string) || '#3388ff';
+    const markerSize = (kwargs.markerSize as number) || 1.0;
+    const showTrail = kwargs.showTrail === true;
+    const trailColor = (kwargs.trailColor as string) || '#3388ff';
+    const trailWidth = (kwargs.trailWidth as number) || 3;
+
+    // Create LineString for route calculations
+    const line = lineString(coordinates);
+    const routeLength = length(line, { units: 'kilometers' });
+
+    // Create marker at start position
+    const marker = new Marker({ color: markerColor, scale: markerSize })
+      .setLngLat(coordinates[0])
+      .addTo(this.map);
+
+    // Add trail if requested
+    let trailSourceId: string | undefined;
+    let trailLayerId: string | undefined;
+    if (showTrail) {
+      trailSourceId = `${id}-trail-source`;
+      trailLayerId = `${id}-trail`;
+
+      if (!this.map.getSource(trailSourceId)) {
+        this.map.addSource(trailSourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: [] },
+          },
+        });
+      }
+
+      if (!this.map.getLayer(trailLayerId)) {
+        this.map.addLayer({
+          id: trailLayerId,
+          type: 'line',
+          source: trailSourceId,
+          paint: {
+            'line-color': trailColor,
+            'line-width': trailWidth,
+            'line-opacity': 0.8,
+          },
+        });
+      }
+    }
+
+    const startTime = performance.now();
+    const trailCoords: [number, number][] = [coordinates[0]];
+
+    const animate = (currentTime: number) => {
+      const animation = this.animations.get(id);
+      if (!animation || !this.map) return;
+
+      if (animation.isPaused) {
+        animation.animationId = requestAnimationFrame(animate);
+        return;
+      }
+
+      let elapsed = (currentTime - animation.startTime) * animation.speed;
+      if (animation.pausedAt > 0) {
+        elapsed = (currentTime - animation.pausedAt + (animation.pausedAt - animation.startTime)) * animation.speed;
+      }
+
+      const progress = (elapsed % animation.duration) / animation.duration;
+
+      // Calculate position along route
+      const distance = progress * routeLength;
+      const point = along(line, distance, { units: 'kilometers' });
+      const position = point.geometry.coordinates as [number, number];
+
+      // Update marker position
+      animation.marker.setLngLat(position);
+
+      // Update trail
+      if (showTrail && trailSourceId) {
+        trailCoords.push(position);
+        const source = this.map.getSource(trailSourceId) as maplibregl.GeoJSONSource;
+        if (source) {
+          source.setData({
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: trailCoords },
+          });
+        }
+      }
+
+      // Check if we should loop or stop
+      if (elapsed >= animation.duration && !loop) {
+        this.handleStopAnimation([id], {});
+        return;
+      }
+
+      animation.animationId = requestAnimationFrame(animate);
+    };
+
+    // Store animation state
+    this.animations.set(id, {
+      animationId: requestAnimationFrame(animate),
+      marker,
+      isPaused: false,
+      speed: 1,
+      startTime,
+      pausedAt: 0,
+      duration,
+      coordinates,
+      loop,
+      trailSourceId,
+      trailLayerId,
+    });
+  }
+
+  private handleStopAnimation(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    const animation = this.animations.get(id);
+    if (!animation) return;
+
+    cancelAnimationFrame(animation.animationId);
+    animation.marker.remove();
+
+    // Remove trail if exists
+    if (animation.trailLayerId && this.map?.getLayer(animation.trailLayerId)) {
+      this.map.removeLayer(animation.trailLayerId);
+    }
+    if (animation.trailSourceId && this.map?.getSource(animation.trailSourceId)) {
+      this.map.removeSource(animation.trailSourceId);
+    }
+
+    this.animations.delete(id);
+  }
+
+  private handlePauseAnimation(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    const animation = this.animations.get(id);
+    if (!animation) return;
+
+    animation.isPaused = true;
+    animation.pausedAt = performance.now();
+  }
+
+  private handleResumeAnimation(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    const animation = this.animations.get(id);
+    if (!animation || !animation.isPaused) return;
+
+    const pausedDuration = performance.now() - animation.pausedAt;
+    animation.startTime += pausedDuration;
+    animation.isPaused = false;
+    animation.pausedAt = 0;
+  }
+
+  private handleSetAnimationSpeed(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id, speed] = args as [string, number];
+    const animation = this.animations.get(id);
+    if (!animation) return;
+
+    animation.speed = speed;
+  }
+
+  // -------------------------------------------------------------------------
+  // Feature Hover handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddHoverEffect(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const layerId = kwargs.layerId as string;
+    const highlightColor = kwargs.highlightColor as string | undefined;
+    const highlightOpacity = kwargs.highlightOpacity as number | undefined;
+    const highlightOutlineWidth = (kwargs.highlightOutlineWidth as number) || 2;
+
+    // Get the source ID for this layer
+    const layer = this.map.getLayer(layerId);
+    if (!layer) {
+      console.warn(`Layer ${layerId} not found`);
+      return;
+    }
+
+    const sourceId = (layer as unknown as { source: string }).source;
+
+    // Set up hover handlers using feature-state
+    this.map.on('mousemove', layerId, (e) => {
+      if (!this.map || !e.features?.length) return;
+
+      // Clear previous hover state
+      if (this.hoveredFeatureId !== null) {
+        this.map.setFeatureState(
+          { source: sourceId, id: this.hoveredFeatureId },
+          { hover: false }
+        );
+      }
+
+      const feature = e.features[0];
+      this.hoveredFeatureId = feature.id ?? null;
+      this.hoveredLayerId = layerId;
+
+      if (this.hoveredFeatureId !== null) {
+        this.map.setFeatureState(
+          { source: sourceId, id: this.hoveredFeatureId },
+          { hover: true }
+        );
+      }
+
+      this.map.getCanvas().style.cursor = 'pointer';
+    });
+
+    this.map.on('mouseleave', layerId, () => {
+      if (!this.map) return;
+
+      if (this.hoveredFeatureId !== null) {
+        this.map.setFeatureState(
+          { source: sourceId, id: this.hoveredFeatureId },
+          { hover: false }
+        );
+      }
+      this.hoveredFeatureId = null;
+      this.hoveredLayerId = null;
+      this.map.getCanvas().style.cursor = '';
+    });
+
+    // Update layer paint properties to respond to hover state
+    const layerType = (layer as unknown as { type: string }).type;
+
+    if (layerType === 'fill') {
+      if (highlightOpacity !== undefined) {
+        this.map.setPaintProperty(layerId, 'fill-opacity', [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          highlightOpacity,
+          this.map.getPaintProperty(layerId, 'fill-opacity') || 0.5,
+        ]);
+      }
+      if (highlightColor) {
+        this.map.setPaintProperty(layerId, 'fill-color', [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          highlightColor,
+          this.map.getPaintProperty(layerId, 'fill-color') || '#3388ff',
+        ]);
+      }
+    } else if (layerType === 'line') {
+      this.map.setPaintProperty(layerId, 'line-width', [
+        'case',
+        ['boolean', ['feature-state', 'hover'], false],
+        highlightOutlineWidth,
+        this.map.getPaintProperty(layerId, 'line-width') || 2,
+      ]);
+    } else if (layerType === 'circle') {
+      if (highlightOpacity !== undefined) {
+        this.map.setPaintProperty(layerId, 'circle-opacity', [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          highlightOpacity,
+          this.map.getPaintProperty(layerId, 'circle-opacity') || 0.8,
+        ]);
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Cleanup
   // -------------------------------------------------------------------------
 
@@ -2635,6 +3387,19 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.lidarControl = null;
     }
     this.lidarLayers.clear();
+
+    // Stop and remove all animations
+    this.animations.forEach((animation, id) => {
+      cancelAnimationFrame(animation.animationId);
+      animation.marker.remove();
+      if (animation.trailLayerId && this.map?.getLayer(animation.trailLayerId)) {
+        this.map.removeLayer(animation.trailLayerId);
+      }
+      if (animation.trailSourceId && this.map?.getSource(animation.trailSourceId)) {
+        this.map.removeSource(animation.trailSourceId);
+      }
+    });
+    this.animations.clear();
 
     // Remove zarr layers
     this.zarrLayers.forEach((layer, id) => {
