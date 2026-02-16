@@ -133,7 +133,15 @@
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/notebooks/image_overlay/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/notebooks/keplergl/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/layer_management/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
@@ -150,6 +158,14 @@
     </url>
     <url>
          <loc>https://ts.anymap.dev/notebooks/maplibre/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/maplibre_heatmap/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/markers/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
@@ -170,6 +186,10 @@
     </url>
     <url>
          <loc>https://ts.anymap.dev/notebooks/polygon_layer/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/popups/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
@@ -198,6 +218,10 @@
     </url>
     <url>
          <loc>https://ts.anymap.dev/notebooks/solidpolygon_layer/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/terrain_3d/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
