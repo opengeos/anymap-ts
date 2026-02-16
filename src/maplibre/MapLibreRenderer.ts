@@ -306,6 +306,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Raster data
     this.registerMethod('addTileLayer', this.handleAddTileLayer.bind(this));
+    this.registerMethod('addImageLayer', this.handleAddImageLayer.bind(this));
 
     // Controls
     this.registerMethod('addControl', this.handleAddControl.bind(this));
@@ -320,7 +321,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Markers and popups
     this.registerMethod('addMarker', this.handleAddMarker.bind(this));
+    this.registerMethod('addMarkers', this.handleAddMarkers.bind(this));
     this.registerMethod('removeMarker', this.handleRemoveMarker.bind(this));
+    this.registerMethod('addPopup', this.handleAddPopup.bind(this));
+
+    // Terrain
+    this.registerMethod('addTerrain', this.handleAddTerrain.bind(this));
+
+    // Layer management (moveLayer is new, setPaintProperty/setLayoutProperty already registered)
+    this.registerMethod('moveLayer', this.handleMoveLayer.bind(this));
 
     // COG layers (deck.gl)
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
@@ -746,6 +755,42 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
+  private handleAddImageLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const id = (kwargs.id as string) || `image-${Date.now()}`;
+    const url = kwargs.url as string;
+    const coordinates = kwargs.coordinates as number[][];
+    const opacity = (kwargs.opacity as number) ?? 1.0;
+
+    if (!url || !coordinates || coordinates.length !== 4) {
+      console.error('addImageLayer requires url and 4 corner coordinates');
+      return;
+    }
+
+    const sourceId = `${id}-source`;
+
+    // Add image source
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, {
+        type: 'image',
+        url: url,
+        coordinates: coordinates,
+      });
+    }
+
+    // Add raster layer
+    if (!this.map.getLayer(id)) {
+      this.map.addLayer({
+        id: id,
+        type: 'raster',
+        source: sourceId,
+        paint: {
+          'raster-opacity': opacity,
+        },
+      });
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Control handlers
   // -------------------------------------------------------------------------
@@ -975,6 +1020,152 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (marker) {
       marker.remove();
       this.markersMap.delete(id);
+    }
+  }
+
+  private handleAddMarkers(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const id = (kwargs.id as string) || `markers-${Date.now()}`;
+    const markers = kwargs.markers as Array<{ lngLat: [number, number]; popup?: string }>;
+    const color = (kwargs.color as string) || '#3388ff';
+
+    if (!markers || !Array.isArray(markers)) {
+      console.error('addMarkers requires markers array');
+      return;
+    }
+
+    for (let i = 0; i < markers.length; i++) {
+      const markerData = markers[i];
+      const markerId = `${id}-${i}`;
+      const marker = new Marker({ color }).setLngLat(markerData.lngLat);
+
+      if (markerData.popup) {
+        marker.setPopup(new Popup().setHTML(markerData.popup));
+      }
+
+      marker.addTo(this.map);
+      this.markersMap.set(markerId, marker);
+    }
+  }
+
+  private handleAddPopup(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const properties = kwargs.properties as string[] | undefined;
+    const template = kwargs.template as string | undefined;
+
+    if (!layerId) {
+      console.error('addPopup requires layerId');
+      return;
+    }
+
+    // Add click handler for the layer
+    this.map.on('click', layerId, (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const feature = e.features[0];
+      const props = feature.properties || {};
+
+      // CSS styles for better contrast and readability
+      const tableStyle =
+        'border-collapse: collapse; font-size: 13px; color: #333;';
+      const cellStyle =
+        'padding: 4px 8px; border-bottom: 1px solid #ddd; color: #333;';
+      const keyStyle = 'font-weight: 600; color: #222;';
+      const valueStyle = 'color: #444;';
+
+      // Base style for custom templates
+      const containerStyle =
+        'font-size: 13px; color: #333; line-height: 1.4;';
+      const templateStyles = `
+        <style>
+          .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
+          .anymap-popup p { color: #444; margin: 4px 0; }
+        </style>
+      `;
+
+      let content: string;
+      if (template) {
+        // Replace placeholders in template and wrap with styled container
+        const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
+          return props[key] !== undefined ? String(props[key]) : match;
+        });
+        content = `${templateStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
+      } else if (properties) {
+        // Build table from specified properties
+        const rows = properties
+          .filter((key) => props[key] !== undefined)
+          .map(
+            (key) =>
+              `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${props[key]}</td></tr>`
+          )
+          .join('');
+        content = `<table style="${tableStyle}">${rows}</table>`;
+      } else {
+        // Show all properties
+        const rows = Object.entries(props)
+          .map(
+            ([key, value]) =>
+              `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${value}</td></tr>`
+          )
+          .join('');
+        content = `<table style="${tableStyle}">${rows}</table>`;
+      }
+
+      new Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(content)
+        .addTo(this.map!);
+    });
+
+    // Change cursor on hover
+    this.map.on('mouseenter', layerId, () => {
+      if (this.map) this.map.getCanvas().style.cursor = 'pointer';
+    });
+    this.map.on('mouseleave', layerId, () => {
+      if (this.map) this.map.getCanvas().style.cursor = '';
+    });
+  }
+
+  private handleAddTerrain(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const source = kwargs.source as { url: string; encoding: string };
+    const exaggeration = (kwargs.exaggeration as number) ?? 1.0;
+
+    if (!source || !source.url) {
+      console.error('addTerrain requires source with url');
+      return;
+    }
+
+    const sourceId = 'terrain-dem';
+
+    // Add terrain source
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, {
+        type: 'raster-dem',
+        tiles: [source.url],
+        tileSize: 256,
+        encoding: source.encoding === 'mapbox' ? 'mapbox' : 'terrarium',
+      });
+    }
+
+    // Enable terrain
+    this.map.setTerrain({
+      source: sourceId,
+      exaggeration: exaggeration,
+    });
+  }
+
+  private handleMoveLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const [layerId, beforeId] = args as [string, string | undefined];
+
+    if (!layerId) {
+      console.error('moveLayer requires layerId');
+      return;
+    }
+
+    if (this.map.getLayer(layerId)) {
+      this.map.moveLayer(layerId, beforeId || undefined);
     }
   }
 
