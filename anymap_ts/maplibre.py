@@ -11,7 +11,13 @@ import traitlets
 
 from .base import MapWidget
 from .basemaps import get_basemap_url, get_maplibre_style
-from .utils import to_geojson, get_bounds, infer_layer_type, get_default_paint, fetch_geojson
+from .utils import (
+    to_geojson,
+    get_bounds,
+    infer_layer_type,
+    get_default_paint,
+    fetch_geojson,
+)
 
 # Path to bundled static assets
 STATIC_DIR = Path(__file__).parent / "static"
