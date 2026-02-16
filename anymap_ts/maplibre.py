@@ -2223,6 +2223,10 @@ class MapLibreMap(MapWidget):
 
         Overlays an image on the map at specified geographic coordinates.
 
+        Note:
+            This method requires frontend implementation of the ``addImageLayer``
+            handler. Currently not supported - raises NotImplementedError.
+
         Args:
             url: URL to the image file.
             coordinates: Four corner coordinates as [[lng, lat], ...] in order:
@@ -2230,6 +2234,9 @@ class MapLibreMap(MapWidget):
             name: Layer identifier. If None, auto-generated.
             opacity: Layer opacity (0-1).
             **kwargs: Additional layer options.
+
+        Raises:
+            NotImplementedError: This feature requires frontend support.
 
         Example:
             >>> from anymap_ts import Map
@@ -2244,33 +2251,13 @@ class MapLibreMap(MapWidget):
             ...     ]
             ... )
         """
-        self._validate_opacity(opacity)
-        layer_id = name or f"image-{len(self._layers)}"
-
-        if len(coordinates) != 4:
-            raise ValueError(
-                "coordinates must have exactly 4 corner points "
-                "[top-left, top-right, bottom-right, bottom-left]"
-            )
-
-        self.call_js_method(
-            "addImageLayer",
-            id=layer_id,
-            url=url,
-            coordinates=coordinates,
-            opacity=opacity,
-            **kwargs,
+        # The frontend does not currently implement an addImageLayer handler.
+        # This would require adding an image source + raster layer in MapLibre.
+        raise NotImplementedError(
+            "add_image_layer is not yet supported: the frontend 'addImageLayer' "
+            "handler is not implemented. This feature requires adding frontend "
+            "support for MapLibre image sources."
         )
-
-        self._layers = {
-            **self._layers,
-            layer_id: {
-                "id": layer_id,
-                "type": "image",
-                "url": url,
-                "coordinates": coordinates,
-            },
-        }
         self._add_to_layer_dict(layer_id, "Raster")
 
     # -------------------------------------------------------------------------
