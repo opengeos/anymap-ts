@@ -131,3 +131,60 @@
 .anymap-draw-control button.active {
   background-color: #e0e0e0;
 }
+
+/* ===========================================================================
+ * Layer Control styles - Panel/IPyWidget compatibility fixes
+ * ===========================================================================
+ * These styles ensure the layer control works properly when the map is
+ * embedded in Panel library using pn.pane.IPyWidget.
+ */
+
+/* Ensure layer control button is clickable */
+.maplibregl-ctrl-layer-control {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
+}
+
+.maplibregl-ctrl-layer-control button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure layer control panel is clickable and visible */
+.layer-control-panel {
+  pointer-events: auto !important;
+  z-index: 1000 !important;
+}
+
+/* Ensure all interactive elements in the panel are clickable */
+.layer-control-panel input,
+.layer-control-panel button,
+.layer-control-panel .layer-control-item {
+  pointer-events: auto !important;
+}
+
+/* Fix for controls in Panel's IPyWidget wrapper */
+.jp-OutputArea-output .maplibregl-ctrl,
+.jupyter-widgets .maplibregl-ctrl,
+.widget-output .maplibregl-ctrl {
+  pointer-events: auto !important;
+}
+
+/* Ensure map controls are above any Panel overlays */
+.maplibregl-ctrl-top-left,
+.maplibregl-ctrl-top-right,
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  z-index: 10;
+  pointer-events: none;
+}
+
+.maplibregl-ctrl-top-left > *,
+.maplibregl-ctrl-top-right > *,
+.maplibregl-ctrl-bottom-left > *,
+.maplibregl-ctrl-bottom-right > * {
+  pointer-events: auto;
+}
