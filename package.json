@@ -100,5 +100,13 @@
     "geospatial"
   ],
   "author": "Qiusheng Wu <giswqs@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opengeos/anymap-ts.git"
+  },
+  "homepage": "https://github.com/opengeos/anymap-ts",
+  "bugs": {
+    "url": "https://github.com/opengeos/anymap-ts/issues"
+  }
 }
