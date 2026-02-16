@@ -2129,6 +2129,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#anymap_ts.utils.build_step_expression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_step_expression()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anymap_ts.utils.compute_breaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        compute_breaks()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#anymap_ts.utils.fetch_geojson" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2144,6 +2166,17 @@
     <span class="md-ellipsis">
       
         get_bounds()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anymap_ts.utils.get_choropleth_colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_choropleth_colors()
       
     </span>
   </a>
@@ -2237,6 +2270,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#anymap_ts.utils.build_step_expression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_step_expression()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anymap_ts.utils.compute_breaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        compute_breaks()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#anymap_ts.utils.fetch_geojson" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2252,6 +2307,17 @@
     <span class="md-ellipsis">
       
         get_bounds()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anymap_ts.utils.get_choropleth_colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_choropleth_colors()
       
     </span>
   </a>
@@ -2334,6 +2400,261 @@
 
 
 
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="anymap_ts.utils.build_step_expression" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">build_step_expression</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">breaks</span><span class="p">,</span> <span class="n">colors</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.utils.build_step_expression" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents ">
+
+      <p>Build a MapLibre step expression for choropleth styling.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>column</code></td>
+        <td><code>str</code></td>
+        <td><p>Property name to style by.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>breaks</code></td>
+        <td><code>List[float]</code></td>
+        <td><p>Break values (k+1 values for k classes).</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>colors</code></td>
+        <td><code>List[str]</code></td>
+        <td><p>List of k colors for each class.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List</code></td>
+      <td><p>MapLibre step expression as a list.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_step_expression</span><span class="p">(</span><span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">breaks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">colors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a MapLibre step expression for choropleth styling.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        column: Property name to style by.</span>
+<span class="sd">        breaks: Break values (k+1 values for k classes).</span>
+<span class="sd">        colors: List of k colors for each class.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        MapLibre step expression as a list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># MapLibre step expression format:</span>
+    <span class="c1"># [&quot;step&quot;, [&quot;get&quot;, &quot;property&quot;], color0, break1, color1, break2, color2, ...]</span>
+    <span class="n">expr</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="n">column</span><span class="p">],</span> <span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="c1"># Add breaks and colors (skip the first break which is the minimum)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">breaks</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">expr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">breaks</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">expr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="c1"># Handle the last class</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">breaks</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">expr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">breaks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">expr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">colors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">expr</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="anymap_ts.utils.compute_breaks" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">compute_breaks</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">classification</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">manual_breaks</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.utils.compute_breaks" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents ">
+
+      <p>Compute classification breaks for choropleth maps.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>values</code></td>
+        <td><code>List[float]</code></td>
+        <td><p>List of numeric values to classify.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>classification</code></td>
+        <td><code>str</code></td>
+        <td><p>Classification method ('quantile', 'equal_interval',
+'natural_breaks', 'manual').</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>k</code></td>
+        <td><code>int</code></td>
+        <td><p>Number of classes.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>manual_breaks</code></td>
+        <td><code>Optional[List[float]]</code></td>
+        <td><p>Custom break values for 'manual' classification.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List[float]</code></td>
+      <td><p>List of break values (k+1 values defining class boundaries).</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>ValueError</code></td>
+        <td><p>If classification method is invalid or breaks are incorrect.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_breaks</span><span class="p">(</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">classification</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">manual_breaks</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute classification breaks for choropleth maps.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        values: List of numeric values to classify.</span>
+<span class="sd">        classification: Classification method (&#39;quantile&#39;, &#39;equal_interval&#39;,</span>
+<span class="sd">            &#39;natural_breaks&#39;, &#39;manual&#39;).</span>
+<span class="sd">        k: Number of classes.</span>
+<span class="sd">        manual_breaks: Custom break values for &#39;manual&#39; classification.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of break values (k+1 values defining class boundaries).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If classification method is invalid or breaks are incorrect.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">&quot;manual&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">manual_breaks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;manual_breaks required for &#39;manual&#39; classification&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">manual_breaks</span><span class="p">)</span> <span class="o">!=</span> <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;manual_breaks must have </span><span class="si">{</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> values for </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> classes&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">manual_breaks</span>
+
+    <span class="n">sorted_values</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+    <span class="n">min_val</span> <span class="o">=</span> <span class="n">sorted_values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">max_val</span> <span class="o">=</span> <span class="n">sorted_values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+        <span class="c1"># Equal number of features per class</span>
+        <span class="n">breaks</span> <span class="o">=</span> <span class="p">[</span><span class="n">min_val</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sorted_values</span><span class="p">)</span> <span class="o">*</span> <span class="n">i</span> <span class="o">/</span> <span class="n">k</span><span class="p">)</span>
+            <span class="n">breaks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sorted_values</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+        <span class="n">breaks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">max_val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">breaks</span>
+
+    <span class="k">elif</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">&quot;equal_interval&quot;</span><span class="p">:</span>
+        <span class="c1"># Equal value ranges</span>
+        <span class="n">interval</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_val</span> <span class="o">-</span> <span class="n">min_val</span><span class="p">)</span> <span class="o">/</span> <span class="n">k</span>
+        <span class="n">breaks</span> <span class="o">=</span> <span class="p">[</span><span class="n">min_val</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">interval</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">breaks</span>
+
+    <span class="k">elif</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">&quot;natural_breaks&quot;</span><span class="p">:</span>
+        <span class="c1"># Jenks natural breaks - requires jenkspy</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">jenkspy</span>
+
+            <span class="n">breaks</span> <span class="o">=</span> <span class="n">jenkspy</span><span class="o">.</span><span class="n">jenks_breaks</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">breaks</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+                <span class="s2">&quot;jenkspy is required for natural_breaks classification. &quot;</span>
+                <span class="s2">&quot;Install with: pip install jenkspy&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unknown classification method &#39;</span><span class="si">{</span><span class="n">classification</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+            <span class="s2">&quot;Options: &#39;quantile&#39;, &#39;equal_interval&#39;, &#39;natural_breaks&#39;, &#39;manual&#39;&quot;</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
 
 
 
@@ -2502,6 +2823,172 @@
         <span class="k">return</span> <span class="n">_get_geojson_bounds_simple</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="anymap_ts.utils.get_choropleth_colors" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_choropleth_colors</span><span class="p">(</span><span class="n">cmap</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.utils.get_choropleth_colors" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents ">
+
+      <p>Get colors for a choropleth map using matplotlib colormaps.</p>
+<p>Uses matplotlib colormaps when available, falling back to a small
+set of built-in colormaps if matplotlib is not installed.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>cmap</code></td>
+        <td><code>str</code></td>
+        <td><p>Colormap name. Any matplotlib colormap is supported when
+matplotlib is installed. Common options include:
+- Sequential: 'viridis', 'plasma', 'inferno', 'magma', 'cividis',
+  'Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys'
+- Diverging: 'RdBu', 'RdYlGn', 'RdYlBu', 'Spectral', 'coolwarm',
+  'bwr', 'seismic'
+- Qualitative: 'Set1', 'Set2', 'Set3', 'Paired', 'tab10', 'tab20'
+- Perceptually uniform: 'viridis', 'plasma', 'inferno', 'magma'</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>k</code></td>
+        <td><code>int</code></td>
+        <td><p>Number of classes/colors to generate.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List[str]</code></td>
+      <td><p>List of k hex color strings.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>ValueError</code></td>
+        <td><p>If colormap is not found.</p></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">colors</span> <span class="o">=</span> <span class="n">get_choropleth_colors</span><span class="p">(</span><span class="s1">&#39;viridis&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">colors</span>
+<span class="p">[</span><span class="s1">&#39;#440154&#39;</span><span class="p">,</span> <span class="s1">&#39;#3b528b&#39;</span><span class="p">,</span> <span class="s1">&#39;#21918c&#39;</span><span class="p">,</span> <span class="s1">&#39;#5ec962&#39;</span><span class="p">,</span> <span class="s1">&#39;#fde725&#39;</span><span class="p">]</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_choropleth_colors</span><span class="p">(</span><span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get colors for a choropleth map using matplotlib colormaps.</span>
+
+<span class="sd">    Uses matplotlib colormaps when available, falling back to a small</span>
+<span class="sd">    set of built-in colormaps if matplotlib is not installed.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cmap: Colormap name. Any matplotlib colormap is supported when</span>
+<span class="sd">            matplotlib is installed. Common options include:</span>
+<span class="sd">            - Sequential: &#39;viridis&#39;, &#39;plasma&#39;, &#39;inferno&#39;, &#39;magma&#39;, &#39;cividis&#39;,</span>
+<span class="sd">              &#39;Blues&#39;, &#39;Greens&#39;, &#39;Reds&#39;, &#39;Oranges&#39;, &#39;Purples&#39;, &#39;Greys&#39;</span>
+<span class="sd">            - Diverging: &#39;RdBu&#39;, &#39;RdYlGn&#39;, &#39;RdYlBu&#39;, &#39;Spectral&#39;, &#39;coolwarm&#39;,</span>
+<span class="sd">              &#39;bwr&#39;, &#39;seismic&#39;</span>
+<span class="sd">            - Qualitative: &#39;Set1&#39;, &#39;Set2&#39;, &#39;Set3&#39;, &#39;Paired&#39;, &#39;tab10&#39;, &#39;tab20&#39;</span>
+<span class="sd">            - Perceptually uniform: &#39;viridis&#39;, &#39;plasma&#39;, &#39;inferno&#39;, &#39;magma&#39;</span>
+<span class="sd">        k: Number of classes/colors to generate.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of k hex color strings.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If colormap is not found.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; colors = get_choropleth_colors(&#39;viridis&#39;, 5)</span>
+<span class="sd">        &gt;&gt;&gt; colors</span>
+<span class="sd">        [&#39;#440154&#39;, &#39;#3b528b&#39;, &#39;#21918c&#39;, &#39;#5ec962&#39;, &#39;#fde725&#39;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">HAS_MATPLOTLIB</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Get the colormap from matplotlib</span>
+            <span class="n">colormap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cmap</span><span class="p">)</span>
+
+            <span class="c1"># Sample k colors evenly from the colormap</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+                <span class="c1"># Sample at evenly spaced points</span>
+                <span class="n">position</span> <span class="o">=</span> <span class="n">i</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mf">0.5</span>
+                <span class="n">rgba</span> <span class="o">=</span> <span class="n">colormap</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+                <span class="n">colors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_rgb_to_hex</span><span class="p">(</span><span class="n">rgba</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="n">colors</span>
+
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unknown colormap &#39;</span><span class="si">{</span><span class="n">cmap</span><span class="si">}</span><span class="s2">&#39;. See matplotlib colormap documentation &quot;</span>
+                <span class="s2">&quot;for available options: https://matplotlib.org/stable/gallery/color/colormap_reference.html&quot;</span>
+            <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Fallback to built-in colormaps</span>
+        <span class="k">if</span> <span class="n">cmap</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_FALLBACK_COLORMAPS</span><span class="p">:</span>
+            <span class="n">available</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_FALLBACK_COLORMAPS</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Colormap &#39;</span><span class="si">{</span><span class="n">cmap</span><span class="si">}</span><span class="s2">&#39; not available. Without matplotlib, only these &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;colormaps are available: </span><span class="si">{</span><span class="n">available</span><span class="si">}</span><span class="s2">. &quot;</span>
+                <span class="s2">&quot;Install matplotlib for full colormap support: pip install matplotlib&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">full_colors</span> <span class="o">=</span> <span class="n">_FALLBACK_COLORMAPS</span><span class="p">[</span><span class="n">cmap</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">full_colors</span><span class="p">):</span>
+            <span class="c1"># Sample evenly from the colormap</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">full_colors</span><span class="p">)</span> <span class="o">/</span> <span class="n">k</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">step</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">)]</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">full_colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Interpolate if we need more colors than available</span>
+            <span class="c1"># For simplicity, just repeat the last colors</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="n">full_colors</span><span class="p">[:]</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
+                <span class="n">colors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">colors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">colors</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span>
 </code></pre></div>
         </details>
     </div>

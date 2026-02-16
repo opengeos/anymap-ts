@@ -73,7 +73,19 @@
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/notebooks/buildings_3d/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/notebooks/cesium/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/choropleth/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/clustering/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
@@ -198,6 +210,10 @@
     </url>
     <url>
          <loc>https://ts.anymap.dev/notebooks/quadkey_layer/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/route_animation/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
