@@ -1065,6 +1065,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const feature = e.features[0];
       const props = feature.properties || {};
 
+      // CSS styles for better contrast and readability
+      const tableStyle =
+        'border-collapse: collapse; font-size: 13px; color: #333;';
+      const cellStyle =
+        'padding: 4px 8px; border-bottom: 1px solid #ddd; color: #333;';
+      const keyStyle = 'font-weight: 600; color: #222;';
+      const valueStyle = 'color: #444;';
+
       let content: string;
       if (template) {
         // Replace placeholders in template
@@ -1075,15 +1083,21 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         // Build table from specified properties
         const rows = properties
           .filter((key) => props[key] !== undefined)
-          .map((key) => `<tr><td><strong>${key}</strong></td><td>${props[key]}</td></tr>`)
+          .map(
+            (key) =>
+              `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${props[key]}</td></tr>`
+          )
           .join('');
-        content = `<table>${rows}</table>`;
+        content = `<table style="${tableStyle}">${rows}</table>`;
       } else {
         // Show all properties
         const rows = Object.entries(props)
-          .map(([key, value]) => `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`)
+          .map(
+            ([key, value]) =>
+              `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${value}</td></tr>`
+          )
           .join('');
-        content = `<table>${rows}</table>`;
+        content = `<table style="${tableStyle}">${rows}</table>`;
       }
 
       new Popup()
