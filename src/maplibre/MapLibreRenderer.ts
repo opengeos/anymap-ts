@@ -818,8 +818,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const modelLayers = this.model.get('_layers') || {};
       const layerIds = Object.keys(modelLayers);
       if (layerIds.length > 0) {
-        // Reverse to match the order layers were added (most recent last)
-        layers = layerIds.reverse();
+        layers = layerIds;
       }
     }
     const position = (kwargs.position as ControlPosition) || 'top-right';
