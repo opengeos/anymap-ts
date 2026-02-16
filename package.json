@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@carbonplan/zarr-layer": "^0.3.1",
+    "@duckdb/duckdb-wasm": "^1.29.0",
     "@deck.gl/aggregation-layers": "9.2.6",
     "@deck.gl/core": "9.2.6",
     "@deck.gl/geo-layers": "9.2.6",
@@ -50,7 +51,7 @@
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.18.1",
     "maplibre-gl": ">=5.16.0",
-    "maplibre-gl-components": "^0.12.2",
+    "maplibre-gl-components": "^0.14.0",
     "maplibre-gl-geo-editor": "^0.7.3",
     "maplibre-gl-layer-control": "^0.13.0",
     "maplibre-gl-lidar": "^0.11.1",
