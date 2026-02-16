@@ -27308,9 +27308,23 @@ full bidirectional communication through anywidget.</p>
             <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;excludeLayers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude_layers</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addControlGrid&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">js_kwargs</span><span class="p">)</span>
+        <span class="c1"># Save full config for HTML export</span>
+        <span class="n">control_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+            <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">,</span>
+            <span class="s2">&quot;collapsible&quot;</span><span class="p">:</span> <span class="n">collapsible</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">default_controls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;defaultControls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_controls</span>
+        <span class="k">if</span> <span class="n">exclude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;exclude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span>
+        <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
-            <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+            <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="n">control_config</span><span class="p">,</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_process_deck_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -27485,7 +27499,11 @@ full bidirectional communication through anywidget.</p>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
-            <span class="s2">&quot;layer-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;layers&quot;</span><span class="p">:</span> <span class="n">layers</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">},</span>
+            <span class="s2">&quot;layer-control&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;layers&quot;</span><span class="p">:</span> <span class="n">layers</span><span class="p">,</span>
+                <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+                <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">,</span>
+            <span class="p">},</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_legend</span><span class="p">(</span>
@@ -29076,9 +29094,23 @@ are applied.</p></td>
         <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;excludeLayers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude_layers</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addControlGrid&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">js_kwargs</span><span class="p">)</span>
+    <span class="c1"># Save full config for HTML export</span>
+    <span class="n">control_config</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+        <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">,</span>
+        <span class="s2">&quot;collapsible&quot;</span><span class="p">:</span> <span class="n">collapsible</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">default_controls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;defaultControls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_controls</span>
+    <span class="k">if</span> <span class="n">exclude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;exclude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude</span>
+    <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span>
+    <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
-        <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span> <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">},</span>
+        <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="n">control_config</span><span class="p">,</span>
     <span class="p">}</span>
 </code></pre></div>
         </details>
@@ -29491,7 +29523,11 @@ are applied.</p></td>
     <span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
-        <span class="s2">&quot;layer-control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;layers&quot;</span><span class="p">:</span> <span class="n">layers</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">},</span>
+        <span class="s2">&quot;layer-control&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;layers&quot;</span><span class="p">:</span> <span class="n">layers</span><span class="p">,</span>
+            <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+            <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">,</span>
+        <span class="p">},</span>
     <span class="p">}</span>
 </code></pre></div>
         </details>
