@@ -812,7 +812,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private handleAddLayerControl(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
 
-    const layers = kwargs.layers as string[] | undefined;
+    // Get layers from kwargs, or fall back to restored layers from model
+    let layers = kwargs.layers as string[] | undefined;
+    if (!layers || layers.length === 0) {
+      const modelLayers = this.model.get('_layers') || {};
+      const layerIds = Object.keys(modelLayers);
+      if (layerIds.length > 0) {
+        layers = layerIds;
+      }
+    }
     const position = (kwargs.position as ControlPosition) || 'top-right';
     const collapsed = (kwargs.collapsed as boolean) || false;
     // Exclude internal/helper layers from the layer control by default

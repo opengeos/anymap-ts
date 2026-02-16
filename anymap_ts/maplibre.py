@@ -1529,9 +1529,23 @@ class MapLibreMap(MapWidget):
             js_kwargs["excludeLayers"] = exclude_layers
 
         self.call_js_method("addControlGrid", **js_kwargs)
+        # Save full config for HTML export
+        control_config = {
+            "position": position,
+            "collapsed": collapsed,
+            "collapsible": collapsible,
+        }
+        if default_controls is not None:
+            control_config["defaultControls"] = default_controls
+        if exclude is not None:
+            control_config["exclude"] = exclude
+        if rows is not None:
+            control_config["rows"] = rows
+        if columns is not None:
+            control_config["columns"] = columns
         self._controls = {
             **self._controls,
-            "control-grid": {"position": position, "collapsed": collapsed},
+            "control-grid": control_config,
         }
 
     def _process_deck_data(self, data: Any) -> Any:
@@ -1706,7 +1720,11 @@ class MapLibreMap(MapWidget):
         )
         self._controls = {
             **self._controls,
-            "layer-control": {"layers": layers, "position": position},
+            "layer-control": {
+                "layers": layers,
+                "position": position,
+                "collapsed": collapsed,
+            },
         }
 
     def add_legend(

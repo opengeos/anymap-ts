@@ -224,3 +224,4 @@ marimo/_lsp/
 __marimo__/
 CLAUDE.md
 private/
+docs/notebooks/*.html
