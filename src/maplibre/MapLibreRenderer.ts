@@ -1073,12 +1073,23 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const keyStyle = 'font-weight: 600; color: #222;';
       const valueStyle = 'color: #444;';
 
+      // Base style for custom templates
+      const containerStyle =
+        'font-size: 13px; color: #333; line-height: 1.4;';
+      const templateStyles = `
+        <style>
+          .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
+          .anymap-popup p { color: #444; margin: 4px 0; }
+        </style>
+      `;
+
       let content: string;
       if (template) {
-        // Replace placeholders in template
-        content = template.replace(/\{(\w+)\}/g, (match, key) => {
+        // Replace placeholders in template and wrap with styled container
+        const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
           return props[key] !== undefined ? String(props[key]) : match;
         });
+        content = `${templateStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
       } else if (properties) {
         // Build table from specified properties
         const rows = properties
