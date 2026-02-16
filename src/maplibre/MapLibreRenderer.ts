@@ -877,47 +877,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       collapsed,
       customLayerAdapters: customLayerAdapters.length > 0 ? customLayerAdapters : undefined,
       excludeLayers,
-      onLayerRemove: (layerId: string) => {
-        this.handleRemoveLayerFromControl(layerId);
-      },
     });
 
     this.stateManager.addControl('layer-control', 'layer-control', position, kwargs);
-  }
-
-  /**
-   * Handle layer removal from the layer control.
-   * Removes the layer and its associated source from the map and state manager.
-   */
-  private handleRemoveLayerFromControl(layerId: string): void {
-    if (!this.map) return;
-
-    // Get layer info before removal
-    const layer = this.map.getLayer(layerId);
-    if (!layer) return;
-
-    // Get the source ID from the layer
-    const sourceId = (layer as { source?: string }).source;
-
-    // Remove the layer from the map
-    this.map.removeLayer(layerId);
-    this.stateManager.removeLayer(layerId);
-
-    // Remove the source if it exists and is no longer used by other layers
-    if (sourceId) {
-      const style = this.map.getStyle();
-      const layersUsingSource = style?.layers?.filter(
-        (l) => (l as { source?: string }).source === sourceId
-      );
-
-      // Only remove source if no other layers are using it
-      if (!layersUsingSource || layersUsingSource.length === 0) {
-        if (this.map.getSource(sourceId)) {
-          this.map.removeSource(sourceId);
-          this.stateManager.removeSource(sourceId);
-        }
-      }
-    }
   }
 
   // -------------------------------------------------------------------------

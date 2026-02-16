@@ -13,7 +13,6 @@ export interface LayerControlOptions {
   collapsed?: boolean;
   customLayerAdapters?: CustomLayerAdapter[];
   excludeLayers?: string[];
-  onLayerRemove?: (layerId: string) => void;
 }
 
 /**
@@ -35,21 +34,13 @@ export class LayerControlPlugin {
       this.destroy();
     }
 
-    const {
-      layers,
-      position = 'top-right',
-      collapsed = false,
-      customLayerAdapters,
-      excludeLayers,
-      onLayerRemove,
-    } = options;
+    const { layers, position = 'top-right', collapsed = false, customLayerAdapters, excludeLayers } = options;
 
     this.control = new LayerControl({
       layers,
       collapsed,
       customLayerAdapters,
       excludeLayers,
-      onLayerRemove,
     });
 
     this.map.addControl(this.control, position);
