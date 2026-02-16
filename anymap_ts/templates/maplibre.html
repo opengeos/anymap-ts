@@ -69,6 +69,8 @@
         const addedLayers = [];
         let layerControlConfig = null;
         let drawControlConfig = null;
+        let controlGridAdded = false;
+        let layerControlAdded = false;
 
         // Create map
         const map = new maplibregl.Map({
@@ -96,14 +98,15 @@
                 }
             }
 
-            // Add layer control if configured
-            if (layerControlConfig || (state.controls && state.controls['layer-control'])) {
+            // Add layer control if configured and not already added
+            if (!layerControlAdded && (layerControlConfig || (state.controls && state.controls['layer-control']))) {
                 const config = layerControlConfig || state.controls['layer-control'];
                 createLayerControl(config);
+                layerControlAdded = true;
             }
 
-            // Add control grid if configured - add basic controls as fallback
-            if (state.controls && state.controls['control-grid']) {
+            // Add control grid if configured and not already added via js_calls
+            if (!controlGridAdded && state.controls && state.controls['control-grid']) {
                 const config = state.controls['control-grid'];
                 const position = config.position || 'top-right';
                 const defaultControls = config.defaultControls || [
@@ -276,6 +279,9 @@
                 }
 
                 case 'addControlGrid': {
+                    // Mark as added to prevent duplicate from state.controls
+                    controlGridAdded = true;
+
                     // Add basic MapLibre controls as fallback for control grid
                     const position = kwargs.position || 'top-right';
                     const defaultControls = kwargs.defaultControls || [
