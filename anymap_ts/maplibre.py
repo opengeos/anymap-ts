@@ -119,6 +119,40 @@ class MapLibreMap(MapWidget):
                     )
 
     # -------------------------------------------------------------------------
+    # Layer Dict Helper
+    # -------------------------------------------------------------------------
+
+    def _add_to_layer_dict(self, layer_id: str, category: str = "Overlays") -> None:
+        """Add a layer to the layer dictionary for UI tracking.
+
+        Args:
+            layer_id: The layer identifier.
+            category: The category to add the layer to (e.g., "Overlays", "Raster").
+        """
+        layers = self._layer_dict.get(category, [])
+        if layer_id not in layers:
+            self._layer_dict = {
+                **self._layer_dict,
+                category: layers + [layer_id],
+            }
+
+    def _remove_from_layer_dict(self, layer_id: str) -> None:
+        """Remove a layer from the layer dictionary.
+
+        Args:
+            layer_id: The layer identifier to remove.
+        """
+        new_dict = {}
+        for category, layers in self._layer_dict.items():
+            if layer_id in layers:
+                new_layers = [lid for lid in layers if lid != layer_id]
+                if new_layers:  # Only keep category if it still has layers
+                    new_dict[category] = new_layers
+            else:
+                new_dict[category] = layers
+        self._layer_dict = new_dict
+
+    # -------------------------------------------------------------------------
     # Basemap Methods
     # -------------------------------------------------------------------------
 
@@ -226,6 +260,7 @@ class MapLibreMap(MapWidget):
                 "paint": paint,
             },
         }
+        self._add_to_layer_dict(layer_id, "Vector")
 
     def add_geojson(
         self,
@@ -364,6 +399,7 @@ class MapLibreMap(MapWidget):
                 "source": f"{layer_id}-source",
             },
         }
+        self._add_to_layer_dict(layer_id, "Raster")
 
     def add_stac_layer(
         self,
@@ -558,6 +594,7 @@ class MapLibreMap(MapWidget):
                 "url": url,
             },
         }
+        self._add_to_layer_dict(layer_id, "Raster")
 
     def remove_cog_layer(self, layer_id: str) -> None:
         """Remove a COG layer.
@@ -659,6 +696,7 @@ class MapLibreMap(MapWidget):
                 "variable": variable,
             },
         }
+        self._add_to_layer_dict(layer_id, "Raster")
 
     def remove_zarr_layer(self, layer_id: str) -> None:
         """Remove a Zarr layer.
@@ -783,6 +821,8 @@ class MapLibreMap(MapWidget):
                 "source_type": source_type,
             },
         }
+        category = "Vector" if source_type == "vector" else "Raster"
+        self._add_to_layer_dict(layer_id, category)
 
     def remove_pmtiles_layer(self, layer_id: str) -> None:
         """Remove a PMTiles layer.
@@ -874,6 +914,7 @@ class MapLibreMap(MapWidget):
                 "type": "arc",
             },
         }
+        self._add_to_layer_dict(layer_id, "Deck.gl")
 
     def remove_arc_layer(self, layer_id: str) -> None:
         """Remove an arc layer.
@@ -968,6 +1009,7 @@ class MapLibreMap(MapWidget):
                 "type": "pointcloud",
             },
         }
+        self._add_to_layer_dict(layer_id, "Deck.gl")
 
     def remove_point_cloud_layer(self, layer_id: str) -> None:
         """Remove a point cloud layer.
@@ -1144,6 +1186,7 @@ class MapLibreMap(MapWidget):
                 "source": str(source),
             },
         }
+        self._add_to_layer_dict(layer_id, "LiDAR")
 
     def remove_lidar_layer(self, layer_id: Optional[str] = None) -> None:
         """Remove a LiDAR layer.
@@ -1564,6 +1607,12 @@ class MapLibreMap(MapWidget):
 
         self._layers = {**self._layers, layer_id: layer_config}
         self.call_js_method("addLayer", beforeId=before_id, **layer_config)
+        # Determine category based on layer type
+        layer_type = layer_config.get("type", "")
+        if layer_type == "raster":
+            self._add_to_layer_dict(layer_id, "Raster")
+        else:
+            self._add_to_layer_dict(layer_id, "Vector")
 
     def remove_layer(self, layer_id: str) -> None:
         """Remove a layer from the map.
@@ -1575,6 +1624,7 @@ class MapLibreMap(MapWidget):
             layers = dict(self._layers)
             del layers[layer_id]
             self._layers = layers
+        self._remove_from_layer_dict(layer_id)
         self.call_js_method("removeLayer", layer_id)
 
     def set_visibility(self, layer_id: str, visible: bool) -> None:

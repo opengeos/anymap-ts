@@ -181,7 +181,8 @@ export abstract class BaseMapRenderer<TMap> {
   }
 
   /**
-   * Restore persisted state (layers, sources) from model.
+   * Restore persisted state (layers, sources, controls) from model.
+   * Called when the map is displayed in a subsequent cell.
    */
   protected restoreState(): void {
     // Restore sources first
@@ -194,6 +195,13 @@ export abstract class BaseMapRenderer<TMap> {
     const layers = this.model.get('_layers') || {};
     for (const [layerId, layerConfig] of Object.entries(layers)) {
       this.executeMethod('addLayer', [], layerConfig as unknown as Record<string, unknown>);
+    }
+
+    // Restore controls
+    const controls = this.model.get('_controls') || {};
+    for (const [controlId, controlConfig] of Object.entries(controls)) {
+      const config = controlConfig as { type: string; position: string; options?: Record<string, unknown> };
+      this.executeMethod('addControl', [config.type], { position: config.position, ...config.options });
     }
   }
 
