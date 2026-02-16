@@ -381,8 +381,9 @@ class MapLibreMap(MapWidget):
 
         self.call_js_method(
             "addMarker",
+            lng,
+            lat,
             id=marker_id,
-            lngLat=[lng, lat],
             popup=popup,
             color=color,
             draggable=draggable,
