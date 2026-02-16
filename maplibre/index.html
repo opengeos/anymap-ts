@@ -3383,6 +3383,40 @@ full bidirectional communication through anywidget.</p>
                     <span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
+    <span class="c1"># Layer Dict Helper</span>
+    <span class="c1"># -------------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_to_layer_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">category</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Overlays&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a layer to the layer dictionary for UI tracking.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            layer_id: The layer identifier.</span>
+<span class="sd">            category: The category to add the layer to (e.g., &quot;Overlays&quot;, &quot;Raster&quot;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layer_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">category</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="n">layer_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_layer_dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layer_dict</span><span class="p">,</span>
+                <span class="n">category</span><span class="p">:</span> <span class="n">layers</span> <span class="o">+</span> <span class="p">[</span><span class="n">layer_id</span><span class="p">],</span>
+            <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remove_from_layer_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a layer from the layer dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            layer_id: The layer identifier to remove.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">layers</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layer_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">layer_id</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">:</span>
+                <span class="n">new_layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">lid</span> <span class="k">for</span> <span class="n">lid</span> <span class="ow">in</span> <span class="n">layers</span> <span class="k">if</span> <span class="n">lid</span> <span class="o">!=</span> <span class="n">layer_id</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">new_layers</span><span class="p">:</span>  <span class="c1"># Only keep category if it still has layers</span>
+                    <span class="n">new_dict</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_layers</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_dict</span><span class="p">[</span><span class="n">category</span><span class="p">]</span> <span class="o">=</span> <span class="n">layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_layer_dict</span> <span class="o">=</span> <span class="n">new_dict</span>
+
+    <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># Basemap Methods</span>
     <span class="c1"># -------------------------------------------------------------------------</span>
 
@@ -3490,6 +3524,7 @@ full bidirectional communication through anywidget.</p>
                 <span class="s2">&quot;paint&quot;</span><span class="p">:</span> <span class="n">paint</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Vector&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_geojson</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -3628,6 +3663,7 @@ full bidirectional communication through anywidget.</p>
                 <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">layer_id</span><span class="si">}</span><span class="s2">-source&quot;</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Raster&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_stac_layer</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -3822,6 +3858,7 @@ full bidirectional communication through anywidget.</p>
                 <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Raster&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_cog_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a COG layer.</span>
@@ -3923,6 +3960,7 @@ full bidirectional communication through anywidget.</p>
                 <span class="s2">&quot;variable&quot;</span><span class="p">:</span> <span class="n">variable</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Raster&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_zarr_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a Zarr layer.</span>
@@ -4047,6 +4085,8 @@ full bidirectional communication through anywidget.</p>
                 <span class="s2">&quot;source_type&quot;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">}</span>
+        <span class="n">category</span> <span class="o">=</span> <span class="s2">&quot;Vector&quot;</span> <span class="k">if</span> <span class="n">source_type</span> <span class="o">==</span> <span class="s2">&quot;vector&quot;</span> <span class="k">else</span> <span class="s2">&quot;Raster&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="n">category</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_pmtiles_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a PMTiles layer.</span>
@@ -4138,6 +4178,7 @@ full bidirectional communication through anywidget.</p>
                 <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;arc&quot;</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Deck.gl&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_arc_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove an arc layer.</span>
@@ -4232,6 +4273,7 @@ full bidirectional communication through anywidget.</p>
                 <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;pointcloud&quot;</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Deck.gl&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_point_cloud_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a point cloud layer.</span>
@@ -4408,6 +4450,7 @@ full bidirectional communication through anywidget.</p>
                 <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">source</span><span class="p">),</span>
             <span class="p">},</span>
         <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;LiDAR&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_lidar_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a LiDAR layer.</span>
@@ -4828,6 +4871,12 @@ full bidirectional communication through anywidget.</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="n">layer_config</span><span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addLayer&quot;</span><span class="p">,</span> <span class="n">beforeId</span><span class="o">=</span><span class="n">before_id</span><span class="p">,</span> <span class="o">**</span><span class="n">layer_config</span><span class="p">)</span>
+        <span class="c1"># Determine category based on layer type</span>
+        <span class="n">layer_type</span> <span class="o">=</span> <span class="n">layer_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">layer_type</span> <span class="o">==</span> <span class="s2">&quot;raster&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Raster&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Vector&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a layer from the map.</span>
@@ -4839,6 +4888,7 @@ full bidirectional communication through anywidget.</p>
             <span class="n">layers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">layers</span><span class="p">[</span><span class="n">layer_id</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="n">layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_from_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeLayer&quot;</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">set_visibility</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -5791,6 +5841,7 @@ Default: [255, 136, 51, 255] (orange).</p></td>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;arc&quot;</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Deck.gl&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6212,6 +6263,7 @@ create denser mesh for better accuracy.</p></td>
             <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Raster&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6836,6 +6888,12 @@ are applied.</p></td>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="n">layer_config</span><span class="p">}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addLayer&quot;</span><span class="p">,</span> <span class="n">beforeId</span><span class="o">=</span><span class="n">before_id</span><span class="p">,</span> <span class="o">**</span><span class="n">layer_config</span><span class="p">)</span>
+    <span class="c1"># Determine category based on layer type</span>
+    <span class="n">layer_type</span> <span class="o">=</span> <span class="n">layer_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">layer_type</span> <span class="o">==</span> <span class="s2">&quot;raster&quot;</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Raster&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Vector&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -7496,6 +7554,7 @@ For URLs, the data is loaded directly via streaming when possible.</p>
             <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">source</span><span class="p">),</span>
         <span class="p">},</span>
     <span class="p">}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;LiDAR&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -7846,6 +7905,8 @@ Example: {"type": "line", "source-layer": "roads", "line-color": "#ff0000"}</p><
             <span class="s2">&quot;source_type&quot;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
+    <span class="n">category</span> <span class="o">=</span> <span class="s2">&quot;Vector&quot;</span> <span class="k">if</span> <span class="n">source_type</span> <span class="o">==</span> <span class="s2">&quot;vector&quot;</span> <span class="k">else</span> <span class="s2">&quot;Raster&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="n">category</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -8055,6 +8116,7 @@ Default: [0, 0, 1] (pointing up).</p></td>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;pointcloud&quot;</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Deck.gl&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -8573,6 +8635,7 @@ Supports both STAC item URLs and pystac Item objects.</p>
             <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">layer_id</span><span class="si">}</span><span class="s2">-source&quot;</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Raster&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -8717,6 +8780,7 @@ Supports both STAC item URLs and pystac Item objects.</p>
             <span class="s2">&quot;paint&quot;</span><span class="p">:</span> <span class="n">paint</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Vector&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -9241,6 +9305,7 @@ Units depend on CRS: degrees for EPSG:4326, meters for EPSG:3857.</p></td>
             <span class="s2">&quot;variable&quot;</span><span class="p">:</span> <span class="n">variable</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Raster&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -9586,6 +9651,7 @@ Units depend on CRS: degrees for EPSG:4326, meters for EPSG:3857.</p></td>
         <span class="n">layers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">layers</span><span class="p">[</span><span class="n">layer_id</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="n">layers</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_from_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeLayer&quot;</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">)</span>
 </code></pre></div>
         </details>
