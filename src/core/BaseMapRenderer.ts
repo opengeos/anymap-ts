@@ -191,9 +191,20 @@ export abstract class BaseMapRenderer<TMap> {
       this.executeMethod('addSource', [sourceId], sourceConfig as unknown as Record<string, unknown>);
     }
 
-    // Then restore layers
+    // Then restore layers, ensuring correct z-order:
+    // Basemap (raster) layers must be added first so they sit below vector layers.
     const layers = this.model.get('_layers') || {};
-    for (const [layerId, layerConfig] of Object.entries(layers)) {
+    const entries = Object.entries(layers);
+    const basemapEntries = entries.filter(([id, cfg]) => {
+      const config = cfg as Record<string, unknown>;
+      return id.startsWith('basemap-') || config.type === 'raster';
+    });
+    const otherEntries = entries.filter(([id, cfg]) => {
+      const config = cfg as Record<string, unknown>;
+      return !(id.startsWith('basemap-') || config.type === 'raster');
+    });
+    const orderedEntries = [...basemapEntries, ...otherEntries];
+    for (const [layerId, layerConfig] of orderedEntries) {
       this.executeMethod('addLayer', [], layerConfig as unknown as Record<string, unknown>);
     }
 
