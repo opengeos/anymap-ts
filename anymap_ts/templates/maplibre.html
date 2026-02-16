@@ -9,8 +9,8 @@
     <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
     <!-- PMTiles -->
     <script src="https://unpkg.com/pmtiles@3.0.8/dist/pmtiles.js"></script>
-    <!-- maplibre-gl-layer-manager CSS -->
-    <link href="https://unpkg.com/maplibre-gl-layer-manager@0.1.0/src/layer-manager.css" rel="stylesheet" />
+    <!-- maplibre-gl-layer-control CSS -->
+    <link href="https://unpkg.com/maplibre-gl-layer-control@0.13.0/dist/maplibre-gl-layer-control.css" rel="stylesheet" />
     <!-- maplibre-gl-components CSS -->
     <link href="https://unpkg.com/maplibre-gl-components@0.14.0/dist/maplibre-gl-components.css" rel="stylesheet" />
     <!-- Geoman for drawing -->
@@ -26,7 +26,7 @@
     <div id="map"></div>
     <script type="module">
         // Import controls from esm.sh
-        import LayerManager from 'https://esm.sh/maplibre-gl-layer-manager@0.1.0';
+        import { LayerControl } from 'https://esm.sh/maplibre-gl-layer-control@0.13.0';
         import { addControlGrid } from 'https://esm.sh/maplibre-gl-components@0.14.0';
 
         // Map state from Python
@@ -432,21 +432,11 @@
             const position = config.position || 'top-right';
             const collapsed = config.collapsed !== false;
 
-            // Convert addedLayers to LayerManager format
-            const layers = addedLayers.map(layer => ({
-                id: layer.id,
-                name: layer.name || layer.id,
-                visible: true,
-                opacity: 1.0
-            }));
-
-            // Use maplibre-gl-layer-manager
-            const layerManager = new LayerManager({
-                layers: layers,
-                collapsed: collapsed,
-                title: 'Layers'
+            // Use maplibre-gl-layer-control
+            const layerControl = new LayerControl({
+                collapsed: collapsed
             });
-            map.addControl(layerManager, position);
+            map.addControl(layerControl, position);
         }
 
         function createDrawControl(config) {
