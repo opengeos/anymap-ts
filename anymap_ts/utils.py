@@ -100,6 +100,8 @@ def fetch_geojson(url: str) -> Dict:
             return json.loads(data)
     except URLError as e:
         raise ValueError(f"Failed to fetch GeoJSON from URL: {e}") from e
+    except UnicodeDecodeError as e:
+        raise ValueError(f"Failed to decode response as UTF-8: {e}") from e
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON at URL: {e}") from e
 
