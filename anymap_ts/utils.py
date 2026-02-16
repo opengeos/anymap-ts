@@ -94,7 +94,7 @@ def fetch_geojson(url: str) -> Dict:
         ValueError: If the URL cannot be fetched or parsed
     """
     try:
-        with urlopen(url) as response:
+        with urlopen(url, timeout=30) as response:
             data = response.read().decode("utf-8")
             return json.loads(data)
     except URLError as e:
