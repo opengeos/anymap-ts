@@ -201,7 +201,16 @@ export abstract class BaseMapRenderer<TMap> {
     const controls = this.model.get('_controls') || {};
     for (const [controlId, controlConfig] of Object.entries(controls)) {
       const config = controlConfig as { type: string; position: string; options?: Record<string, unknown> };
-      this.executeMethod('addControl', [config.type], { position: config.position, ...config.options });
+      // Dispatch to correct method based on control type
+      if (config.type === 'layer-control') {
+        this.executeMethod('addLayerControl', [], { position: config.position, ...config.options });
+      } else if (config.type === 'draw-control') {
+        this.executeMethod('addDrawControl', [], { position: config.position, ...config.options });
+      } else if (config.type === 'control-grid') {
+        this.executeMethod('addControlGrid', [], { position: config.position, ...config.options });
+      } else {
+        this.executeMethod('addControl', [config.type], { position: config.position, ...config.options });
+      }
     }
   }
 

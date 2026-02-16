@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Interactive Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- MapLibre GL JS -->
+    <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
+    <!-- PMTiles -->
+    <script src="https://unpkg.com/pmtiles@3.0.8/dist/pmtiles.js"></script>
+    <!-- maplibre-gl-layer-control CSS -->
+    <link href="https://unpkg.com/maplibre-gl-layer-control@0.13.0/dist/maplibre-gl-layer-control.css" rel="stylesheet" />
+    <!-- maplibre-gl-components CSS -->
+    <link href="https://unpkg.com/maplibre-gl-components@0.14.0/dist/maplibre-gl-components.css" rel="stylesheet" />
+    <!-- Geoman for drawing -->
+    <script src="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.umd.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.css" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script type="module">
+        // Import controls from esm.sh
+        import { LayerControl } from 'https://esm.sh/maplibre-gl-layer-control@0.13.0';
+        import { addControlGrid } from 'https://esm.sh/maplibre-gl-components@0.14.0';
+
+        // Map state from Python
+        const state = {
+  "center": [
+    -98,
+    38.5
+  ],
+  "zoom": 4.0,
+  "style": "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  "bearing": 0.0,
+  "pitch": 0.0,
+  "width": "100%",
+  "height": "700px",
+  "layers": {
+    "vector-0": {
+      "id": "vector-0",
+      "type": "circle",
+      "source": "vector-0-source",
+      "paint": {
+        "circle-radius": 5,
+        "circle-color": "#3388ff",
+        "circle-opacity": 0.8,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#ffffff"
+      }
+    }
+  },
+  "sources": {},
+  "controls": {
+    "layer-control": {
+      "layers": [],
+      "position": "top-right",
+      "collapsed": true
+    },
+    "control-grid": {
+      "position": "top-right",
+      "collapsed": true,
+      "collapsible": true
+    }
+  },
+  "js_calls": [
+    {
+      "id": 1,
+      "method": "addLayerControl",
+      "args": [],
+      "kwargs": {
+        "layers": [],
+        "position": "top-right",
+        "collapsed": true
+      }
+    },
+    {
+      "id": 2,
+      "method": "addControlGrid",
+      "args": [],
+      "kwargs": {
+        "position": "top-right",
+        "collapsed": true,
+        "collapsible": true,
+        "showRowColumnControls": true,
+        "gap": 2
+      }
+    },
+    {
+      "id": 3,
+      "method": "addBasemap",
+      "args": [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "kwargs": {
+        "attribution": "Tiles (C) Esri -- Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+        "name": "Esri.WorldImagery"
+      }
+    },
+    {
+      "id": 4,
+      "method": "addGeoJSON",
+      "args": [],
+      "kwargs": {
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  -122.4194,
+                  37.7749
+                ]
+              },
+              "properties": {
+                "name": "San Francisco City Hall",
+                "type": "landmark"
+              }
+            },
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  -122.4862,
+                  37.8199
+                ]
+              },
+              "properties": {
+                "name": "Golden Gate Bridge",
+                "type": "landmark"
+              }
+            },
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                  [
+                    -122.4194,
+                    37.7749
+                  ],
+                  [
+                    -122.41,
+                    37.7855
+                  ],
+                  [
+                    -122.3894,
+                    37.7866
+                  ]
+                ]
+              },
+              "properties": {
+                "name": "Market Street Route",
+                "type": "route"
+              }
+            },
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                  [
+                    [
+                      -122.415,
+                      37.795
+                    ],
+                    [
+                      -122.395,
+                      37.795
+                    ],
+                    [
+                      -122.395,
+                      37.78
+                    ],
+                    [
+                      -122.415,
+                      37.78
+                    ],
+                    [
+                      -122.415,
+                      37.795
+                    ]
+                  ]
+                ]
+              },
+              "properties": {
+                "name": "Downtown",
+                "type": "neighborhood",
+                "elevation": 500
+              }
+            }
+          ]
+        },
+        "name": "vector-0",
+        "layerType": "circle",
+        "paint": {
+          "circle-radius": 5,
+          "circle-color": "#3388ff",
+          "circle-opacity": 0.8,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#ffffff"
+        },
+        "fitBounds": true,
+        "bounds": [
+          -122.4862,
+          37.7749,
+          -122.3894,
+          37.8199
+        ]
+      }
+    }
+  ]
+};
+
+        // Track added layers for layer control
+        const addedLayers = [];
+        let layerControlConfig = null;
+        let drawControlConfig = null;
+        let controlGridConfig = null;
+        let controlGridAdded = false;
+        let layerControlAdded = false;
+
+        // Create map
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: state.style,
+            center: state.center,
+            zoom: state.zoom,
+            bearing: state.bearing || 0,
+            pitch: state.pitch || 0
+        });
+
+        // Initialize PMTiles protocol
+        if (typeof pmtiles !== 'undefined') {
+            const protocol = new pmtiles.Protocol();
+            maplibregl.addProtocol("pmtiles", protocol.tile);
+        }
+
+        map.on('load', function() {
+            // Replay JS calls
+            for (const call of state.js_calls || []) {
+                try {
+                    executeMethod(call.method, call.args, call.kwargs);
+                } catch (e) {
+                    console.error('Error executing', call.method, e);
+                }
+            }
+
+            // Add layer control first (so it appears on top)
+            if (!layerControlAdded && (layerControlConfig || (state.controls && state.controls['layer-control']))) {
+                const config = layerControlConfig || state.controls['layer-control'];
+                createLayerControl(config);
+                layerControlAdded = true;
+            }
+
+            // Add control grid below layer control
+            if (!controlGridAdded && (controlGridConfig || (state.controls && state.controls['control-grid']))) {
+                const config = controlGridConfig || state.controls['control-grid'];
+                addControlGrid(map, {
+                    position: config.position || 'top-right',
+                    defaultControls: config.defaultControls,
+                    exclude: config.exclude,
+                    rows: config.rows,
+                    columns: config.columns,
+                    collapsed: config.collapsed !== false
+                });
+                controlGridAdded = true;
+            }
+
+            // Add draw control if configured
+            if (drawControlConfig || (state.controls && state.controls['draw-control'])) {
+                createDrawControl(drawControlConfig || state.controls['draw-control']);
+            }
+        });
+
+        function executeMethod(method, args, kwargs) {
+            switch (method) {
+                case 'addBasemap': {
+                    const url = args[0];
+                    const name = kwargs.name || 'basemap';
+                    const sourceId = 'basemap-' + name;
+                    if (!map.getSource(sourceId)) {
+                        map.addSource(sourceId, {
+                            type: 'raster',
+                            tiles: [url],
+                            tileSize: 256,
+                            attribution: kwargs.attribution || ''
+                        });
+                    }
+                    if (!map.getLayer(sourceId)) {
+                        const layers = map.getStyle().layers || [];
+                        const firstSymbolId = layers.find(l => l.type === 'symbol')?.id;
+                        map.addLayer({
+                            id: sourceId,
+                            type: 'raster',
+                            source: sourceId
+                        }, firstSymbolId);
+                        addedLayers.push({ id: sourceId, name: name, type: 'raster' });
+                    }
+                    break;
+                }
+
+                case 'addGeoJSON': {
+                    const layerName = kwargs.name;
+                    const sourceId = layerName + '-source';
+                    if (!map.getSource(sourceId)) {
+                        map.addSource(sourceId, {
+                            type: 'geojson',
+                            data: kwargs.data
+                        });
+                    }
+                    if (!map.getLayer(layerName)) {
+                        const layerType = kwargs.layerType || 'circle';
+                        map.addLayer({
+                            id: layerName,
+                            type: layerType,
+                            source: sourceId,
+                            paint: kwargs.paint || getDefaultPaint(layerType)
+                        });
+                        addedLayers.push({ id: layerName, name: layerName, type: layerType });
+                    }
+                    if (kwargs.fitBounds && kwargs.bounds) {
+                        map.fitBounds([
+                            [kwargs.bounds[0], kwargs.bounds[1]],
+                            [kwargs.bounds[2], kwargs.bounds[3]]
+                        ], { padding: 50 });
+                    }
+                    break;
+                }
+
+                case 'addTileLayer': {
+                    const tileUrl = args[0];
+                    const tileName = kwargs.name;
+                    const tileSourceId = tileName + '-source';
+                    if (!map.getSource(tileSourceId)) {
+                        map.addSource(tileSourceId, {
+                            type: 'raster',
+                            tiles: [tileUrl],
+                            tileSize: 256,
+                            attribution: kwargs.attribution || ''
+                        });
+                    }
+                    if (!map.getLayer(tileName)) {
+                        map.addLayer({
+                            id: tileName,
+                            type: 'raster',
+                            source: tileSourceId
+                        });
+                        addedLayers.push({ id: tileName, name: tileName, type: 'raster' });
+                    }
+                    break;
+                }
+
+                case 'addControl': {
+                    const controlType = args[0];
+                    const position = kwargs.position || 'top-right';
+                    let control;
+                    switch (controlType) {
+                        case 'navigation':
+                            control = new maplibregl.NavigationControl();
+                            break;
+                        case 'scale':
+                            control = new maplibregl.ScaleControl();
+                            break;
+                        case 'fullscreen':
+                            control = new maplibregl.FullscreenControl();
+                            break;
+                        case 'geolocate':
+                            control = new maplibregl.GeolocateControl();
+                            break;
+                        case 'globe':
+                            control = new maplibregl.GlobeControl();
+                            break;
+                        case 'attribution':
+                            control = new maplibregl.AttributionControl({
+                                compact: kwargs.compact !== false
+                            });
+                            break;
+                    }
+                    if (control) {
+                        map.addControl(control, position);
+                    }
+                    break;
+                }
+
+                case 'addLayerControl': {
+                    // Store config for later (after all layers are added)
+                    layerControlConfig = kwargs;
+                    break;
+                }
+
+                case 'addDrawControl': {
+                    // Store config for later (after map is fully loaded)
+                    drawControlConfig = kwargs;
+                    break;
+                }
+
+                case 'addControlGrid': {
+                    // Store config for later (add after layer control)
+                    controlGridConfig = kwargs;
+                    break;
+                }
+
+                case 'addMarker': {
+                    const [lng, lat] = args;
+                    const color = kwargs.color || '#3388ff';
+                    const marker = new maplibregl.Marker({ color })
+                        .setLngLat([lng, lat]);
+                    if (kwargs.popup) {
+                        marker.setPopup(new maplibregl.Popup().setHTML(kwargs.popup));
+                    }
+                    marker.addTo(map);
+                    break;
+                }
+
+                case 'flyTo': {
+                    map.flyTo({
+                        center: [args[0], args[1]],
+                        zoom: kwargs.zoom,
+                        duration: kwargs.duration || 2000
+                    });
+                    break;
+                }
+
+                case 'fitBounds': {
+                    const bounds = args[0];
+                    map.fitBounds([
+                        [bounds[0], bounds[1]],
+                        [bounds[2], bounds[3]]
+                    ], {
+                        padding: kwargs.padding || 50,
+                        duration: kwargs.duration || 1000
+                    });
+                    break;
+                }
+
+                case 'setVisibility': {
+                    const [layerId, visible] = args;
+                    if (map.getLayer(layerId)) {
+                        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+                    }
+                    break;
+                }
+
+                case 'setOpacity': {
+                    const [layerId, opacity] = args;
+                    if (map.getLayer(layerId)) {
+                        const layer = map.getLayer(layerId);
+                        const opacityProp = getOpacityProperty(layer.type);
+                        if (opacityProp) {
+                            map.setPaintProperty(layerId, opacityProp, opacity);
+                        }
+                    }
+                    break;
+                }
+
+                case 'addPMTilesLayer': {
+                    const url = kwargs.url;
+                    const layerId = kwargs.id;
+                    const sourceType = kwargs.sourceType || 'vector';
+                    const opacity = kwargs.opacity || 1.0;
+                    const visible = kwargs.visible !== false;
+                    const style = kwargs.style || {};
+
+                    // Prepare PMTiles URL with protocol
+                    const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
+
+                    // Add source
+                    const sourceId = `${layerId}-source`;
+                    if (!map.getSource(sourceId)) {
+                        map.addSource(sourceId, {
+                            type: sourceType,
+                            url: pmtilesUrl
+                        });
+                    }
+
+                    // Add layer(s)
+                    if (!map.getLayer(layerId)) {
+                        if (sourceType === 'vector') {
+                            // For vector PMTiles, we might need to add multiple layers
+                            // Use provided style or create default
+                            const layerStyle = {
+                                id: layerId,
+                                source: sourceId,
+                                type: 'fill',
+                                layout: {
+                                    visibility: visible ? 'visible' : 'none'
+                                },
+                                paint: {
+                                    'fill-opacity': opacity,
+                                    'fill-color': '#3388ff',
+                                    ...style
+                                }
+                            };
+
+                            if (style.type) {
+                                layerStyle.type = style.type;
+                                if (style.type === 'line') {
+                                    layerStyle.paint = {
+                                        'line-opacity': opacity,
+                                        'line-color': '#3388ff',
+                                        'line-width': 2,
+                                        ...style
+                                    };
+                                } else if (style.type === 'circle') {
+                                    layerStyle.paint = {
+                                        'circle-opacity': opacity,
+                                        'circle-color': '#3388ff',
+                                        'circle-radius': 5,
+                                        ...style
+                                    };
+                                }
+                            }
+
+                            if (style['source-layer']) {
+                                layerStyle['source-layer'] = style['source-layer'];
+                            }
+
+                            map.addLayer(layerStyle);
+                        } else {
+                            // For raster PMTiles
+                            map.addLayer({
+                                id: layerId,
+                                type: 'raster',
+                                source: sourceId,
+                                layout: {
+                                    visibility: visible ? 'visible' : 'none'
+                                },
+                                paint: {
+                                    'raster-opacity': opacity
+                                }
+                            });
+                        }
+
+                        addedLayers.push({
+                            id: layerId,
+                            name: kwargs.name || layerId,
+                            type: sourceType === 'vector' ? (style.type || 'fill') : 'raster'
+                        });
+                    }
+
+                    // Fit bounds if requested
+                    if (kwargs.fitBounds) {
+                        // For PMTiles, we could try to get metadata and fit to bounds
+                        // This is optional and complex, so we'll skip for now
+                    }
+
+                    break;
+                }
+
+                case 'removePMTilesLayer': {
+                    const layerId = args[0];
+                    if (map.getLayer(layerId)) {
+                        map.removeLayer(layerId);
+                    }
+                    const sourceId = `${layerId}-source`;
+                    if (map.getSource(sourceId)) {
+                        map.removeSource(sourceId);
+                    }
+                    // Remove from addedLayers
+                    const index = addedLayers.findIndex(l => l.id === layerId);
+                    if (index > -1) {
+                        addedLayers.splice(index, 1);
+                    }
+                    break;
+                }
+
+                default:
+                    console.log('Unknown method:', method);
+            }
+        }
+
+        function getDefaultPaint(layerType) {
+            const defaults = {
+                circle: {
+                    'circle-radius': 5,
+                    'circle-color': '#3388ff',
+                    'circle-opacity': 0.8,
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#ffffff'
+                },
+                line: {
+                    'line-color': '#3388ff',
+                    'line-width': 2,
+                    'line-opacity': 0.8
+                },
+                fill: {
+                    'fill-color': '#3388ff',
+                    'fill-opacity': 0.5,
+                    'fill-outline-color': '#0000ff'
+                },
+                raster: {
+                    'raster-opacity': 1
+                }
+            };
+            return defaults[layerType] || {};
+        }
+
+        function getOpacityProperty(layerType) {
+            const opacityMap = {
+                fill: 'fill-opacity',
+                line: 'line-opacity',
+                circle: 'circle-opacity',
+                symbol: 'icon-opacity',
+                raster: 'raster-opacity',
+                'fill-extrusion': 'fill-extrusion-opacity'
+            };
+            return opacityMap[layerType];
+        }
+
+        function createLayerControl(config) {
+            const position = config.position || 'top-right';
+            const collapsed = config.collapsed !== false;
+
+            // Build layer IDs and states from addedLayers
+            const layerIds = addedLayers.map(layer => layer.id);
+            const layerStates = {};
+            for (const layer of addedLayers) {
+                layerStates[layer.id] = {
+                    visible: true,
+                    opacity: 1.0,
+                    name: layer.name || layer.id
+                };
+            }
+
+            // Use maplibre-gl-layer-control with explicit layers
+            // Layers not in the array are grouped as "Background"
+            const layerControl = new LayerControl({
+                collapsed: collapsed,
+                layers: layerIds,
+                // layerStates: layerStates
+            });
+            map.addControl(layerControl, position);
+        }
+
+        function createDrawControl(config) {
+            // Check if Geoman is available (UMD exports to Geoman.Geoman)
+            const GeomanClass = (typeof Geoman !== 'undefined' && Geoman.Geoman)
+                ? Geoman.Geoman
+                : (typeof window !== 'undefined' && window.Geoman && window.Geoman.Geoman)
+                    ? window.Geoman.Geoman
+                    : null;
+
+            if (!GeomanClass) {
+                console.warn('Geoman library not loaded. Draw control not available.');
+                return;
+            }
+
+            const position = config.position || 'top-right';
+
+            // Initialize Geoman
+            const geoman = new GeomanClass(map, {
+                position: position
+            });
+
+            map.on('gm:loaded', () => {
+                console.log('Geoman draw control loaded');
+            });
+        }
+    </script>
+</body>
+</html>
