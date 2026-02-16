@@ -150,6 +150,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     await new Promise<void>((resolve) => {
       this.map!.on('load', () => {
         this.isMapReady = true;
+        // Restore persisted state (layers, sources) before processing new calls
+        // This ensures layers are restored when map is displayed in subsequent cells
+        this.restoreState();
         // Process any calls that were queued while waiting for map to load
         this.processPendingCalls();
         // Force resize after load to ensure correct dimensions
@@ -562,12 +565,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Add source if not exists
     if (!this.map.getSource(sourceId)) {
-      this.map.addSource(sourceId, {
-        type: 'raster',
+      const sourceConfig = {
+        type: 'raster' as const,
         tiles: [url],
         tileSize: 256,
         attribution,
-      });
+      };
+      this.map.addSource(sourceId, sourceConfig);
+      // Persist source state for multi-cell rendering
+      this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
     }
 
     // Add layer at bottom (before first layer or first symbol layer)
@@ -575,14 +581,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const layers = this.map.getStyle().layers || [];
       const firstSymbolId = layers.find((l) => l.type === 'symbol')?.id;
 
-      this.map.addLayer(
-        {
-          id: layerId,
-          type: 'raster',
-          source: sourceId,
-        },
-        firstSymbolId
-      );
+      const layerConfig = {
+        id: layerId,
+        type: 'raster' as const,
+        source: sourceId,
+      };
+      this.map.addLayer(layerConfig, firstSymbolId);
+      // Persist layer state for multi-cell rendering
+      this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
     }
   }
 
@@ -602,14 +608,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const sourceId = `${name}-source`;
     const layerId = name;
 
-    // Add source
-    if (!this.map.getSource(sourceId)) {
-      this.map.addSource(sourceId, {
-        type: 'geojson',
-        data: geojson,
-      });
-    }
-
     // Determine layer type from geometry if not specified
     let type = layerType;
     if (!type && geojson.type === 'FeatureCollection' && geojson.features.length > 0) {
@@ -624,14 +622,28 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const defaultPaint = this.getDefaultPaint(type);
     const layerPaint = paint || defaultPaint;
 
+    // Add source
+    if (!this.map.getSource(sourceId)) {
+      const sourceConfig = {
+        type: 'geojson' as const,
+        data: geojson,
+      };
+      this.map.addSource(sourceId, sourceConfig);
+      // Persist source state for multi-cell rendering
+      this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
+    }
+
     // Add layer
     if (!this.map.getLayer(layerId)) {
-      this.map.addLayer({
+      const layerConfig = {
         id: layerId,
         type: type as maplibregl.LayerSpecification['type'],
         source: sourceId,
         paint: layerPaint,
-      } as maplibregl.AddLayerObject);
+      };
+      this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
+      // Persist layer state for multi-cell rendering
+      this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
     }
 
     // Fit bounds
@@ -706,25 +718,31 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Add source
     if (!this.map.getSource(sourceId)) {
-      this.map.addSource(sourceId, {
-        type: 'raster',
+      const sourceConfig = {
+        type: 'raster' as const,
         tiles: [url],
         tileSize: 256,
         attribution,
         minzoom: minZoom,
         maxzoom: maxZoom,
-      });
+      };
+      this.map.addSource(sourceId, sourceConfig);
+      // Persist source state for multi-cell rendering
+      this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
     }
 
     // Add layer
     if (!this.map.getLayer(layerId)) {
-      this.map.addLayer({
+      const layerConfig = {
         id: layerId,
-        type: 'raster',
+        type: 'raster' as const,
         source: sourceId,
         minzoom: minZoom,
         maxzoom: maxZoom,
-      });
+      };
+      this.map.addLayer(layerConfig);
+      // Persist layer state for multi-cell rendering
+      this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
     }
   }
 
@@ -2268,14 +2286,19 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       // Add source
       const sourceId = `${layerId}-source`;
       if (!this.map.getSource(sourceId)) {
-        this.map.addSource(sourceId, {
+        const sourceConfig = {
           type: sourceType as 'vector' | 'raster',
           url: pmtilesUrl,
-        });
+        };
+        this.map.addSource(sourceId, sourceConfig);
+        // Persist source state for multi-cell rendering
+        this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
       }
 
       // Add layer
       if (!this.map.getLayer(layerId)) {
+        let layerConfig: Record<string, unknown>;
+
         if (sourceType === 'vector') {
           const layerType = (style.type as string) || 'fill';
 
@@ -2308,7 +2331,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
             }
           }
 
-          const layerDef: Record<string, unknown> = {
+          layerConfig = {
             id: layerId,
             type: layerType,
             source: sourceId,
@@ -2319,13 +2342,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
           };
 
           if (style['source-layer']) {
-            layerDef['source-layer'] = style['source-layer'];
+            layerConfig['source-layer'] = style['source-layer'];
           }
 
-          this.map.addLayer(layerDef as maplibregl.AddLayerObject);
+          this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
         } else {
           // Raster PMTiles
-          this.map.addLayer({
+          layerConfig = {
             id: layerId,
             type: 'raster',
             source: sourceId,
@@ -2335,8 +2358,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
             layout: {
               visibility: visible ? 'visible' : 'none',
             },
-          });
+          };
+          this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
         }
+
+        // Persist layer state for multi-cell rendering
+        this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
       }
     } catch (error) {
       console.error(`[anymap-ts] Error adding PMTiles layer "${layerId}":`, error);
