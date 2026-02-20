@@ -1041,7 +1041,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
   // Helper to wrap popup/tooltip content with contrast-safe styling
   private wrapWithContrastStyle(content: string): string {
-    return `<div style="color: #333; background: #fff; padding: 4px;">${content}</div>`;
+    return `<div style="color: #333; background: #fff; margin: -10px -10px -15px; padding: 6px 10px;">${content}</div>`;
   }
 
   private handleAddMarker(args: unknown[], kwargs: Record<string, unknown>): void {
