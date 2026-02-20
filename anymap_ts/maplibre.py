@@ -3215,10 +3215,13 @@ class MapLibreMap(MapWidget):
         """Generate standalone HTML for the map."""
         template_path = Path(__file__).parent / "templates" / "maplibre.html"
 
-        if template_path.exists():
-            template = template_path.read_text(encoding="utf-8")
-        else:
-            template = self._get_default_template()
+        if not template_path.exists():
+            raise FileNotFoundError(
+                f"HTML template not found at {template_path}. "
+                "Please ensure the templates directory is included in the package."
+            )
+
+        template = template_path.read_text(encoding="utf-8")
 
         # Serialize state
         state = {
@@ -3237,159 +3240,3 @@ class MapLibreMap(MapWidget):
 
         template = template.replace("{{state}}", json.dumps(state, indent=2))
         return template
-
-    def _get_default_template(self) -> str:
-        """Get default HTML template."""
-        return """<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{{title}}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
-    <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    </style>
-</head>
-<body>
-    <div id="map"></div>
-    <script>
-        const state = {{state}};
-
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: state.style,
-            center: state.center,
-            zoom: state.zoom,
-            bearing: state.bearing || 0,
-            pitch: state.pitch || 0
-        });
-
-        map.on('load', function() {
-            // Replay JS calls
-            for (const call of state.js_calls || []) {
-                try {
-                    executeMethod(call.method, call.args, call.kwargs);
-                } catch (e) {
-                    console.error('Error executing', call.method, e);
-                }
-            }
-        });
-
-        function executeMethod(method, args, kwargs) {
-            switch (method) {
-                case 'addBasemap':
-                    const url = args[0];
-                    const name = kwargs.name || 'basemap';
-                    const sourceId = 'basemap-' + name;
-                    if (!map.getSource(sourceId)) {
-                        map.addSource(sourceId, {
-                            type: 'raster',
-                            tiles: [url],
-                            tileSize: 256,
-                            attribution: kwargs.attribution || ''
-                        });
-                    }
-                    if (!map.getLayer(sourceId)) {
-                        map.addLayer({
-                            id: sourceId,
-                            type: 'raster',
-                            source: sourceId
-                        });
-                    }
-                    break;
-
-                case 'addGeoJSON':
-                    const layerName = kwargs.name;
-                    const sourceIdGeo = layerName + '-source';
-                    if (!map.getSource(sourceIdGeo)) {
-                        map.addSource(sourceIdGeo, {
-                            type: 'geojson',
-                            data: kwargs.data
-                        });
-                    }
-                    if (!map.getLayer(layerName)) {
-                        map.addLayer({
-                            id: layerName,
-                            type: kwargs.layerType || 'circle',
-                            source: sourceIdGeo,
-                            paint: kwargs.paint || {}
-                        });
-                    }
-                    if (kwargs.fitBounds && kwargs.bounds) {
-                        map.fitBounds([
-                            [kwargs.bounds[0], kwargs.bounds[1]],
-                            [kwargs.bounds[2], kwargs.bounds[3]]
-                        ], { padding: 50 });
-                    }
-                    break;
-
-                case 'addTileLayer':
-                    const tileUrl = args[0];
-                    const tileName = kwargs.name;
-                    const tileSourceId = tileName + '-source';
-                    if (!map.getSource(tileSourceId)) {
-                        map.addSource(tileSourceId, {
-                            type: 'raster',
-                            tiles: [tileUrl],
-                            tileSize: 256,
-                            attribution: kwargs.attribution || ''
-                        });
-                    }
-                    if (!map.getLayer(tileName)) {
-                        map.addLayer({
-                            id: tileName,
-                            type: 'raster',
-                            source: tileSourceId
-                        });
-                    }
-                    break;
-
-                case 'addControl':
-                    const controlType = args[0];
-                    const position = kwargs.position || 'top-right';
-                    let control;
-                    switch (controlType) {
-                        case 'navigation':
-                            control = new maplibregl.NavigationControl();
-                            break;
-                        case 'scale':
-                            control = new maplibregl.ScaleControl();
-                            break;
-                        case 'fullscreen':
-                            control = new maplibregl.FullscreenControl();
-                            break;
-                    }
-                    if (control) {
-                        map.addControl(control, position);
-                    }
-                    break;
-
-                case 'flyTo':
-                    map.flyTo({
-                        center: [args[0], args[1]],
-                        zoom: kwargs.zoom,
-                        duration: kwargs.duration || 2000
-                    });
-                    break;
-
-                case 'fitBounds':
-                    const bounds = args[0];
-                    map.fitBounds([
-                        [bounds[0], bounds[1]],
-                        [bounds[2], bounds[3]]
-                    ], {
-                        padding: kwargs.padding || 50,
-                        duration: kwargs.duration || 1000
-                    });
-                    break;
-
-                default:
-                    console.log('Unknown method:', method);
-            }
-        }
-    </script>
-</body>
-</html>"""
