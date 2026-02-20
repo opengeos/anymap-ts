@@ -3436,14 +3436,10 @@ class MapLibreMap(MapWidget):
                     const items = kwargs.items || [];
                     const legendPosition = kwargs.position || 'bottom-right';
                     const opacity = kwargs.opacity !== undefined ? kwargs.opacity : 1.0;
-                    const parts = legendPosition.split('-');
-                    let posStyles = 'position: absolute; z-index: 1;';
-                    posStyles += parts[0] === 'top' ? ' top: 10px;' : ' bottom: 30px;';
-                    posStyles += parts[1] === 'left' ? ' left: 10px;' : ' right: 10px;';
                     const legendDiv = document.createElement('div');
                     legendDiv.id = legendId;
-                    legendDiv.className = 'legend-control';
-                    legendDiv.style.cssText = posStyles + ' background: rgba(255, 255, 255, ' + opacity + '); padding: 10px 14px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 12px; line-height: 1.4; max-width: 200px;';
+                    legendDiv.className = 'maplibregl-ctrl legend-control';
+                    legendDiv.style.cssText = 'background: rgba(255, 255, 255, ' + opacity + '); padding: 10px 14px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 12px; line-height: 1.4; max-width: 200px;';
                     const titleEl = document.createElement('div');
                     titleEl.style.cssText = 'font-weight: bold; margin-bottom: 8px; font-size: 13px;';
                     titleEl.textContent = title;
@@ -3459,7 +3455,14 @@ class MapLibreMap(MapWidget):
                         row.appendChild(label);
                         legendDiv.appendChild(row);
                     }
-                    document.getElementById('map').appendChild(legendDiv);
+                    const positionClass = 'maplibregl-ctrl-' + legendPosition;
+                    let container = document.querySelector('.' + positionClass);
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.className = 'maplibregl-ctrl-' + legendPosition.split('-')[0] + ' ' + positionClass;
+                        document.querySelector('.maplibregl-control-container').appendChild(container);
+                    }
+                    container.insertBefore(legendDiv, container.firstChild);
                     break;
                 }
 
