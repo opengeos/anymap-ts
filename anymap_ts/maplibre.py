@@ -353,8 +353,12 @@ class MapLibreMap(MapWidget):
         lng: float,
         lat: float,
         popup: Optional[str] = None,
+        tooltip: Optional[str] = None,
         color: str = "#3388ff",
         draggable: bool = False,
+        scale: float = 1.0,
+        popup_max_width: str = "240px",
+        tooltip_max_width: str = "240px",
         name: Optional[str] = None,
         **kwargs,
     ) -> str:
@@ -363,9 +367,13 @@ class MapLibreMap(MapWidget):
         Args:
             lng: Longitude of the marker.
             lat: Latitude of the marker.
-            popup: Optional popup HTML content.
+            popup: Optional popup HTML content (shown on click).
+            tooltip: Optional tooltip HTML content (shown on hover).
             color: Marker color as hex string.
             draggable: Whether the marker can be dragged.
+            scale: Marker size multiplier (default 1.0, range 0.1 to 3.0).
+            popup_max_width: Maximum width of popup (CSS value, default "240px").
+            tooltip_max_width: Maximum width of tooltip (CSS value, default "240px").
             name: Marker identifier. If None, auto-generated.
             **kwargs: Additional marker options.
 
@@ -375,7 +383,8 @@ class MapLibreMap(MapWidget):
         Example:
             >>> from anymap_ts import Map
             >>> m = Map(center=[-122.4, 37.8], zoom=10)
-            >>> m.add_marker(-122.4, 37.8, popup="San Francisco")
+            >>> m.add_marker(-122.4, 37.8, popup="San Francisco", tooltip="Hover me!")
+            >>> m.add_marker(-122.5, 37.7, scale=1.5, color="#ff0000")
         """
         marker_id = name or f"marker-{len(self._layers)}"
 
@@ -385,8 +394,12 @@ class MapLibreMap(MapWidget):
             lat,
             id=marker_id,
             popup=popup,
+            tooltip=tooltip,
             color=color,
             draggable=draggable,
+            scale=scale,
+            popupMaxWidth=popup_max_width,
+            tooltipMaxWidth=tooltip_max_width,
             **kwargs,
         )
 
@@ -407,7 +420,12 @@ class MapLibreMap(MapWidget):
         lng_column: Optional[str] = None,
         lat_column: Optional[str] = None,
         popup_column: Optional[str] = None,
+        tooltip_column: Optional[str] = None,
         color: str = "#3388ff",
+        scale: float = 1.0,
+        popup_max_width: str = "240px",
+        tooltip_max_width: str = "240px",
+        draggable: bool = False,
         name: Optional[str] = None,
         **kwargs,
     ) -> str:
@@ -420,8 +438,13 @@ class MapLibreMap(MapWidget):
                 - GeoJSON FeatureCollection with Point features
             lng_column: Column name for longitude (auto-detected if None).
             lat_column: Column name for latitude (auto-detected if None).
-            popup_column: Column name for popup content.
+            popup_column: Column name for popup content (shown on click).
+            tooltip_column: Column name for tooltip content (shown on hover).
             color: Marker color as hex string.
+            scale: Marker size multiplier (default 1.0, range 0.1 to 3.0).
+            popup_max_width: Maximum width of popup (CSS value, default "240px").
+            tooltip_max_width: Maximum width of tooltip (CSS value, default "240px").
+            draggable: Whether markers can be dragged.
             name: Layer identifier. If None, auto-generated.
             **kwargs: Additional marker options.
 
@@ -432,10 +455,10 @@ class MapLibreMap(MapWidget):
             >>> from anymap_ts import Map
             >>> m = Map()
             >>> cities = [
-            ...     {"name": "SF", "lng": -122.4, "lat": 37.8},
-            ...     {"name": "NYC", "lng": -74.0, "lat": 40.7},
+            ...     {"name": "SF", "info": "San Francisco", "lng": -122.4, "lat": 37.8},
+            ...     {"name": "NYC", "info": "New York City", "lng": -74.0, "lat": 40.7},
             ... ]
-            >>> m.add_markers(cities, popup_column="name")
+            >>> m.add_markers(cities, popup_column="name", tooltip_column="info", scale=1.5)
         """
         layer_id = name or f"markers-{len(self._layers)}"
         markers = []
@@ -448,6 +471,8 @@ class MapLibreMap(MapWidget):
                     marker = {"lngLat": [geom.x, geom.y]}
                     if popup_column and popup_column in row:
                         marker["popup"] = str(row[popup_column])
+                    if tooltip_column and tooltip_column in row:
+                        marker["tooltip"] = str(row[tooltip_column])
                     markers.append(marker)
         # Handle GeoJSON
         elif isinstance(data, dict) and data.get("type") == "FeatureCollection":
@@ -459,6 +484,8 @@ class MapLibreMap(MapWidget):
                     props = feature.get("properties", {})
                     if popup_column and popup_column in props:
                         marker["popup"] = str(props[popup_column])
+                    if tooltip_column and tooltip_column in props:
+                        marker["tooltip"] = str(props[tooltip_column])
                     markers.append(marker)
         # Handle list of dicts
         elif isinstance(data, list):
@@ -493,6 +520,8 @@ class MapLibreMap(MapWidget):
                     marker = {"lngLat": [float(lng_val), float(lat_val)]}
                     if popup_column and popup_column in item:
                         marker["popup"] = str(item[popup_column])
+                    if tooltip_column and tooltip_column in item:
+                        marker["tooltip"] = str(item[tooltip_column])
                     markers.append(marker)
 
         if not markers:
@@ -503,6 +532,10 @@ class MapLibreMap(MapWidget):
             id=layer_id,
             markers=markers,
             color=color,
+            scale=scale,
+            popupMaxWidth=popup_max_width,
+            tooltipMaxWidth=tooltip_max_width,
+            draggable=draggable,
             **kwargs,
         )
 
