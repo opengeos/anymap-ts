@@ -3439,7 +3439,7 @@ class MapLibreMap(MapWidget):
                     const legendDiv = document.createElement('div');
                     legendDiv.id = legendId;
                     legendDiv.className = 'maplibregl-ctrl legend-control';
-                    legendDiv.style.cssText = 'background: rgba(255, 255, 255, ' + opacity + '); padding: 10px 14px; margin: 0 0 10px 0; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 12px; line-height: 1.4; max-width: 200px;';
+                    legendDiv.style.cssText = 'background: rgba(255, 255, 255, ' + opacity + '); padding: 10px 14px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 12px; line-height: 1.4; max-width: 200px;';
                     const titleEl = document.createElement('div');
                     titleEl.style.cssText = 'font-weight: bold; margin-bottom: 8px; font-size: 13px;';
                     titleEl.textContent = title;
