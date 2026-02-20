@@ -4117,8 +4117,12 @@ full bidirectional communication through anywidget.</p>
         <span class="n">lng</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">lat</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">popup</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tooltip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
         <span class="n">draggable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">popup_max_width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;240px&quot;</span><span class="p">,</span>
+        <span class="n">tooltip_max_width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;240px&quot;</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -4127,9 +4131,13 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">        Args:</span>
 <span class="sd">            lng: Longitude of the marker.</span>
 <span class="sd">            lat: Latitude of the marker.</span>
-<span class="sd">            popup: Optional popup HTML content.</span>
+<span class="sd">            popup: Optional popup HTML content (shown on click).</span>
+<span class="sd">            tooltip: Optional tooltip HTML content (shown on hover).</span>
 <span class="sd">            color: Marker color as hex string.</span>
 <span class="sd">            draggable: Whether the marker can be dragged.</span>
+<span class="sd">            scale: Marker size multiplier (default 1.0, range 0.1 to 3.0).</span>
+<span class="sd">            popup_max_width: Maximum width of popup (CSS value, default &quot;240px&quot;).</span>
+<span class="sd">            tooltip_max_width: Maximum width of tooltip (CSS value, default &quot;240px&quot;).</span>
 <span class="sd">            name: Marker identifier. If None, auto-generated.</span>
 <span class="sd">            **kwargs: Additional marker options.</span>
 
@@ -4139,7 +4147,8 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">        Example:</span>
 <span class="sd">            &gt;&gt;&gt; from anymap_ts import Map</span>
 <span class="sd">            &gt;&gt;&gt; m = Map(center=[-122.4, 37.8], zoom=10)</span>
-<span class="sd">            &gt;&gt;&gt; m.add_marker(-122.4, 37.8, popup=&quot;San Francisco&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; m.add_marker(-122.4, 37.8, popup=&quot;San Francisco&quot;, tooltip=&quot;Hover me!&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; m.add_marker(-122.5, 37.7, scale=1.5, color=&quot;#ff0000&quot;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">marker_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;marker-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
@@ -4149,8 +4158,12 @@ full bidirectional communication through anywidget.</p>
             <span class="n">lat</span><span class="p">,</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">marker_id</span><span class="p">,</span>
             <span class="n">popup</span><span class="o">=</span><span class="n">popup</span><span class="p">,</span>
+            <span class="n">tooltip</span><span class="o">=</span><span class="n">tooltip</span><span class="p">,</span>
             <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
             <span class="n">draggable</span><span class="o">=</span><span class="n">draggable</span><span class="p">,</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+            <span class="n">popupMaxWidth</span><span class="o">=</span><span class="n">popup_max_width</span><span class="p">,</span>
+            <span class="n">tooltipMaxWidth</span><span class="o">=</span><span class="n">tooltip_max_width</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4171,7 +4184,12 @@ full bidirectional communication through anywidget.</p>
         <span class="n">lng_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lat_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">popup_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tooltip_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">popup_max_width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;240px&quot;</span><span class="p">,</span>
+        <span class="n">tooltip_max_width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;240px&quot;</span><span class="p">,</span>
+        <span class="n">draggable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -4184,8 +4202,13 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">                - GeoJSON FeatureCollection with Point features</span>
 <span class="sd">            lng_column: Column name for longitude (auto-detected if None).</span>
 <span class="sd">            lat_column: Column name for latitude (auto-detected if None).</span>
-<span class="sd">            popup_column: Column name for popup content.</span>
+<span class="sd">            popup_column: Column name for popup content (shown on click).</span>
+<span class="sd">            tooltip_column: Column name for tooltip content (shown on hover).</span>
 <span class="sd">            color: Marker color as hex string.</span>
+<span class="sd">            scale: Marker size multiplier (default 1.0, range 0.1 to 3.0).</span>
+<span class="sd">            popup_max_width: Maximum width of popup (CSS value, default &quot;240px&quot;).</span>
+<span class="sd">            tooltip_max_width: Maximum width of tooltip (CSS value, default &quot;240px&quot;).</span>
+<span class="sd">            draggable: Whether markers can be dragged.</span>
 <span class="sd">            name: Layer identifier. If None, auto-generated.</span>
 <span class="sd">            **kwargs: Additional marker options.</span>
 
@@ -4196,10 +4219,10 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">            &gt;&gt;&gt; from anymap_ts import Map</span>
 <span class="sd">            &gt;&gt;&gt; m = Map()</span>
 <span class="sd">            &gt;&gt;&gt; cities = [</span>
-<span class="sd">            ...     {&quot;name&quot;: &quot;SF&quot;, &quot;lng&quot;: -122.4, &quot;lat&quot;: 37.8},</span>
-<span class="sd">            ...     {&quot;name&quot;: &quot;NYC&quot;, &quot;lng&quot;: -74.0, &quot;lat&quot;: 40.7},</span>
+<span class="sd">            ...     {&quot;name&quot;: &quot;SF&quot;, &quot;info&quot;: &quot;San Francisco&quot;, &quot;lng&quot;: -122.4, &quot;lat&quot;: 37.8},</span>
+<span class="sd">            ...     {&quot;name&quot;: &quot;NYC&quot;, &quot;info&quot;: &quot;New York City&quot;, &quot;lng&quot;: -74.0, &quot;lat&quot;: 40.7},</span>
 <span class="sd">            ... ]</span>
-<span class="sd">            &gt;&gt;&gt; m.add_markers(cities, popup_column=&quot;name&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; m.add_markers(cities, popup_column=&quot;name&quot;, tooltip_column=&quot;info&quot;, scale=1.5)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;markers-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">markers</span> <span class="o">=</span> <span class="p">[]</span>
@@ -4212,6 +4235,8 @@ full bidirectional communication through anywidget.</p>
                     <span class="n">marker</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lngLat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">geom</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">y</span><span class="p">]}</span>
                     <span class="k">if</span> <span class="n">popup_column</span> <span class="ow">and</span> <span class="n">popup_column</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
                         <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;popup&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">popup_column</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">tooltip_column</span> <span class="ow">and</span> <span class="n">tooltip_column</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+                        <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;tooltip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">tooltip_column</span><span class="p">])</span>
                     <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
         <span class="c1"># Handle GeoJSON</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;FeatureCollection&quot;</span><span class="p">:</span>
@@ -4223,6 +4248,8 @@ full bidirectional communication through anywidget.</p>
                     <span class="n">props</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="p">{})</span>
                     <span class="k">if</span> <span class="n">popup_column</span> <span class="ow">and</span> <span class="n">popup_column</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
                         <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;popup&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">props</span><span class="p">[</span><span class="n">popup_column</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">tooltip_column</span> <span class="ow">and</span> <span class="n">tooltip_column</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+                        <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;tooltip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">props</span><span class="p">[</span><span class="n">tooltip_column</span><span class="p">])</span>
                     <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
         <span class="c1"># Handle list of dicts</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
@@ -4257,6 +4284,8 @@ full bidirectional communication through anywidget.</p>
                     <span class="n">marker</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lngLat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">lng_val</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_val</span><span class="p">)]}</span>
                     <span class="k">if</span> <span class="n">popup_column</span> <span class="ow">and</span> <span class="n">popup_column</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
                         <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;popup&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="n">popup_column</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">tooltip_column</span> <span class="ow">and</span> <span class="n">tooltip_column</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+                        <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;tooltip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="n">tooltip_column</span><span class="p">])</span>
                     <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">markers</span><span class="p">:</span>
@@ -4267,6 +4296,10 @@ full bidirectional communication through anywidget.</p>
             <span class="nb">id</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
             <span class="n">markers</span><span class="o">=</span><span class="n">markers</span><span class="p">,</span>
             <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+            <span class="n">popupMaxWidth</span><span class="o">=</span><span class="n">popup_max_width</span><span class="p">,</span>
+            <span class="n">tooltipMaxWidth</span><span class="o">=</span><span class="n">tooltip_max_width</span><span class="p">,</span>
+            <span class="n">draggable</span><span class="o">=</span><span class="n">draggable</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -10616,7 +10649,7 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 
 
 <h3 id="anymap_ts.maplibre.MapLibreMap.add_marker" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_marker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lng</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">popup</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#3388ff&#39;</span><span class="p">,</span> <span class="n">draggable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_marker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lng</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">popup</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tooltip</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#3388ff&#39;</span><span class="p">,</span> <span class="n">draggable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">popup_max_width</span><span class="o">=</span><span class="s1">&#39;240px&#39;</span><span class="p">,</span> <span class="n">tooltip_max_width</span><span class="o">=</span><span class="s1">&#39;240px&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.maplibre.MapLibreMap.add_marker" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -10651,7 +10684,13 @@ For URLs, the data is loaded directly via streaming when possible.</p>
       <tr>
         <td><code>popup</code></td>
         <td><code>Optional[str]</code></td>
-        <td><p>Optional popup HTML content.</p></td>
+        <td><p>Optional popup HTML content (shown on click).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>tooltip</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Optional tooltip HTML content (shown on hover).</p></td>
         <td><code>None</code></td>
       </tr>
       <tr>
@@ -10665,6 +10704,24 @@ For URLs, the data is loaded directly via streaming when possible.</p>
         <td><code>bool</code></td>
         <td><p>Whether the marker can be dragged.</p></td>
         <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>scale</code></td>
+        <td><code>float</code></td>
+        <td><p>Marker size multiplier (default 1.0, range 0.1 to 3.0).</p></td>
+        <td><code>1.0</code></td>
+      </tr>
+      <tr>
+        <td><code>popup_max_width</code></td>
+        <td><code>str</code></td>
+        <td><p>Maximum width of popup (CSS value, default "240px").</p></td>
+        <td><code>&#39;240px&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>tooltip_max_width</code></td>
+        <td><code>str</code></td>
+        <td><p>Maximum width of tooltip (CSS value, default "240px").</p></td>
+        <td><code>&#39;240px&#39;</code></td>
       </tr>
       <tr>
         <td><code>name</code></td>
@@ -10698,7 +10755,8 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 <p><strong>Examples:</strong></p>
     <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">Map</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_marker</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">,</span> <span class="n">popup</span><span class="o">=</span><span class="s2">&quot;San Francisco&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_marker</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">,</span> <span class="n">popup</span><span class="o">=</span><span class="s2">&quot;San Francisco&quot;</span><span class="p">,</span> <span class="n">tooltip</span><span class="o">=</span><span class="s2">&quot;Hover me!&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_marker</span><span class="p">(</span><span class="o">-</span><span class="mf">122.5</span><span class="p">,</span> <span class="mf">37.7</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#ff0000&quot;</span><span class="p">)</span>
 </code></pre></div>
 
         <details class="quote">
@@ -10708,8 +10766,12 @@ For URLs, the data is loaded directly via streaming when possible.</p>
     <span class="n">lng</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">lat</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">popup</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tooltip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
     <span class="n">draggable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">popup_max_width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;240px&quot;</span><span class="p">,</span>
+    <span class="n">tooltip_max_width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;240px&quot;</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -10718,9 +10780,13 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 <span class="sd">    Args:</span>
 <span class="sd">        lng: Longitude of the marker.</span>
 <span class="sd">        lat: Latitude of the marker.</span>
-<span class="sd">        popup: Optional popup HTML content.</span>
+<span class="sd">        popup: Optional popup HTML content (shown on click).</span>
+<span class="sd">        tooltip: Optional tooltip HTML content (shown on hover).</span>
 <span class="sd">        color: Marker color as hex string.</span>
 <span class="sd">        draggable: Whether the marker can be dragged.</span>
+<span class="sd">        scale: Marker size multiplier (default 1.0, range 0.1 to 3.0).</span>
+<span class="sd">        popup_max_width: Maximum width of popup (CSS value, default &quot;240px&quot;).</span>
+<span class="sd">        tooltip_max_width: Maximum width of tooltip (CSS value, default &quot;240px&quot;).</span>
 <span class="sd">        name: Marker identifier. If None, auto-generated.</span>
 <span class="sd">        **kwargs: Additional marker options.</span>
 
@@ -10730,7 +10796,8 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 <span class="sd">    Example:</span>
 <span class="sd">        &gt;&gt;&gt; from anymap_ts import Map</span>
 <span class="sd">        &gt;&gt;&gt; m = Map(center=[-122.4, 37.8], zoom=10)</span>
-<span class="sd">        &gt;&gt;&gt; m.add_marker(-122.4, 37.8, popup=&quot;San Francisco&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; m.add_marker(-122.4, 37.8, popup=&quot;San Francisco&quot;, tooltip=&quot;Hover me!&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; m.add_marker(-122.5, 37.7, scale=1.5, color=&quot;#ff0000&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">marker_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;marker-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
@@ -10740,8 +10807,12 @@ For URLs, the data is loaded directly via streaming when possible.</p>
         <span class="n">lat</span><span class="p">,</span>
         <span class="nb">id</span><span class="o">=</span><span class="n">marker_id</span><span class="p">,</span>
         <span class="n">popup</span><span class="o">=</span><span class="n">popup</span><span class="p">,</span>
+        <span class="n">tooltip</span><span class="o">=</span><span class="n">tooltip</span><span class="p">,</span>
         <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
         <span class="n">draggable</span><span class="o">=</span><span class="n">draggable</span><span class="p">,</span>
+        <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+        <span class="n">popupMaxWidth</span><span class="o">=</span><span class="n">popup_max_width</span><span class="p">,</span>
+        <span class="n">tooltipMaxWidth</span><span class="o">=</span><span class="n">tooltip_max_width</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -10768,7 +10839,7 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 
 
 <h3 id="anymap_ts.maplibre.MapLibreMap.add_markers" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_markers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">lng_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lat_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">popup_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#3388ff&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_markers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">lng_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lat_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">popup_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tooltip_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#3388ff&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">popup_max_width</span><span class="o">=</span><span class="s1">&#39;240px&#39;</span><span class="p">,</span> <span class="n">tooltip_max_width</span><span class="o">=</span><span class="s1">&#39;240px&#39;</span><span class="p">,</span> <span class="n">draggable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.maplibre.MapLibreMap.add_markers" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -10812,7 +10883,13 @@ For URLs, the data is loaded directly via streaming when possible.</p>
       <tr>
         <td><code>popup_column</code></td>
         <td><code>Optional[str]</code></td>
-        <td><p>Column name for popup content.</p></td>
+        <td><p>Column name for popup content (shown on click).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>tooltip_column</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Column name for tooltip content (shown on hover).</p></td>
         <td><code>None</code></td>
       </tr>
       <tr>
@@ -10820,6 +10897,30 @@ For URLs, the data is loaded directly via streaming when possible.</p>
         <td><code>str</code></td>
         <td><p>Marker color as hex string.</p></td>
         <td><code>&#39;#3388ff&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>scale</code></td>
+        <td><code>float</code></td>
+        <td><p>Marker size multiplier (default 1.0, range 0.1 to 3.0).</p></td>
+        <td><code>1.0</code></td>
+      </tr>
+      <tr>
+        <td><code>popup_max_width</code></td>
+        <td><code>str</code></td>
+        <td><p>Maximum width of popup (CSS value, default "240px").</p></td>
+        <td><code>&#39;240px&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>tooltip_max_width</code></td>
+        <td><code>str</code></td>
+        <td><p>Maximum width of tooltip (CSS value, default "240px").</p></td>
+        <td><code>&#39;240px&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>draggable</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether markers can be dragged.</p></td>
+        <td><code>False</code></td>
       </tr>
       <tr>
         <td><code>name</code></td>
@@ -10854,10 +10955,10 @@ For URLs, the data is loaded directly via streaming when possible.</p>
     <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">Map</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">()</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">cities</span> <span class="o">=</span> <span class="p">[</span>
-<span class="o">...</span>     <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;SF&quot;</span><span class="p">,</span> <span class="s2">&quot;lng&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="mf">37.8</span><span class="p">},</span>
-<span class="o">...</span>     <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;NYC&quot;</span><span class="p">,</span> <span class="s2">&quot;lng&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">74.0</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="mf">40.7</span><span class="p">},</span>
+<span class="o">...</span>     <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;SF&quot;</span><span class="p">,</span> <span class="s2">&quot;info&quot;</span><span class="p">:</span> <span class="s2">&quot;San Francisco&quot;</span><span class="p">,</span> <span class="s2">&quot;lng&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="mf">37.8</span><span class="p">},</span>
+<span class="o">...</span>     <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;NYC&quot;</span><span class="p">,</span> <span class="s2">&quot;info&quot;</span><span class="p">:</span> <span class="s2">&quot;New York City&quot;</span><span class="p">,</span> <span class="s2">&quot;lng&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">74.0</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="mf">40.7</span><span class="p">},</span>
 <span class="o">...</span> <span class="p">]</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_markers</span><span class="p">(</span><span class="n">cities</span><span class="p">,</span> <span class="n">popup_column</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_markers</span><span class="p">(</span><span class="n">cities</span><span class="p">,</span> <span class="n">popup_column</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">tooltip_column</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
 </code></pre></div>
 
         <details class="quote">
@@ -10868,7 +10969,12 @@ For URLs, the data is loaded directly via streaming when possible.</p>
     <span class="n">lng_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">lat_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">popup_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tooltip_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">popup_max_width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;240px&quot;</span><span class="p">,</span>
+    <span class="n">tooltip_max_width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;240px&quot;</span><span class="p">,</span>
+    <span class="n">draggable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -10881,8 +10987,13 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 <span class="sd">            - GeoJSON FeatureCollection with Point features</span>
 <span class="sd">        lng_column: Column name for longitude (auto-detected if None).</span>
 <span class="sd">        lat_column: Column name for latitude (auto-detected if None).</span>
-<span class="sd">        popup_column: Column name for popup content.</span>
+<span class="sd">        popup_column: Column name for popup content (shown on click).</span>
+<span class="sd">        tooltip_column: Column name for tooltip content (shown on hover).</span>
 <span class="sd">        color: Marker color as hex string.</span>
+<span class="sd">        scale: Marker size multiplier (default 1.0, range 0.1 to 3.0).</span>
+<span class="sd">        popup_max_width: Maximum width of popup (CSS value, default &quot;240px&quot;).</span>
+<span class="sd">        tooltip_max_width: Maximum width of tooltip (CSS value, default &quot;240px&quot;).</span>
+<span class="sd">        draggable: Whether markers can be dragged.</span>
 <span class="sd">        name: Layer identifier. If None, auto-generated.</span>
 <span class="sd">        **kwargs: Additional marker options.</span>
 
@@ -10893,10 +11004,10 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 <span class="sd">        &gt;&gt;&gt; from anymap_ts import Map</span>
 <span class="sd">        &gt;&gt;&gt; m = Map()</span>
 <span class="sd">        &gt;&gt;&gt; cities = [</span>
-<span class="sd">        ...     {&quot;name&quot;: &quot;SF&quot;, &quot;lng&quot;: -122.4, &quot;lat&quot;: 37.8},</span>
-<span class="sd">        ...     {&quot;name&quot;: &quot;NYC&quot;, &quot;lng&quot;: -74.0, &quot;lat&quot;: 40.7},</span>
+<span class="sd">        ...     {&quot;name&quot;: &quot;SF&quot;, &quot;info&quot;: &quot;San Francisco&quot;, &quot;lng&quot;: -122.4, &quot;lat&quot;: 37.8},</span>
+<span class="sd">        ...     {&quot;name&quot;: &quot;NYC&quot;, &quot;info&quot;: &quot;New York City&quot;, &quot;lng&quot;: -74.0, &quot;lat&quot;: 40.7},</span>
 <span class="sd">        ... ]</span>
-<span class="sd">        &gt;&gt;&gt; m.add_markers(cities, popup_column=&quot;name&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; m.add_markers(cities, popup_column=&quot;name&quot;, tooltip_column=&quot;info&quot;, scale=1.5)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;markers-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="n">markers</span> <span class="o">=</span> <span class="p">[]</span>
@@ -10909,6 +11020,8 @@ For URLs, the data is loaded directly via streaming when possible.</p>
                 <span class="n">marker</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lngLat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">geom</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">y</span><span class="p">]}</span>
                 <span class="k">if</span> <span class="n">popup_column</span> <span class="ow">and</span> <span class="n">popup_column</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
                     <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;popup&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">popup_column</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">tooltip_column</span> <span class="ow">and</span> <span class="n">tooltip_column</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+                    <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;tooltip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">tooltip_column</span><span class="p">])</span>
                 <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
     <span class="c1"># Handle GeoJSON</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;FeatureCollection&quot;</span><span class="p">:</span>
@@ -10920,6 +11033,8 @@ For URLs, the data is loaded directly via streaming when possible.</p>
                 <span class="n">props</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="p">{})</span>
                 <span class="k">if</span> <span class="n">popup_column</span> <span class="ow">and</span> <span class="n">popup_column</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
                     <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;popup&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">props</span><span class="p">[</span><span class="n">popup_column</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">tooltip_column</span> <span class="ow">and</span> <span class="n">tooltip_column</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+                    <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;tooltip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">props</span><span class="p">[</span><span class="n">tooltip_column</span><span class="p">])</span>
                 <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
     <span class="c1"># Handle list of dicts</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
@@ -10954,6 +11069,8 @@ For URLs, the data is loaded directly via streaming when possible.</p>
                 <span class="n">marker</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lngLat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">lng_val</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_val</span><span class="p">)]}</span>
                 <span class="k">if</span> <span class="n">popup_column</span> <span class="ow">and</span> <span class="n">popup_column</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
                     <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;popup&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="n">popup_column</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">tooltip_column</span> <span class="ow">and</span> <span class="n">tooltip_column</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+                    <span class="n">marker</span><span class="p">[</span><span class="s2">&quot;tooltip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="n">tooltip_column</span><span class="p">])</span>
                 <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">markers</span><span class="p">:</span>
@@ -10964,6 +11081,10 @@ For URLs, the data is loaded directly via streaming when possible.</p>
         <span class="nb">id</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
         <span class="n">markers</span><span class="o">=</span><span class="n">markers</span><span class="p">,</span>
         <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+        <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+        <span class="n">popupMaxWidth</span><span class="o">=</span><span class="n">popup_max_width</span><span class="p">,</span>
+        <span class="n">tooltipMaxWidth</span><span class="o">=</span><span class="n">tooltip_max_width</span><span class="p">,</span>
+        <span class="n">draggable</span><span class="o">=</span><span class="n">draggable</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span>
 
