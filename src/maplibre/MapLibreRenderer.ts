@@ -94,6 +94,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private markersMap: globalThis.Map<string, Marker> = new globalThis.Map();
   private popupsMap: globalThis.Map<string, Popup> = new globalThis.Map();
   private controlsMap: globalThis.Map<string, maplibregl.IControl> = new globalThis.Map();
+  private legendsMap: globalThis.Map<string, HTMLElement> = new globalThis.Map();
   private geoEditorPlugin: GeoEditorPlugin | null = null;
   private layerControlPlugin: LayerControlPlugin | null = null;
   private resizeObserver: ResizeObserver | null = null;
@@ -346,6 +347,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addMarkers', this.handleAddMarkers.bind(this));
     this.registerMethod('removeMarker', this.handleRemoveMarker.bind(this));
     this.registerMethod('addPopup', this.handleAddPopup.bind(this));
+
+    // Legend
+    this.registerMethod('addLegend', this.handleAddLegend.bind(this));
+    this.registerMethod('removeLegend', this.handleRemoveLegend.bind(this));
 
     // Terrain
     this.registerMethod('addTerrain', this.handleAddTerrain.bind(this));
@@ -1262,6 +1267,105 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.map.on('mouseleave', layerId, () => {
       if (this.map) this.map.getCanvas().style.cursor = '';
     });
+  }
+
+  private handleAddLegend(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const legendId = (kwargs.id as string) || `legend-${Date.now()}`;
+    const title = (kwargs.title as string) || 'Legend';
+    const items = kwargs.items as Array<{ label: string; color: string }> || [];
+    const position = (kwargs.position as string) || 'bottom-right';
+    const opacity = (kwargs.opacity as number) ?? 1.0;
+
+    // Remove existing legend with the same ID
+    if (this.legendsMap.has(legendId)) {
+      this.handleRemoveLegend([legendId], {});
+    }
+
+    // Create legend container
+    const legendDiv = document.createElement('div');
+    legendDiv.id = legendId;
+    legendDiv.className = 'maplibregl-ctrl legend-control';
+    legendDiv.style.cssText = `
+      background: rgba(255, 255, 255, ${opacity});
+      padding: 10px 14px;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 200px;
+    `;
+
+    // Add title
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-weight: bold; margin-bottom: 8px; font-size: 13px; color: #333;';
+    titleEl.textContent = title;
+    legendDiv.appendChild(titleEl);
+
+    // Add items
+    for (const item of items) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display: flex; align-items: center; margin-bottom: 4px;';
+
+      const colorBox = document.createElement('span');
+      colorBox.style.cssText = `
+        width: 16px;
+        height: 16px;
+        background-color: ${item.color};
+        margin-right: 8px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      `;
+      row.appendChild(colorBox);
+
+      const label = document.createElement('span');
+      label.style.color = '#333';
+      label.textContent = item.label;
+      row.appendChild(label);
+
+      legendDiv.appendChild(row);
+    }
+
+    // Get the appropriate control container
+    const container = this.map.getContainer();
+    const positionClass = `maplibregl-ctrl-${position}`;
+    let controlContainer = container.querySelector(`.${positionClass}`) as HTMLElement;
+    if (!controlContainer) {
+      // Create container if it doesn't exist
+      const controlWrapper = container.querySelector('.maplibregl-control-container');
+      if (controlWrapper) {
+        controlContainer = document.createElement('div');
+        controlContainer.className = `maplibregl-ctrl-${position.split('-')[0]} ${positionClass}`;
+        controlWrapper.appendChild(controlContainer);
+      }
+    }
+    if (controlContainer) {
+      controlContainer.appendChild(legendDiv);
+    }
+
+    this.legendsMap.set(legendId, legendDiv);
+  }
+
+  private handleRemoveLegend(args: unknown[], kwargs: Record<string, unknown>): void {
+    const legendId = args[0] as string | undefined;
+
+    if (legendId) {
+      // Remove specific legend
+      const legendDiv = this.legendsMap.get(legendId);
+      if (legendDiv && legendDiv.parentNode) {
+        legendDiv.parentNode.removeChild(legendDiv);
+      }
+      this.legendsMap.delete(legendId);
+    } else {
+      // Remove all legends
+      for (const [id, legendDiv] of this.legendsMap) {
+        if (legendDiv.parentNode) {
+          legendDiv.parentNode.removeChild(legendDiv);
+        }
+      }
+      this.legendsMap.clear();
+    }
   }
 
   private handleAddTerrain(args: unknown[], kwargs: Record<string, unknown>): void {
