@@ -347,7 +347,8 @@
                         container.className = 'maplibregl-ctrl-' + position.split('-')[0] + ' ' + positionClass;
                         document.querySelector('.maplibregl-control-container').appendChild(container);
                     }
-                    container.appendChild(legendDiv);
+                    // Insert at beginning so legend appears above attribution
+                    container.insertBefore(legendDiv, container.firstChild);
                     break;
                 }
 

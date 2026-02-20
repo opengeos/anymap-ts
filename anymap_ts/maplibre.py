@@ -3462,7 +3462,7 @@ class MapLibreMap(MapWidget):
                         container.className = 'maplibregl-ctrl-' + legendPosition.split('-')[0] + ' ' + positionClass;
                         document.querySelector('.maplibregl-control-container').appendChild(container);
                     }
-                    container.appendChild(legendDiv);
+                    container.insertBefore(legendDiv, container.firstChild);
                     break;
                 }
 

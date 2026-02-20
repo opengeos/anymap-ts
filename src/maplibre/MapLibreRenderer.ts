@@ -1341,7 +1341,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       }
     }
     if (controlContainer) {
-      controlContainer.appendChild(legendDiv);
+      // Insert at beginning so legend appears above attribution
+      controlContainer.insertBefore(legendDiv, controlContainer.firstChild);
     }
 
     this.legendsMap.set(legendId, legendDiv);
