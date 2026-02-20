@@ -1063,15 +1063,32 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         closeButton: false,
         closeOnClick: false,
         maxWidth: tooltipMaxWidth,
+        offset: [0, -30 * scale], // Offset above the marker based on scale
+        anchor: 'bottom',
       });
       tooltipPopup.setHTML(tooltip);
 
       const markerElement = marker.getElement();
+      let isHovering = false;
+
       markerElement.addEventListener('mouseenter', () => {
+        isHovering = true;
         tooltipPopup.setLngLat([lng, lat]).addTo(this.map!);
       });
-      markerElement.addEventListener('mouseleave', () => {
+
+      markerElement.addEventListener('mouseleave', (e: MouseEvent) => {
+        // Check if we're moving to the popup itself
+        const relatedTarget = e.relatedTarget as HTMLElement;
+        if (relatedTarget?.closest('.maplibregl-popup')) {
+          return;
+        }
+        isHovering = false;
         tooltipPopup.remove();
+      });
+
+      // Also handle leaving the popup
+      tooltipPopup.on('close', () => {
+        isHovering = false;
       });
     }
 
@@ -1129,16 +1146,33 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
           closeButton: false,
           closeOnClick: false,
           maxWidth: tooltipMaxWidth,
+          offset: [0, -30 * scale], // Offset above the marker based on scale
+          anchor: 'bottom',
         });
         tooltipPopup.setHTML(markerData.tooltip);
 
         const markerElement = marker.getElement();
         const [lng, lat] = markerData.lngLat;
+        let isHovering = false;
+
         markerElement.addEventListener('mouseenter', () => {
+          isHovering = true;
           tooltipPopup.setLngLat([lng, lat]).addTo(this.map!);
         });
-        markerElement.addEventListener('mouseleave', () => {
+
+        markerElement.addEventListener('mouseleave', (e: MouseEvent) => {
+          // Check if we're moving to the popup itself
+          const relatedTarget = e.relatedTarget as HTMLElement;
+          if (relatedTarget?.closest('.maplibregl-popup')) {
+            return;
+          }
+          isHovering = false;
           tooltipPopup.remove();
+        });
+
+        // Also handle leaving the popup
+        tooltipPopup.on('close', () => {
+          isHovering = false;
         });
       }
 
