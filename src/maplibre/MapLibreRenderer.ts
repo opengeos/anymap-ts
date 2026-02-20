@@ -1039,17 +1039,62 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // Marker handlers
   // -------------------------------------------------------------------------
 
+  // Helper to wrap popup/tooltip content with contrast-safe styling
+  private wrapWithContrastStyle(content: string): string {
+    return `<div style="color: #333; background: #fff; margin: -10px -10px -15px; padding: 6px 10px 10px;">${content}</div>`;
+  }
+
   private handleAddMarker(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const [lng, lat] = args as [number, number];
     const id = (kwargs.id as string) || `marker-${Date.now()}`;
     const color = (kwargs.color as string) || '#3388ff';
     const popup = kwargs.popup as string | undefined;
+    const tooltip = kwargs.tooltip as string | undefined;
+    const scale = (kwargs.scale as number) ?? 1.0;
+    const popupMaxWidth = (kwargs.popupMaxWidth as string) || '240px';
+    const tooltipMaxWidth = (kwargs.tooltipMaxWidth as string) || '240px';
+    const draggable = (kwargs.draggable as boolean) || false;
 
-    const marker = new Marker({ color }).setLngLat([lng, lat]);
+    const marker = new Marker({ color, scale, draggable }).setLngLat([lng, lat]);
 
     if (popup) {
-      marker.setPopup(new Popup().setHTML(popup));
+      marker.setPopup(new Popup({ maxWidth: popupMaxWidth }).setHTML(this.wrapWithContrastStyle(popup)));
+    }
+
+    // Add tooltip (shown on hover)
+    if (tooltip) {
+      const tooltipPopup = new Popup({
+        closeButton: false,
+        closeOnClick: false,
+        maxWidth: tooltipMaxWidth,
+        offset: [0, -30 * scale], // Offset above the marker based on scale
+        anchor: 'bottom',
+      });
+      tooltipPopup.setHTML(this.wrapWithContrastStyle(tooltip));
+
+      const markerElement = marker.getElement();
+      let isHovering = false;
+
+      markerElement.addEventListener('mouseenter', () => {
+        isHovering = true;
+        tooltipPopup.setLngLat([lng, lat]).addTo(this.map!);
+      });
+
+      markerElement.addEventListener('mouseleave', (e: MouseEvent) => {
+        // Check if we're moving to the popup itself
+        const relatedTarget = e.relatedTarget as HTMLElement;
+        if (relatedTarget?.closest('.maplibregl-popup')) {
+          return;
+        }
+        isHovering = false;
+        tooltipPopup.remove();
+      });
+
+      // Also handle leaving the popup
+      tooltipPopup.on('close', () => {
+        isHovering = false;
+      });
     }
 
     marker.addTo(this.map);
@@ -1068,8 +1113,19 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private handleAddMarkers(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const id = (kwargs.id as string) || `markers-${Date.now()}`;
-    const markers = kwargs.markers as Array<{ lngLat: [number, number]; popup?: string }>;
+    const markers = kwargs.markers as Array<{
+      lngLat: [number, number];
+      popup?: string;
+      tooltip?: string;
+      scale?: number;
+      popupMaxWidth?: string;
+      tooltipMaxWidth?: string;
+    }>;
     const color = (kwargs.color as string) || '#3388ff';
+    const defaultScale = (kwargs.scale as number) ?? 1.0;
+    const defaultPopupMaxWidth = (kwargs.popupMaxWidth as string) || '240px';
+    const defaultTooltipMaxWidth = (kwargs.tooltipMaxWidth as string) || '240px';
+    const draggable = (kwargs.draggable as boolean) || false;
 
     if (!markers || !Array.isArray(markers)) {
       console.error('addMarkers requires markers array');
@@ -1079,10 +1135,50 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     for (let i = 0; i < markers.length; i++) {
       const markerData = markers[i];
       const markerId = `${id}-${i}`;
-      const marker = new Marker({ color }).setLngLat(markerData.lngLat);
+      const scale = markerData.scale ?? defaultScale;
+      const popupMaxWidth = markerData.popupMaxWidth || defaultPopupMaxWidth;
+      const tooltipMaxWidth = markerData.tooltipMaxWidth || defaultTooltipMaxWidth;
+
+      const marker = new Marker({ color, scale, draggable }).setLngLat(markerData.lngLat);
 
       if (markerData.popup) {
-        marker.setPopup(new Popup().setHTML(markerData.popup));
+        marker.setPopup(new Popup({ maxWidth: popupMaxWidth }).setHTML(this.wrapWithContrastStyle(markerData.popup)));
+      }
+
+      // Add tooltip (shown on hover)
+      if (markerData.tooltip) {
+        const tooltipPopup = new Popup({
+          closeButton: false,
+          closeOnClick: false,
+          maxWidth: tooltipMaxWidth,
+          offset: [0, -30 * scale], // Offset above the marker based on scale
+          anchor: 'bottom',
+        });
+        tooltipPopup.setHTML(this.wrapWithContrastStyle(markerData.tooltip));
+
+        const markerElement = marker.getElement();
+        const [lng, lat] = markerData.lngLat;
+        let isHovering = false;
+
+        markerElement.addEventListener('mouseenter', () => {
+          isHovering = true;
+          tooltipPopup.setLngLat([lng, lat]).addTo(this.map!);
+        });
+
+        markerElement.addEventListener('mouseleave', (e: MouseEvent) => {
+          // Check if we're moving to the popup itself
+          const relatedTarget = e.relatedTarget as HTMLElement;
+          if (relatedTarget?.closest('.maplibregl-popup')) {
+            return;
+          }
+          isHovering = false;
+          tooltipPopup.remove();
+        });
+
+        // Also handle leaving the popup
+        tooltipPopup.on('close', () => {
+          isHovering = false;
+        });
       }
 
       marker.addTo(this.map);
