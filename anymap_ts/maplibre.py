@@ -3367,6 +3367,105 @@ class MapLibreMap(MapWidget):
                     }
                     break;
 
+                case 'addMarker': {
+                    const [lng, lat] = args;
+                    const color = kwargs.color || '#3388ff';
+                    const scale = kwargs.scale || 1.0;
+                    const draggable = kwargs.draggable || false;
+                    const marker = new maplibregl.Marker({ color, scale, draggable })
+                        .setLngLat([lng, lat]);
+                    if (kwargs.popup) {
+                        const popupMaxWidth = kwargs.popupMaxWidth || '240px';
+                        marker.setPopup(new maplibregl.Popup({ maxWidth: popupMaxWidth }).setHTML(kwargs.popup));
+                    }
+                    marker.addTo(map);
+                    if (kwargs.tooltip) {
+                        const tooltipMaxWidth = kwargs.tooltipMaxWidth || '240px';
+                        const tooltipPopup = new maplibregl.Popup({
+                            closeButton: false,
+                            closeOnClick: false,
+                            maxWidth: tooltipMaxWidth
+                        });
+                        const markerEl = marker.getElement();
+                        markerEl.addEventListener('mouseenter', () => {
+                            tooltipPopup.setLngLat([lng, lat]).setHTML(kwargs.tooltip).addTo(map);
+                        });
+                        markerEl.addEventListener('mouseleave', () => {
+                            tooltipPopup.remove();
+                        });
+                    }
+                    break;
+                }
+
+                case 'addMarkers': {
+                    const markers = kwargs.markers || [];
+                    const color = kwargs.color || '#3388ff';
+                    const scale = kwargs.scale || 1.0;
+                    const draggable = kwargs.draggable || false;
+                    const popupMaxWidth = kwargs.popupMaxWidth || '240px';
+                    const tooltipMaxWidth = kwargs.tooltipMaxWidth || '240px';
+                    for (const m of markers) {
+                        const [lng, lat] = m.lngLat;
+                        const marker = new maplibregl.Marker({ color, scale, draggable })
+                            .setLngLat([lng, lat]);
+                        if (m.popup) {
+                            marker.setPopup(new maplibregl.Popup({ maxWidth: popupMaxWidth }).setHTML(m.popup));
+                        }
+                        marker.addTo(map);
+                        if (m.tooltip) {
+                            const tooltipPopup = new maplibregl.Popup({
+                                closeButton: false,
+                                closeOnClick: false,
+                                maxWidth: tooltipMaxWidth
+                            });
+                            const markerEl = marker.getElement();
+                            markerEl.addEventListener('mouseenter', () => {
+                                tooltipPopup.setLngLat([lng, lat]).setHTML(m.tooltip).addTo(map);
+                            });
+                            markerEl.addEventListener('mouseleave', () => {
+                                tooltipPopup.remove();
+                            });
+                        }
+                    }
+                    break;
+                }
+
+                case 'addLegend': {
+                    const legendId = kwargs.id || 'legend';
+                    const title = kwargs.title || 'Legend';
+                    const items = kwargs.items || [];
+                    const legendPosition = kwargs.position || 'bottom-right';
+                    const opacity = kwargs.opacity !== undefined ? kwargs.opacity : 1.0;
+                    const legendDiv = document.createElement('div');
+                    legendDiv.id = legendId;
+                    legendDiv.className = 'maplibregl-ctrl legend-control';
+                    legendDiv.style.cssText = 'background: rgba(255, 255, 255, ' + opacity + '); padding: 10px 14px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 12px; line-height: 1.4; max-width: 200px;';
+                    const titleEl = document.createElement('div');
+                    titleEl.style.cssText = 'font-weight: bold; margin-bottom: 8px; font-size: 13px;';
+                    titleEl.textContent = title;
+                    legendDiv.appendChild(titleEl);
+                    for (const item of items) {
+                        const row = document.createElement('div');
+                        row.style.cssText = 'display: flex; align-items: center; margin-bottom: 4px;';
+                        const colorBox = document.createElement('span');
+                        colorBox.style.cssText = 'width: 16px; height: 16px; background-color: ' + item.color + '; margin-right: 8px; border-radius: 2px; flex-shrink: 0;';
+                        row.appendChild(colorBox);
+                        const label = document.createElement('span');
+                        label.textContent = item.label;
+                        row.appendChild(label);
+                        legendDiv.appendChild(row);
+                    }
+                    const positionClass = 'maplibregl-ctrl-' + legendPosition;
+                    let container = document.querySelector('.' + positionClass);
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.className = 'maplibregl-ctrl-' + legendPosition.split('-')[0] + ' ' + positionClass;
+                        document.querySelector('.maplibregl-control-container').appendChild(container);
+                    }
+                    container.appendChild(legendDiv);
+                    break;
+                }
+
                 case 'flyTo':
                     map.flyTo({
                         center: [args[0], args[1]],
