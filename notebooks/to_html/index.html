@@ -2119,6 +2119,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#markers-and-legend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Markers and Legend
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3028,6 +3039,96 @@ m</div>
 </div>
 </div>
 </div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="markers-and-legend">Markers and Legend<a class="anchor-link" href="#markers-and-legend">¶</a></h2><p>Add multiple markers and a legend to the map, then export to HTML.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">Map</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">98</span><span class="p">,</span> <span class="mf">38.5</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="c1"># Add a single marker with popup and tooltip</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_marker</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">,</span> <span class="n">popup</span><span class="o">=</span><span class="s2">"San Francisco"</span><span class="p">,</span> <span class="n">tooltip</span><span class="o">=</span><span class="s2">"Hover me!"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"#0000ff"</span><span class="p">)</span>
+
+<span class="c1"># Add multiple markers from a list of dictionaries</span>
+<span class="n">cities</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"New York"</span><span class="p">,</span> <span class="s2">"lng"</span><span class="p">:</span> <span class="o">-</span><span class="mf">74.0</span><span class="p">,</span> <span class="s2">"lat"</span><span class="p">:</span> <span class="mf">40.7</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Chicago"</span><span class="p">,</span> <span class="s2">"lng"</span><span class="p">:</span> <span class="o">-</span><span class="mf">87.6</span><span class="p">,</span> <span class="s2">"lat"</span><span class="p">:</span> <span class="mf">41.9</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Los Angeles"</span><span class="p">,</span> <span class="s2">"lng"</span><span class="p">:</span> <span class="o">-</span><span class="mf">118.2</span><span class="p">,</span> <span class="s2">"lat"</span><span class="p">:</span> <span class="mf">34.1</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Seattle"</span><span class="p">,</span> <span class="s2">"lng"</span><span class="p">:</span> <span class="o">-</span><span class="mf">122.3</span><span class="p">,</span> <span class="s2">"lat"</span><span class="p">:</span> <span class="mf">47.6</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_markers</span><span class="p">(</span><span class="n">cities</span><span class="p">,</span> <span class="n">popup_column</span><span class="o">=</span><span class="s2">"name"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"#ff6600"</span><span class="p">)</span>
+
+<span class="c1"># Add a legend</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_legend</span><span class="p">(</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Land Cover"</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">"Forest"</span><span class="p">,</span> <span class="s2">"Water"</span><span class="p">,</span> <span class="s2">"Urban"</span><span class="p">],</span>
+    <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="s2">"#228822"</span><span class="p">,</span> <span class="s2">"#0000FF"</span><span class="p">,</span> <span class="s2">"#808080"</span><span class="p">],</span>
+    <span class="n">position</span><span class="o">=</span><span class="s2">"bottom-right"</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Export to HTML - markers and legend will be preserved</span>
+<span class="n">m</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="s2">"markers_legend.html"</span><span class="p">)</span>
+<span class="n">m</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-2">from anymap_ts import Map
+
+m = Map(center=[-98, 38.5], zoom=4)
+
+# Add a single marker with popup and tooltip
+m.add_marker(-122.4, 37.8, popup="San Francisco", tooltip="Hover me!", color="#0000ff")
+
+# Add multiple markers from a list of dictionaries
+cities = [
+    {"name": "New York", "lng": -74.0, "lat": 40.7},
+    {"name": "Chicago", "lng": -87.6, "lat": 41.9},
+    {"name": "Los Angeles", "lng": -118.2, "lat": 34.1},
+    {"name": "Seattle", "lng": -122.3, "lat": 47.6},
+]
+m.add_markers(cities, popup_column="name", color="#ff6600")
+
+# Add a legend
+m.add_legend(
+    title="Land Cover",
+    labels=["Forest", "Water", "Urban"],
+    colors=["#228822", "#0000FF", "#808080"],
+    position="bottom-right",
+)
+
+# Export to HTML - markers and legend will be preserved
+m.to_html("markers_legend.html")
+m</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </div> <!-- jp-Notebook -->
 </div> <!-- jupyter-wrapper -->
 
@@ -3057,7 +3158,7 @@ m</div>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 16, 2026 02:59:53 UTC"><span class="timeago" datetime="2026-02-16T02:59:53+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 16, 2026 02:59:53 UTC">2026-02-16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 20, 2026 19:42:22 UTC"><span class="timeago" datetime="2026-02-20T19:42:22+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 20, 2026 19:42:22 UTC">2026-02-20</span>
   </span>
 
     

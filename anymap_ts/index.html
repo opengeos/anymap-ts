@@ -29582,10 +29582,13 @@ full bidirectional communication through anywidget.</p>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate standalone HTML for the map.&quot;&quot;&quot;</span>
         <span class="n">template_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;templates&quot;</span> <span class="o">/</span> <span class="s2">&quot;maplibre.html&quot;</span>
 
-        <span class="k">if</span> <span class="n">template_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="n">template</span> <span class="o">=</span> <span class="n">template_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_template</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">template_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;HTML template not found at </span><span class="si">{</span><span class="n">template_path</span><span class="si">}</span><span class="s2">. &quot;</span>
+                <span class="s2">&quot;Please ensure the templates directory is included in the package.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">template</span> <span class="o">=</span> <span class="n">template_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
 
         <span class="c1"># Serialize state</span>
         <span class="n">state</span> <span class="o">=</span> <span class="p">{</span>
@@ -29604,162 +29607,6 @@ full bidirectional communication through anywidget.</p>
 
         <span class="n">template</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{{state}}&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">template</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_template</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get default HTML template.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;&lt;!DOCTYPE html&gt;</span>
-<span class="s2">&lt;html&gt;</span>
-<span class="s2">&lt;head&gt;</span>
-<span class="s2">    &lt;meta charset=&quot;utf-8&quot;&gt;</span>
-<span class="s2">    &lt;title&gt;{{title}}&lt;/title&gt;</span>
-<span class="s2">    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;</span>
-<span class="s2">    &lt;script src=&quot;https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js&quot;&gt;&lt;/script&gt;</span>
-<span class="s2">    &lt;link href=&quot;https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css&quot; rel=&quot;stylesheet&quot; /&gt;</span>
-<span class="s2">    &lt;style&gt;</span>
-<span class="s2">        body { margin: 0; padding: 0; }</span>
-<span class="s2">        #map { position: absolute; top: 0; bottom: 0; width: 100%; }</span>
-<span class="s2">    &lt;/style&gt;</span>
-<span class="s2">&lt;/head&gt;</span>
-<span class="s2">&lt;body&gt;</span>
-<span class="s2">    &lt;div id=&quot;map&quot;&gt;&lt;/div&gt;</span>
-<span class="s2">    &lt;script&gt;</span>
-<span class="s2">        const state = {{state}};</span>
-
-<span class="s2">        const map = new maplibregl.Map({</span>
-<span class="s2">            container: &#39;map&#39;,</span>
-<span class="s2">            style: state.style,</span>
-<span class="s2">            center: state.center,</span>
-<span class="s2">            zoom: state.zoom,</span>
-<span class="s2">            bearing: state.bearing || 0,</span>
-<span class="s2">            pitch: state.pitch || 0</span>
-<span class="s2">        });</span>
-
-<span class="s2">        map.on(&#39;load&#39;, function() {</span>
-<span class="s2">            // Replay JS calls</span>
-<span class="s2">            for (const call of state.js_calls || []) {</span>
-<span class="s2">                try {</span>
-<span class="s2">                    executeMethod(call.method, call.args, call.kwargs);</span>
-<span class="s2">                } catch (e) {</span>
-<span class="s2">                    console.error(&#39;Error executing&#39;, call.method, e);</span>
-<span class="s2">                }</span>
-<span class="s2">            }</span>
-<span class="s2">        });</span>
-
-<span class="s2">        function executeMethod(method, args, kwargs) {</span>
-<span class="s2">            switch (method) {</span>
-<span class="s2">                case &#39;addBasemap&#39;:</span>
-<span class="s2">                    const url = args[0];</span>
-<span class="s2">                    const name = kwargs.name || &#39;basemap&#39;;</span>
-<span class="s2">                    const sourceId = &#39;basemap-&#39; + name;</span>
-<span class="s2">                    if (!map.getSource(sourceId)) {</span>
-<span class="s2">                        map.addSource(sourceId, {</span>
-<span class="s2">                            type: &#39;raster&#39;,</span>
-<span class="s2">                            tiles: [url],</span>
-<span class="s2">                            tileSize: 256,</span>
-<span class="s2">                            attribution: kwargs.attribution || &#39;&#39;</span>
-<span class="s2">                        });</span>
-<span class="s2">                    }</span>
-<span class="s2">                    if (!map.getLayer(sourceId)) {</span>
-<span class="s2">                        map.addLayer({</span>
-<span class="s2">                            id: sourceId,</span>
-<span class="s2">                            type: &#39;raster&#39;,</span>
-<span class="s2">                            source: sourceId</span>
-<span class="s2">                        });</span>
-<span class="s2">                    }</span>
-<span class="s2">                    break;</span>
-
-<span class="s2">                case &#39;addGeoJSON&#39;:</span>
-<span class="s2">                    const layerName = kwargs.name;</span>
-<span class="s2">                    const sourceIdGeo = layerName + &#39;-source&#39;;</span>
-<span class="s2">                    if (!map.getSource(sourceIdGeo)) {</span>
-<span class="s2">                        map.addSource(sourceIdGeo, {</span>
-<span class="s2">                            type: &#39;geojson&#39;,</span>
-<span class="s2">                            data: kwargs.data</span>
-<span class="s2">                        });</span>
-<span class="s2">                    }</span>
-<span class="s2">                    if (!map.getLayer(layerName)) {</span>
-<span class="s2">                        map.addLayer({</span>
-<span class="s2">                            id: layerName,</span>
-<span class="s2">                            type: kwargs.layerType || &#39;circle&#39;,</span>
-<span class="s2">                            source: sourceIdGeo,</span>
-<span class="s2">                            paint: kwargs.paint || </span><span class="si">{}</span>
-<span class="s2">                        });</span>
-<span class="s2">                    }</span>
-<span class="s2">                    if (kwargs.fitBounds &amp;&amp; kwargs.bounds) {</span>
-<span class="s2">                        map.fitBounds([</span>
-<span class="s2">                            [kwargs.bounds[0], kwargs.bounds[1]],</span>
-<span class="s2">                            [kwargs.bounds[2], kwargs.bounds[3]]</span>
-<span class="s2">                        ], { padding: 50 });</span>
-<span class="s2">                    }</span>
-<span class="s2">                    break;</span>
-
-<span class="s2">                case &#39;addTileLayer&#39;:</span>
-<span class="s2">                    const tileUrl = args[0];</span>
-<span class="s2">                    const tileName = kwargs.name;</span>
-<span class="s2">                    const tileSourceId = tileName + &#39;-source&#39;;</span>
-<span class="s2">                    if (!map.getSource(tileSourceId)) {</span>
-<span class="s2">                        map.addSource(tileSourceId, {</span>
-<span class="s2">                            type: &#39;raster&#39;,</span>
-<span class="s2">                            tiles: [tileUrl],</span>
-<span class="s2">                            tileSize: 256,</span>
-<span class="s2">                            attribution: kwargs.attribution || &#39;&#39;</span>
-<span class="s2">                        });</span>
-<span class="s2">                    }</span>
-<span class="s2">                    if (!map.getLayer(tileName)) {</span>
-<span class="s2">                        map.addLayer({</span>
-<span class="s2">                            id: tileName,</span>
-<span class="s2">                            type: &#39;raster&#39;,</span>
-<span class="s2">                            source: tileSourceId</span>
-<span class="s2">                        });</span>
-<span class="s2">                    }</span>
-<span class="s2">                    break;</span>
-
-<span class="s2">                case &#39;addControl&#39;:</span>
-<span class="s2">                    const controlType = args[0];</span>
-<span class="s2">                    const position = kwargs.position || &#39;top-right&#39;;</span>
-<span class="s2">                    let control;</span>
-<span class="s2">                    switch (controlType) {</span>
-<span class="s2">                        case &#39;navigation&#39;:</span>
-<span class="s2">                            control = new maplibregl.NavigationControl();</span>
-<span class="s2">                            break;</span>
-<span class="s2">                        case &#39;scale&#39;:</span>
-<span class="s2">                            control = new maplibregl.ScaleControl();</span>
-<span class="s2">                            break;</span>
-<span class="s2">                        case &#39;fullscreen&#39;:</span>
-<span class="s2">                            control = new maplibregl.FullscreenControl();</span>
-<span class="s2">                            break;</span>
-<span class="s2">                    }</span>
-<span class="s2">                    if (control) {</span>
-<span class="s2">                        map.addControl(control, position);</span>
-<span class="s2">                    }</span>
-<span class="s2">                    break;</span>
-
-<span class="s2">                case &#39;flyTo&#39;:</span>
-<span class="s2">                    map.flyTo({</span>
-<span class="s2">                        center: [args[0], args[1]],</span>
-<span class="s2">                        zoom: kwargs.zoom,</span>
-<span class="s2">                        duration: kwargs.duration || 2000</span>
-<span class="s2">                    });</span>
-<span class="s2">                    break;</span>
-
-<span class="s2">                case &#39;fitBounds&#39;:</span>
-<span class="s2">                    const bounds = args[0];</span>
-<span class="s2">                    map.fitBounds([</span>
-<span class="s2">                        [bounds[0], bounds[1]],</span>
-<span class="s2">                        [bounds[2], bounds[3]]</span>
-<span class="s2">                    ], {</span>
-<span class="s2">                        padding: kwargs.padding || 50,</span>
-<span class="s2">                        duration: kwargs.duration || 1000</span>
-<span class="s2">                    });</span>
-<span class="s2">                    break;</span>
-
-<span class="s2">                default:</span>
-<span class="s2">                    console.log(&#39;Unknown method:&#39;, method);</span>
-<span class="s2">            }</span>
-<span class="s2">        }</span>
-<span class="s2">    &lt;/script&gt;</span>
-<span class="s2">&lt;/body&gt;</span>
-<span class="s2">&lt;/html&gt;&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 

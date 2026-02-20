@@ -1,0 +1,17 @@
+import"./modulepreload-polyfill-B5Qt9EMX.js";/* empty css               */import{h as c}from"./maplibre-gl-C9tqRo8a.js";import{L as b}from"./maplibre-gl-layer-control-CbPNLzzp.js";import{D as w}from"./DeckLayerAdapter-kz44PQGX.js";import{M as P}from"./mapbox-overlay-B3MFwkdI.js";import{P as C}from"./path-layer-DtS7etqG.js";import"./_commonjsHelpers-Cpj98o6Y.js";import"./preload-helper-PPVm8Dsz.js";import"./cut-by-mercator-bounds-BIiGNyZq.js";import"./picking-CN0D5Hbh.js";import"./geometry-BcGx-jYG.js";const f=`uniform tripsUniforms {
+  bool fadeTrail;
+  float trailLength;
+  float currentTime;
+} trips;
+`,x={name:"trips",vs:f,fs:f,uniformTypes:{fadeTrail:"f32",trailLength:"f32",currentTime:"f32"}},A={fadeTrail:!0,trailLength:{type:"number",value:120,min:0},currentTime:{type:"number",value:0,min:0},getTimestamps:{type:"accessor",value:t=>t.timestamps}};class d extends C{getShaders(){const e=super.getShaders();return e.inject={"vs:#decl":`in float instanceTimestamps;
+in float instanceNextTimestamps;
+out float vTime;
+`,"vs:#main-end":`vTime = instanceTimestamps + (instanceNextTimestamps - instanceTimestamps) * vPathPosition.y / vPathLength;
+`,"fs:#decl":`in float vTime;
+`,"fs:#main-start":`if(vTime > trips.currentTime || (trips.fadeTrail && (vTime < trips.currentTime - trips.trailLength))) {
+  discard;
+}
+`,"fs:DECKGL_FILTER_COLOR":`if(trips.fadeTrail) {
+  color.a *= 1.0 - (trips.currentTime - vTime) / trips.trailLength;
+}
+`},e.modules=[...e.modules,x],e}initializeState(){super.initializeState(),this.getAttributeManager().addInstanced({timestamps:{size:1,accessor:"getTimestamps",shaderAttributes:{instanceTimestamps:{vertexOffset:0},instanceNextTimestamps:{vertexOffset:1}}}})}draw(e){const{fadeTrail:p,trailLength:l,currentTime:a}=this.props,L={fadeTrail:p,trailLength:l,currentTime:a};this.state.model.shaderInputs.setProps({trips:L}),super.draw(e)}}d.layerName="TripsLayer";d.defaultProps=A;const y=[{waypoints:[[-122.45,37.78],[-122.42,37.79],[-122.4,37.78],[-122.38,37.8],[-122.35,37.79]],timestamps:[0,30,60,90,120],name:"Trip 1"},{waypoints:[[-122.5,37.75],[-122.47,37.77],[-122.44,37.76],[-122.41,37.78],[-122.38,37.77]],timestamps:[10,40,70,100,130],name:"Trip 2"},{waypoints:[[-122.43,37.82],[-122.41,37.8],[-122.39,37.78],[-122.37,37.76],[-122.35,37.74]],timestamps:[20,50,80,110,140],name:"Trip 3"}],h=180,M=Math.max(...y.flatMap(t=>t.timestamps))+h,k=30;let s=0,i=0,n=0;const r=new c.Map({container:"map",style:"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",center:[-122.42,37.78],zoom:12,pitch:45});r.addControl(new c.NavigationControl,"top-right");r.addControl(new c.ScaleControl({unit:"metric"}),"bottom-right");const u=new P({layers:[]}),m=new Map,T=new w(r,u,m),o="trips-basic";function O(){u.setProps({layers:Array.from(m.values())})}function S(t){const e=m.get(o),p=e?.props?.visible??!0,l=e?.props?.opacity??1;return new d({id:o,data:y,pickable:!0,opacity:l,visible:p,getPath:a=>a.waypoints,getTimestamps:a=>a.timestamps,getColor:a=>a.color??[253,128,93],widthMinPixels:3,rounded:!0,trailLength:h,currentTime:t,fadeTrail:!0})}function g(t){m.set(o,S(t)),O()}function v(t){i||(i=t);const e=(t-i)/1e3;i=t,s=(s+e*k)%M,g(s),n=requestAnimationFrame(v)}r.on("load",()=>{r.addControl(u);const t=new b({collapsed:!0,customLayerAdapters:[T],panelWidth:360});r.addControl(t,"top-right"),g(s),T.notifyLayerAdded(o),n=requestAnimationFrame(v)});r.on("remove",()=>{n&&cancelAnimationFrame(n)});
