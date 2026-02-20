@@ -1039,6 +1039,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // Marker handlers
   // -------------------------------------------------------------------------
 
+  // Helper to wrap popup/tooltip content with contrast-safe styling
+  private wrapWithContrastStyle(content: string): string {
+    return `<div style="color: #333; background: #fff; padding: 4px;">${content}</div>`;
+  }
+
   private handleAddMarker(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const [lng, lat] = args as [number, number];
@@ -1054,7 +1059,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const marker = new Marker({ color, scale, draggable }).setLngLat([lng, lat]);
 
     if (popup) {
-      marker.setPopup(new Popup({ maxWidth: popupMaxWidth }).setHTML(popup));
+      marker.setPopup(new Popup({ maxWidth: popupMaxWidth }).setHTML(this.wrapWithContrastStyle(popup)));
     }
 
     // Add tooltip (shown on hover)
@@ -1066,7 +1071,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         offset: [0, -30 * scale], // Offset above the marker based on scale
         anchor: 'bottom',
       });
-      tooltipPopup.setHTML(tooltip);
+      tooltipPopup.setHTML(this.wrapWithContrastStyle(tooltip));
 
       const markerElement = marker.getElement();
       let isHovering = false;
@@ -1137,7 +1142,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const marker = new Marker({ color, scale, draggable }).setLngLat(markerData.lngLat);
 
       if (markerData.popup) {
-        marker.setPopup(new Popup({ maxWidth: popupMaxWidth }).setHTML(markerData.popup));
+        marker.setPopup(new Popup({ maxWidth: popupMaxWidth }).setHTML(this.wrapWithContrastStyle(markerData.popup)));
       }
 
       // Add tooltip (shown on hover)
@@ -1149,7 +1154,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
           offset: [0, -30 * scale], // Offset above the marker based on scale
           anchor: 'bottom',
         });
-        tooltipPopup.setHTML(markerData.tooltip);
+        tooltipPopup.setHTML(this.wrapWithContrastStyle(markerData.tooltip));
 
         const markerElement = marker.getElement();
         const [lng, lat] = markerData.lngLat;
