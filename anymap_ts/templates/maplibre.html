@@ -294,11 +294,20 @@
                     const position = kwargs.position || 'bottom-right';
                     const opacity = kwargs.opacity !== undefined ? kwargs.opacity : 1.0;
 
+                    // Parse position for absolute positioning
+                    const [vertical, horizontal] = position.split('-');
+                    let positionStyles = 'position: absolute; z-index: 1;';
+                    if (vertical === 'top') positionStyles += ' top: 10px;';
+                    else positionStyles += ' bottom: 30px;'; // Above attribution
+                    if (horizontal === 'left') positionStyles += ' left: 10px;';
+                    else positionStyles += ' right: 10px;';
+
                     // Create legend container
                     const legendDiv = document.createElement('div');
                     legendDiv.id = legendId;
-                    legendDiv.className = 'maplibregl-ctrl legend-control';
+                    legendDiv.className = 'legend-control';
                     legendDiv.style.cssText = `
+                        ${positionStyles}
                         background: rgba(255, 255, 255, ${opacity});
                         padding: 10px 14px;
                         border-radius: 4px;
@@ -338,17 +347,8 @@
                         legendDiv.appendChild(row);
                     }
 
-                    // Get the appropriate control container
-                    const positionClass = 'maplibregl-ctrl-' + position;
-                    let container = document.querySelector('.' + positionClass);
-                    if (!container) {
-                        // Create container if it doesn't exist
-                        container = document.createElement('div');
-                        container.className = 'maplibregl-ctrl-' + position.split('-')[0] + ' ' + positionClass;
-                        document.querySelector('.maplibregl-control-container').appendChild(container);
-                    }
-                    // Insert at beginning so legend appears above attribution
-                    container.insertBefore(legendDiv, container.firstChild);
+                    // Add directly to map container for absolute positioning
+                    document.getElementById('map').appendChild(legendDiv);
                     break;
                 }
 

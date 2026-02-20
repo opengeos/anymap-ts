@@ -1282,11 +1282,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.handleRemoveLegend([legendId], {});
     }
 
+    // Parse position for absolute positioning
+    const [vertical, horizontal] = position.split('-');
+    let positionStyles = 'position: absolute; z-index: 1;';
+    positionStyles += vertical === 'top' ? ' top: 10px;' : ' bottom: 30px;';
+    positionStyles += horizontal === 'left' ? ' left: 10px;' : ' right: 10px;';
+
     // Create legend container
     const legendDiv = document.createElement('div');
     legendDiv.id = legendId;
-    legendDiv.className = 'maplibregl-ctrl legend-control';
+    legendDiv.className = 'legend-control';
     legendDiv.style.cssText = `
+      ${positionStyles}
       background: rgba(255, 255, 255, ${opacity});
       padding: 10px 14px;
       border-radius: 4px;
@@ -1327,23 +1334,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       legendDiv.appendChild(row);
     }
 
-    // Get the appropriate control container
+    // Add directly to map container for absolute positioning
     const container = this.map.getContainer();
-    const positionClass = `maplibregl-ctrl-${position}`;
-    let controlContainer = container.querySelector(`.${positionClass}`) as HTMLElement;
-    if (!controlContainer) {
-      // Create container if it doesn't exist
-      const controlWrapper = container.querySelector('.maplibregl-control-container');
-      if (controlWrapper) {
-        controlContainer = document.createElement('div');
-        controlContainer.className = `maplibregl-ctrl-${position.split('-')[0]} ${positionClass}`;
-        controlWrapper.appendChild(controlContainer);
-      }
-    }
-    if (controlContainer) {
-      // Insert at beginning so legend appears above attribution
-      controlContainer.insertBefore(legendDiv, controlContainer.firstChild);
-    }
+    container.appendChild(legendDiv);
 
     this.legendsMap.set(legendId, legendDiv);
   }
