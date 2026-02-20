@@ -1289,6 +1289,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     legendDiv.style.cssText = `
       background: rgba(255, 255, 255, ${opacity});
       padding: 10px 14px;
+      margin: 0 0 10px 0;
       border-radius: 4px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.3);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
