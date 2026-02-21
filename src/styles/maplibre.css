@@ -35,22 +35,55 @@
   background-color: rgba(255, 255, 255, 0.8);
 }
 
-/* Popup styling */
+/* Popup styling — use !important to override dark mode themes */
 .maplibregl-popup-content {
   padding: 10px 15px;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #333 !important;
 }
 
 .maplibregl-popup-close-button {
   font-size: 18px;
-  color: #666;
+  color: #666 !important;
   padding: 4px 8px;
 }
 
 .maplibregl-popup-close-button:hover {
   background-color: transparent;
-  color: #333;
+  color: #333 !important;
+}
+
+/* Tooltip styling */
+.anymap-tooltip .maplibregl-popup-content {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #333 !important;
+  padding: 6px 10px;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.anymap-tooltip .maplibregl-popup-content *,
+.anymap-tooltip .maplibregl-popup-content b,
+.anymap-tooltip .maplibregl-popup-content span {
+  color: #333 !important;
+}
+
+/* Custom control styling — !important to override dark mode themes */
+.anymap-opacity-slider,
+.anymap-time-slider,
+.anymap-style-switcher,
+.anymap-coordinates {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #333 !important;
+}
+
+.anymap-opacity-slider *,
+.anymap-time-slider *,
+.anymap-style-switcher *,
+.anymap-coordinates * {
+  color: #333 !important;
 }
 
 /* Marker styling */

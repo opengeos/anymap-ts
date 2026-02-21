@@ -203,14 +203,21 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         // Restore persisted state (layers, sources) before processing new calls
         // This ensures layers are restored when map is displayed in subsequent cells
         this.restoreState();
+        // Apply initial projection from model trait (must be done after style loads)
+        const initProjection = this.model.get('projection') as string;
+        if (initProjection && initProjection !== 'mercator') {
+          try {
+            this.map!.setProjection({ type: initProjection } as maplibregl.ProjectionSpecification);
+          } catch (err) {
+            console.warn('Failed to set initial projection:', err);
+          }
+        }
         // Process any calls that were queued while waiting for map to load
         this.processPendingCalls();
-        // Force resize after load to ensure correct dimensions
-        setTimeout(() => {
-          if (this.map) {
-            this.map.resize();
-          }
-        }, 100);
+        // Resize after load to ensure correct dimensions
+        if (this.map) {
+          this.map.resize();
+        }
         resolve();
       });
     });
@@ -2463,7 +2470,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   protected handleSetProjection(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const projection = (kwargs.projection as string) || (args[0] as string) || 'mercator';
-    (this.map as any).setProjection(projection);
+    try {
+      this.map.setProjection({ type: projection } as maplibregl.ProjectionSpecification);
+    } catch (err) {
+      console.error('setProjection error:', err);
+    }
   }
 
   protected handleUpdateGeoJSONSource(args: unknown[], kwargs: Record<string, unknown>): void {
@@ -2472,7 +2483,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const data = kwargs.data;
     if (!sourceId) return;
 
-    const source = this.map.getSource(sourceId) as maplibregl.GeoJSONSource;
+    let source = this.map.getSource(sourceId) as maplibregl.GeoJSONSource;
+    if (!source && !sourceId.endsWith('-source')) {
+      source = this.map.getSource(sourceId + '-source') as maplibregl.GeoJSONSource;
+    }
     if (source && typeof source.setData === 'function') {
       source.setData(data as any);
     }
@@ -2527,18 +2541,19 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       let html = template;
 
       if (template) {
-        // Replace {property} placeholders
-        html = template.replace(/\{(\w+)\}/g, (_: string, key: string) => {
+        // Replace {property} placeholders and wrap in styled container
+        const content = template.replace(/\{(\w+)\}/g, (_: string, key: string) => {
           return props[key] !== undefined ? String(props[key]) : '';
         });
+        html = '<div style="font-size:12px;color:#333">' + content + '</div>';
       } else if (properties && properties.length > 0) {
         // Show only specified properties
-        html = '<div style="font-size:12px">' +
+        html = '<div style="font-size:12px;color:#333">' +
           properties.map(p => `<b>${p}:</b> ${props[p] !== undefined ? props[p] : 'N/A'}`).join('<br>') +
           '</div>';
       } else {
         // Show all properties
-        html = '<div style="font-size:12px">' +
+        html = '<div style="font-size:12px;color:#333">' +
           Object.entries(props).map(([k, v]) => `<b>${k}:</b> ${v}`).join('<br>') +
           '</div>';
       }
@@ -2981,28 +2996,47 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const sourceId = kwargs.sourceId as string;
     if (!sourceId) return;
 
+    let features: maplibregl.GeoJSONFeature[] = [];
+    let resolvedSourceId = sourceId;
+
+    // Try the given sourceId first
     try {
-      const features = this.map.querySourceFeatures(sourceId);
+      features = this.map.querySourceFeatures(sourceId);
+    } catch {
+      // Source doesn't exist with this ID
+    }
 
-      const geojson: FeatureCollection = {
-        type: 'FeatureCollection',
-        features: features.map(f => ({
-          type: 'Feature' as const,
-          geometry: f.geometry,
-          properties: f.properties,
-        })),
-      };
-
-      if (this.model) {
-        this.model.set('_queried_features', {
-          type: 'layer_data',
-          sourceId,
-          data: geojson,
-        });
-        this.model.save_changes();
+    // If no results, try with '-source' suffix
+    // (add_geojson creates sources as '{name}-source')
+    if (features.length === 0 && !sourceId.endsWith('-source')) {
+      const altSourceId = sourceId + '-source';
+      try {
+        const altFeatures = this.map.querySourceFeatures(altSourceId);
+        if (altFeatures.length > 0) {
+          features = altFeatures;
+          resolvedSourceId = altSourceId;
+        }
+      } catch {
+        // alt source doesn't exist either
       }
-    } catch (err) {
-      console.warn('Error getting layer data:', err);
+    }
+
+    const geojson: FeatureCollection = {
+      type: 'FeatureCollection',
+      features: features.map(f => ({
+        type: 'Feature' as const,
+        geometry: f.geometry,
+        properties: f.properties,
+      })),
+    };
+
+    if (this.model) {
+      this.model.set('_queried_features', {
+        type: 'layer_data',
+        sourceId: resolvedSourceId,
+        data: geojson,
+      });
+      this.model.save_changes();
     }
   }
 

@@ -16,6 +16,8 @@ import 'maplibre-gl-geo-editor/style.css';
 import 'maplibre-gl-layer-control/style.css';
 // Import LiDAR Control CSS
 import 'maplibre-gl-lidar/style.css';
+// Import custom anymap-ts styles (dark mode overrides, tooltip, controls)
+import '../styles/maplibre.css';
 
 // Register PMTiles protocol globally (must be called once before any map is created)
 const pmtilesProtocol = new Protocol();

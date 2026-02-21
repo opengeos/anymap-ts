@@ -77,9 +77,7 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
    * Get all deck.gl layer IDs managed by this adapter.
    */
   getLayerIds(): string[] {
-    return Array.from(this.deckLayers.keys()).filter(id =>
-      DeckLayerAdapter.LAYER_PREFIXES.some(prefix => id.startsWith(prefix))
-    );
+    return Array.from(this.deckLayers.keys());
   }
 
   /**

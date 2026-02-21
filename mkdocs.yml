@@ -138,8 +138,12 @@ nav:
           - maplibre/cog_layer.ipynb
           - maplibre/colorbar.ipynb
           - maplibre/control_grid.ipynb
+          - maplibre/data_export.ipynb
+          - maplibre/deck_advanced_layers.ipynb
+          - maplibre/deck_layers.ipynb
           - maplibre/feature_query_filter.ipynb
           - maplibre/flatgeobuf.ipynb
+          - maplibre/globe_projection.ipynb
           - maplibre/image_overlay.ipynb
           - maplibre/layer_management.ipynb
           - maplibre/lidar_layer.ipynb
@@ -154,8 +158,11 @@ nav:
           - maplibre/search_control.ipynb
           - maplibre/sky_fog.ipynb
           - maplibre/split_map.ipynb
+          - maplibre/style_switcher.ipynb
           - maplibre/terrain_3d.ipynb
+          - maplibre/time_slider.ipynb
           - maplibre/to_html.ipynb
+          - maplibre/tooltip.ipynb
           - maplibre/ui_controls.ipynb
           - maplibre/video_layer.ipynb
           - maplibre/zarr_layer.ipynb

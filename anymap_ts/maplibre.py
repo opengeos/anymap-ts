@@ -43,6 +43,7 @@ class MapLibreMap(MapWidget):
     # MapLibre-specific traits
     bearing = traitlets.Float(0.0).tag(sync=True)
     pitch = traitlets.Float(0.0).tag(sync=True)
+    projection = traitlets.Unicode("mercator").tag(sync=True)
     antialias = traitlets.Bool(True).tag(sync=True)
     double_click_zoom = traitlets.Bool(True).tag(sync=True)
 
@@ -61,6 +62,7 @@ class MapLibreMap(MapWidget):
         bearing: float = 0.0,
         pitch: float = 0.0,
         max_pitch: float = 85.0,
+        projection: str = "mercator",
         controls: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
@@ -75,6 +77,8 @@ class MapLibreMap(MapWidget):
             bearing: Map bearing in degrees.
             pitch: Map pitch in degrees.
             max_pitch: Maximum pitch angle in degrees (default: 85).
+            projection: Map projection. Supported values: 'mercator', 'globe'.
+                Default is 'mercator'.
             controls: Dict of controls to add. If None, defaults to
                 {"layer-control": True, "control-grid": True}.
                 Use {"layer-control": {"collapsed": True}} for custom options.
@@ -96,6 +100,7 @@ class MapLibreMap(MapWidget):
             bearing=bearing,
             pitch=pitch,
             max_pitch=max_pitch,
+            projection=projection,
             **kwargs,
         )
 
@@ -5514,40 +5519,62 @@ class MapLibreMap(MapWidget):
     def get_visible_features(
         self,
         layers: Optional[List[str]] = None,
-    ) -> None:
+    ) -> Optional[Dict]:
         """Get all features currently visible in the viewport.
 
-        Results are stored in the `_queried_features` trait and can be
-        accessed after a short delay for the JavaScript round-trip.
+        This triggers a query to the JavaScript side. The result is
+        returned asynchronously via the ``_queried_features`` trait.
+
+        On the first call, the query is sent and ``None`` is returned
+        because the JavaScript side has not yet responded. Run this
+        method in one notebook cell, then read the result in the next
+        cell (the event loop processes the response between cells).
 
         Args:
-            layers: Optional list of layer IDs to query. If None, queries
-                all visible layers.
+            layers: Optional list of layer IDs to query. If ``None``,
+                queries all visible layers.
+
+        Returns:
+            GeoJSON FeatureCollection dict if results are available from
+            a previous query, otherwise ``None``.
 
         Example:
-            >>> m = MapLibreMap()
+            >>> # Cell 1 – trigger the query
             >>> m.get_visible_features(layers=["my-layer"])
-            >>> # Access results via m._queried_features
+            >>> # Cell 2 – read the result
+            >>> m.get_visible_features()
         """
-        self.call_js_method("getVisibleFeatures", layers=layers)
+        if layers is not None:
+            self.call_js_method("getVisibleFeatures", layers=layers)
+        features = self._queried_features
+        if features and "data" in features:
+            return features["data"]
+        return None
 
     def to_geojson(self, layer_id: Optional[str] = None) -> Optional[Dict]:
         """Get layer data as GeoJSON.
 
-        If a source ID is provided, queries all features from that source.
-        Returns the data from `_queried_features` if previously queried.
+        This triggers a query to the JavaScript side. The result is
+        returned asynchronously via the ``_queried_features`` trait.
+
+        On the first call with a ``layer_id``, the query is sent and
+        ``None`` is returned. Run this method in one notebook cell,
+        then call ``to_geojson()`` (without arguments) in the next cell
+        to read the result.
 
         Args:
-            layer_id: Source/layer ID to export. If None, returns
+            layer_id: Source/layer ID to export. If ``None``, returns
                 previously queried features.
 
         Returns:
-            GeoJSON FeatureCollection dict, or None if not yet available.
+            GeoJSON FeatureCollection dict, or ``None`` if not yet
+            available.
 
         Example:
-            >>> m = MapLibreMap()
-            >>> m.add_geojson("data.geojson", name="my-data")
+            >>> # Cell 1 – trigger the query
             >>> m.to_geojson("my-data")
+            >>> # Cell 2 – read the result
+            >>> result = m.to_geojson()
         """
         if layer_id:
             self.call_js_method("getLayerData", sourceId=layer_id)
@@ -5559,19 +5586,22 @@ class MapLibreMap(MapWidget):
     def to_geopandas(self, layer_id: Optional[str] = None) -> Any:
         """Get layer data as a GeoDataFrame.
 
-        Requires geopandas to be installed.
+        Requires geopandas to be installed. Works the same as
+        :meth:`to_geojson` – trigger with a ``layer_id`` in one cell,
+        then call ``to_geopandas()`` in the next cell.
 
         Args:
-            layer_id: Source/layer ID to export. If None, returns
+            layer_id: Source/layer ID to export. If ``None``, returns
                 previously queried features.
 
         Returns:
-            GeoDataFrame, or None if data not available.
+            GeoDataFrame, or ``None`` if data not available.
 
         Example:
-            >>> m = MapLibreMap()
-            >>> m.add_geojson("data.geojson", name="my-data")
-            >>> gdf = m.to_geopandas("my-data")
+            >>> # Cell 1 – trigger the query
+            >>> m.to_geojson("my-data")
+            >>> # Cell 2 – read the result
+            >>> gdf = m.to_geopandas()
         """
         geojson = self.to_geojson(layer_id)
         if geojson is None:
