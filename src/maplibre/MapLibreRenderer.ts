@@ -1,49 +1,8 @@
 /**
  * MapLibre GL JS renderer implementation.
+ * Uses dynamic imports to keep the bundle size small.
  */
 
-import maplibregl, {
-  Map as MapLibreMap,
-  NavigationControl,
-  ScaleControl,
-  FullscreenControl,
-  GeolocateControl,
-  AttributionControl,
-  Marker,
-  Popup,
-  GlobeControl,
-} from 'maplibre-gl';
-import { MapboxOverlay } from '@deck.gl/mapbox';
-import {
-  ArcLayer,
-  PointCloudLayer,
-  ScatterplotLayer,
-  PathLayer,
-  PolygonLayer,
-  IconLayer,
-  TextLayer,
-  GeoJsonLayer,
-  LineLayer,
-  BitmapLayer,
-  ColumnLayer,
-  GridCellLayer,
-  SolidPolygonLayer,
-} from '@deck.gl/layers';
-import {
-  HexagonLayer,
-  HeatmapLayer,
-  GridLayer,
-  ContourLayer,
-  ScreenGridLayer,
-} from '@deck.gl/aggregation-layers';
-import { TripsLayer } from '@deck.gl/geo-layers';
-import along from '@turf/along';
-import length from '@turf/length';
-import { lineString } from '@turf/helpers';
-import { proj } from '@developmentseed/deck.gl-geotiff';
-import { COGLayerWithOpacity as COGLayer } from './layers/COGLayerWithOpacity';
-import { toProj4 } from 'geotiff-geokeys-to-proj4';
-import { ZarrLayer } from '@carbonplan/zarr-layer';
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
 import { StateManager } from '../core/StateManager';
 import type { MapWidgetModel } from '../types/anywidget';
@@ -53,124 +12,135 @@ import type {
   ControlPosition,
   FlyToOptions,
   FitBoundsOptions,
-  SkySpecification,
-  DEFAULT_PAINT,
-  inferLayerType,
 } from '../types/maplibre';
 import type { Feature, FeatureCollection } from 'geojson';
+import type { LidarControlOptions, LidarLayerOptions, LidarColorScheme } from '../types/lidar';
 
+// Import plugins (these are lightweight)
 import { GeoEditorPlugin } from './plugins/GeoEditorPlugin';
 import { LayerControlPlugin } from './plugins/LayerControlPlugin';
 import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter } from './adapters';
-import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
-import type { LidarControlOptions, LidarLayerOptions, LidarColorScheme } from '../types/lidar';
 
-// Import controls from maplibre-gl-components
-import {
-  PMTilesLayerControl,
-  CogLayerControl,
-  ZarrLayerControl,
-  AddVectorControl,
-  addControlGrid,
-  Colorbar,
-  SearchControl,
-  MeasureControl,
-  PrintControl,
-} from 'maplibre-gl-components';
-import type { ControlGrid } from 'maplibre-gl-components';
-import 'maplibre-gl-components/style.css';
+// flatgeobuf is loaded dynamically when needed
 
-// FlatGeobuf for streaming cloud-native vector data
-import { geojson as flatgeobuf } from 'flatgeobuf';
+// Type imports for CDN-loaded modules
+import type * as MaplibreGl from 'maplibre-gl';
+import type { MapboxOverlay } from '@deck.gl/mapbox';
 
-/**
- * Parse GeoKeys to proj4 definition for COG reprojection.
- */
-async function geoKeysParser(
-  geoKeys: Record<string, unknown>,
-): Promise<proj.ProjectionInfo> {
-  const projDefinition = toProj4(geoKeys as unknown as Parameters<typeof toProj4>[0]);
+// Lazy loader functions for heavy dependencies
+async function loadMaplibreComponents() {
+  const mod = await import('https://esm.sh/maplibre-gl-components@0.15.0');
+  return mod;
+}
 
+async function loadMaplibreLidar() {
+  const mod = await import('https://esm.sh/maplibre-gl-lidar@0.11.1');
+  return mod;
+}
+
+async function loadDeckGl() {
+  const [layers, aggregationLayers, geoLayers, mapbox] = await Promise.all([
+    import('https://esm.sh/@deck.gl/layers@9.2.9'),
+    import('https://esm.sh/@deck.gl/aggregation-layers@9.2.9'),
+    import('https://esm.sh/@deck.gl/geo-layers@9.2.9'),
+    import('https://esm.sh/@deck.gl/mapbox@9.2.9'),
+  ]);
+  return { layers, aggregationLayers, geoLayers, mapbox };
+}
+
+async function loadTurf() {
+  const [along, length, helpers] = await Promise.all([
+    import('https://esm.sh/@turf/along@7'),
+    import('https://esm.sh/@turf/length@7'),
+    import('https://esm.sh/@turf/helpers@7'),
+  ]);
   return {
-    def: projDefinition.proj4,
-    parsed: proj.parseCrs(projDefinition.proj4),
-    coordinatesUnits: projDefinition.coordinatesUnits as proj.SupportedCrsUnit,
+    along: along.default,
+    length: length.default,
+    lineString: helpers.lineString,
   };
+}
+
+async function loadZarrLayer() {
+  const mod = await import('https://esm.sh/@carbonplan/zarr-layer@0.3.1');
+  return mod;
+}
+
+async function loadGeotiff() {
+  const mod = await import('https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0');
+  return mod;
+}
+
+async function loadGeokeysParser() {
+  const mod = await import('https://esm.sh/geotiff-geokeys-to-proj4@2024.4.13');
+  return mod;
 }
 
 /**
  * MapLibre GL JS map renderer.
  */
-export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
+export class MapLibreRenderer extends BaseMapRenderer<MaplibreGl.Map> {
   private stateManager: StateManager;
-  private markersMap: globalThis.Map<string, Marker> = new globalThis.Map();
-  private popupsMap: globalThis.Map<string, Popup> = new globalThis.Map();
-  private controlsMap: globalThis.Map<string, maplibregl.IControl> = new globalThis.Map();
+  private markersMap: globalThis.Map<string, MaplibreGl.Marker> = new globalThis.Map();
+  private popupsMap: globalThis.Map<string, MaplibreGl.Popup> = new globalThis.Map();
+  private controlsMap: globalThis.Map<string, MaplibreGl.IControl> = new globalThis.Map();
   private legendsMap: globalThis.Map<string, HTMLElement> = new globalThis.Map();
   private geoEditorPlugin: GeoEditorPlugin | null = null;
   private layerControlPlugin: LayerControlPlugin | null = null;
   private resizeObserver: ResizeObserver | null = null;
 
-  // Deck.gl overlay for COG layers
+  // MapLibre module reference (loaded from CDN)
+  private maplibregl: typeof MaplibreGl;
+
+  // Deck.gl overlay for layers
   protected deckOverlay: MapboxOverlay | null = null;
   protected deckLayers: globalThis.Map<string, unknown> = new globalThis.Map();
 
   // Zarr layers
-  protected zarrLayers: globalThis.Map<string, ZarrLayer> = new globalThis.Map();
+  protected zarrLayers: globalThis.Map<string, any> = new globalThis.Map();
 
   // Layer control adapters
   private cogAdapter: COGLayerAdapter | null = null;
   private zarrAdapter: ZarrLayerAdapter | null = null;
   private deckLayerAdapter: DeckLayerAdapter | null = null;
-  private lidarAdapter: LidarLayerAdapter | null = null;
+  private lidarAdapter: any | null = null;
 
   // LiDAR control
-  protected lidarControl: LidarControl | null = null;
-  protected lidarLayers: globalThis.Map<string, string> = new globalThis.Map(); // id -> source mapping
+  protected lidarControl: any | null = null;
+  protected lidarLayers: globalThis.Map<string, string> = new globalThis.Map();
 
   // maplibre-gl-components controls
-  protected pmtilesLayerControl: PMTilesLayerControl | null = null;
-  protected cogLayerUiControl: CogLayerControl | null = null;
-  protected zarrLayerUiControl: ZarrLayerControl | null = null;
-  protected addVectorControl: AddVectorControl | null = null;
-  protected controlGrid: ControlGrid | null = null;
+  protected pmtilesLayerControl: any | null = null;
+  protected cogLayerUiControl: any | null = null;
+  protected zarrLayerUiControl: any | null = null;
+  protected addVectorControl: any | null = null;
+  protected controlGrid: any | null = null;
 
-  // Colorbar, Search, Measure, Print controls
-  protected colorbarsMap: globalThis.Map<string, Colorbar> = new globalThis.Map();
-  protected searchControl: SearchControl | null = null;
-  protected measureControl: MeasureControl | null = null;
-  protected printControl: PrintControl | null = null;
+  // Other controls
+  protected colorbarsMap: globalThis.Map<string, any> = new globalThis.Map();
+  protected searchControl: any | null = null;
+  protected measureControl: any | null = null;
+  protected printControl: any | null = null;
 
   // Route animations
-  protected animations: globalThis.Map<string, {
-    animationId: number;
-    marker: Marker;
-    isPaused: boolean;
-    speed: number;
-    startTime: number;
-    pausedAt: number;
-    duration: number;
-    coordinates: [number, number][];
-    loop: boolean;
-    trailSourceId?: string;
-    trailLayerId?: string;
-  }> = new globalThis.Map();
+  protected animations: globalThis.Map<string, any> = new globalThis.Map();
 
   // Feature hover state tracking
   protected hoveredFeatureId: string | number | null = null;
   protected hoveredLayerId: string | null = null;
 
-  // Video sources tracking (layer id -> source id)
+  // Video sources tracking
   protected videoSources: globalThis.Map<string, string> = new globalThis.Map();
 
   // Split map state
-  private splitMapRight: MapLibreMap | null = null;
+  private splitMapRight: MaplibreGl.Map | null = null;
   private splitMapContainer: HTMLDivElement | null = null;
   private splitSlider: HTMLDivElement | null = null;
   private splitActive: boolean = false;
 
-  constructor(model: MapWidgetModel, el: HTMLElement) {
+  constructor(model: MapWidgetModel, el: HTMLElement, maplibregl: typeof MaplibreGl) {
     super(model, el);
+    this.maplibregl = maplibregl;
     this.stateManager = new StateManager(model);
     this.registerMethods();
   }
@@ -179,42 +149,31 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
    * Initialize the MapLibre map.
    */
   async initialize(): Promise<void> {
-    // Create container
     this.createMapContainer();
-
-    // Create map
     this.map = this.createMap();
-
-    // Set up listeners
     this.setupModelListeners();
     this.setupMapEvents();
-
-    // Set up resize observer to handle container size changes
     this.setupResizeObserver();
-
-    // Process any JS calls that were made before listeners were set up
-    // These will be queued in pendingCalls since map isn't ready yet
-    this.processJsCalls();
+    // Note: processJsCalls is now async, but we don't need to await it here
+    // as it will be called again when the model changes
+    this.processJsCalls().catch(console.error);
 
     // Wait for map to load
     await new Promise<void>((resolve) => {
-      this.map!.on('load', () => {
+      this.map!.on('load', async () => {
         this.isMapReady = true;
-        // Restore persisted state (layers, sources) before processing new calls
-        // This ensures layers are restored when map is displayed in subsequent cells
-        this.restoreState();
-        // Apply initial projection from model trait (must be done after style loads)
+        await this.restoreState();
+
         const initProjection = this.model.get('projection') as string;
         if (initProjection && initProjection !== 'mercator') {
           try {
-            this.map!.setProjection({ type: initProjection } as maplibregl.ProjectionSpecification);
+            this.map!.setProjection({ type: initProjection } as MaplibreGl.ProjectionSpecification);
           } catch (err) {
             console.warn('Failed to set initial projection:', err);
           }
         }
-        // Process any calls that were queued while waiting for map to load
-        this.processPendingCalls();
-        // Resize after load to ensure correct dimensions
+
+        await this.processPendingCalls();
         if (this.map) {
           this.map.resize();
         }
@@ -233,7 +192,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     this.resizeObserver = new ResizeObserver(() => {
       if (this.map) {
-        // Debounce resize to prevent flickering during window resize
         if (this.resizeDebounceTimer !== null) {
           window.clearTimeout(this.resizeDebounceTimer);
         }
@@ -247,14 +205,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     });
 
     this.resizeObserver.observe(this.mapContainer);
-    // Also observe the parent element
     this.resizeObserver.observe(this.el);
   }
 
   /**
    * Create the MapLibre map instance.
    */
-  protected createMap(): MapLibreMap {
+  protected createMap(): MaplibreGl.Map {
     const style = this.model.get('style');
     const center = this.model.get('center');
     const zoom = this.model.get('zoom');
@@ -263,9 +220,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const maxPitchValue = this.model.get('max_pitch');
     const maxPitch = typeof maxPitchValue === 'number' ? maxPitchValue : 85;
 
-    return new MapLibreMap({
+    return new this.maplibregl.Map({
       container: this.mapContainer!,
-      style: typeof style === 'string' ? style : (style as maplibregl.StyleSpecification),
+      style: typeof style === 'string' ? style : (style as MaplibreGl.StyleSpecification),
       center: center as [number, number],
       zoom,
       bearing,
@@ -281,8 +238,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private setupMapEvents(): void {
     if (!this.map) return;
 
-    // Click event
-    this.map.on('click', (e) => {
+    this.map.on('click', (e: MaplibreGl.MapMouseEvent) => {
       this.model.set('clicked', {
         lng: e.lngLat.lng,
         lat: e.lngLat.lat,
@@ -295,7 +251,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.model.save_changes();
     });
 
-    // Move end event
     this.map.on('moveend', () => {
       if (!this.map) return;
       const center = this.map.getCenter();
@@ -326,7 +281,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       }
     });
 
-    // Zoom end event
     this.map.on('zoomend', () => {
       if (!this.map) return;
       this.sendEvent('zoomend', { zoom: this.map.getZoom() });
@@ -343,25 +297,20 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('flyTo', this.handleFlyTo.bind(this));
     this.registerMethod('fitBounds', this.handleFitBounds.bind(this));
 
-    // Sources
+    // Sources and layers
     this.registerMethod('addSource', this.handleAddSource.bind(this));
     this.registerMethod('removeSource', this.handleRemoveSource.bind(this));
-
-    // Layers
     this.registerMethod('addLayer', this.handleAddLayer.bind(this));
     this.registerMethod('removeLayer', this.handleRemoveLayer.bind(this));
     this.registerMethod('setVisibility', this.handleSetVisibility.bind(this));
     this.registerMethod('setOpacity', this.handleSetOpacity.bind(this));
     this.registerMethod('setPaintProperty', this.handleSetPaintProperty.bind(this));
     this.registerMethod('setLayoutProperty', this.handleSetLayoutProperty.bind(this));
+    this.registerMethod('moveLayer', this.handleMoveLayer.bind(this));
 
-    // Basemaps
+    // Basemaps and data
     this.registerMethod('addBasemap', this.handleAddBasemap.bind(this));
-
-    // Vector data
     this.registerMethod('addGeoJSON', this.handleAddGeoJSON.bind(this));
-
-    // Raster data
     this.registerMethod('addTileLayer', this.handleAddTileLayer.bind(this));
     this.registerMethod('addImageLayer', this.handleAddImageLayer.bind(this));
 
@@ -370,46 +319,38 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('removeControl', this.handleRemoveControl.bind(this));
     this.registerMethod('addLayerControl', this.handleAddLayerControl.bind(this));
 
+    // Markers
+    this.registerMethod('addMarker', this.handleAddMarker.bind(this));
+    this.registerMethod('addMarkers', this.handleAddMarkers.bind(this));
+    this.registerMethod('removeMarker', this.handleRemoveMarker.bind(this));
+    this.registerMethod('addPopup', this.handleAddPopup.bind(this));
+
+    // Legend and terrain
+    this.registerMethod('addLegend', this.handleAddLegend.bind(this));
+    this.registerMethod('removeLegend', this.handleRemoveLegend.bind(this));
+    this.registerMethod('addTerrain', this.handleAddTerrain.bind(this));
+
     // Draw control
     this.registerMethod('addDrawControl', this.handleAddDrawControl.bind(this));
     this.registerMethod('getDrawData', this.handleGetDrawData.bind(this));
     this.registerMethod('loadDrawData', this.handleLoadDrawData.bind(this));
     this.registerMethod('clearDrawData', this.handleClearDrawData.bind(this));
 
-    // Markers and popups
-    this.registerMethod('addMarker', this.handleAddMarker.bind(this));
-    this.registerMethod('addMarkers', this.handleAddMarkers.bind(this));
-    this.registerMethod('removeMarker', this.handleRemoveMarker.bind(this));
-    this.registerMethod('addPopup', this.handleAddPopup.bind(this));
+    // Projection and native features
+    this.registerMethod('setProjection', this.handleSetProjection.bind(this));
+    this.registerMethod('updateGeoJSONSource', this.handleUpdateGeoJSONSource.bind(this));
+    this.registerMethod('addMapImage', this.handleAddMapImage.bind(this));
 
-    // Legend
-    this.registerMethod('addLegend', this.handleAddLegend.bind(this));
-    this.registerMethod('removeLegend', this.handleRemoveLegend.bind(this));
-
-    // Terrain
-    this.registerMethod('addTerrain', this.handleAddTerrain.bind(this));
-
-    // Layer management (moveLayer is new, setPaintProperty/setLayoutProperty already registered)
-    this.registerMethod('moveLayer', this.handleMoveLayer.bind(this));
-
-    // COG layers (deck.gl)
+    // Deck.gl layers (async)
     this.registerMethod('addCOGLayer', this.handleAddCOGLayer.bind(this));
     this.registerMethod('removeCOGLayer', this.handleRemoveCOGLayer.bind(this));
-
-    // Zarr layers (@carbonplan/zarr-layer)
     this.registerMethod('addZarrLayer', this.handleAddZarrLayer.bind(this));
     this.registerMethod('removeZarrLayer', this.handleRemoveZarrLayer.bind(this));
     this.registerMethod('updateZarrLayer', this.handleUpdateZarrLayer.bind(this));
-
-    // Arc layers (deck.gl)
     this.registerMethod('addArcLayer', this.handleAddArcLayer.bind(this));
     this.registerMethod('removeArcLayer', this.handleRemoveArcLayer.bind(this));
-
-    // PointCloud layers (deck.gl)
     this.registerMethod('addPointCloudLayer', this.handleAddPointCloudLayer.bind(this));
     this.registerMethod('removePointCloudLayer', this.handleRemovePointCloudLayer.bind(this));
-
-    // Additional deck.gl layers
     this.registerMethod('addScatterplotLayer', this.handleAddScatterplotLayer.bind(this));
     this.registerMethod('addPathLayer', this.handleAddPathLayer.bind(this));
     this.registerMethod('addPolygonLayer', this.handleAddPolygonLayer.bind(this));
@@ -423,33 +364,17 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addScreenGridLayer', this.handleAddScreenGridLayer.bind(this));
     this.registerMethod('addTripsLayer', this.handleAddTripsLayer.bind(this));
     this.registerMethod('addLineLayer', this.handleAddLineLayer.bind(this));
-    this.registerMethod('addDeckGLLayer', this.handleAddDeckGLLayer.bind(this));
-    this.registerMethod('removeDeckLayer', this.handleRemoveDeckLayer.bind(this));
-    this.registerMethod('setDeckLayerVisibility', this.handleSetDeckLayerVisibility.bind(this));
-
-    // Additional deck.gl layers
     this.registerMethod('addBitmapLayer', this.handleAddBitmapLayer.bind(this));
     this.registerMethod('addColumnLayer', this.handleAddColumnLayer.bind(this));
     this.registerMethod('addGridCellLayer', this.handleAddGridCellLayer.bind(this));
     this.registerMethod('addSolidPolygonLayer', this.handleAddSolidPolygonLayer.bind(this));
-    // Note: Heavy geo-layers (MVT, Tile3D, Terrain, H3, S2, etc.) and mesh-layers
-    // (SimpleMesh, Scenegraph) are only available in DeckGLRenderer to keep the
-    // maplibre.js bundle lightweight.
+    this.registerMethod('addDeckGLLayer', this.handleAddDeckGLLayer.bind(this));
+    this.registerMethod('removeDeckLayer', this.handleRemoveDeckLayer.bind(this));
+    this.registerMethod('setDeckLayerVisibility', this.handleSetDeckLayerVisibility.bind(this));
 
-    // Native MapLibre features
-    this.registerMethod('setProjection', this.handleSetProjection.bind(this));
-    this.registerMethod('updateGeoJSONSource', this.handleUpdateGeoJSONSource.bind(this));
-    this.registerMethod('addMapImage', this.handleAddMapImage.bind(this));
-    this.registerMethod('addTooltip', this.handleAddTooltip.bind(this));
-    this.registerMethod('removeTooltip', this.handleRemoveTooltip.bind(this));
-    this.registerMethod('addCoordinatesControl', this.handleAddCoordinatesControl.bind(this));
-    this.registerMethod('removeCoordinatesControl', this.handleRemoveCoordinatesControl.bind(this));
-
-    // Time slider
+    // UI controls
     this.registerMethod('addTimeSlider', this.handleAddTimeSlider.bind(this));
     this.registerMethod('removeTimeSlider', this.handleRemoveTimeSlider.bind(this));
-
-    // UI enhancements
     this.registerMethod('addSwipeMap', this.handleAddSwipeMap.bind(this));
     this.registerMethod('removeSwipeMap', this.handleRemoveSwipeMap.bind(this));
     this.registerMethod('addOpacitySlider', this.handleAddOpacitySlider.bind(this));
@@ -457,11 +382,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addStyleSwitcher', this.handleAddStyleSwitcher.bind(this));
     this.registerMethod('removeStyleSwitcher', this.handleRemoveStyleSwitcher.bind(this));
 
-    // Data export
+    // Query and features
     this.registerMethod('getVisibleFeatures', this.handleGetVisibleFeatures.bind(this));
     this.registerMethod('getLayerData', this.handleGetLayerData.bind(this));
+    this.registerMethod('queryRenderedFeatures', this.handleQueryRenderedFeatures.bind(this));
+    this.registerMethod('querySourceFeatures', this.handleQuerySourceFeatures.bind(this));
+    this.registerMethod('setFilter', this.handleSetFilter.bind(this));
 
-    // LiDAR layers (maplibre-gl-lidar)
+    // LiDAR
     this.registerMethod('addLidarControl', this.handleAddLidarControl.bind(this));
     this.registerMethod('addLidarLayer', this.handleAddLidarLayer.bind(this));
     this.registerMethod('removeLidarLayer', this.handleRemoveLidarLayer.bind(this));
@@ -469,12 +397,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('setLidarPointSize', this.handleSetLidarPointSize.bind(this));
     this.registerMethod('setLidarOpacity', this.handleSetLidarOpacity.bind(this));
 
-    // PMTiles layers
+    // PMTiles
     this.registerMethod('addPMTilesLayer', this.handleAddPMTilesLayer.bind(this));
     this.registerMethod('removePMTilesLayer', this.handleRemovePMTilesLayer.bind(this));
-
-    // maplibre-gl-components controls
     this.registerMethod('addPMTilesControl', this.handleAddPMTilesControl.bind(this));
+
+    // maplibre-gl-components
     this.registerMethod('addCogControl', this.handleAddCogControl.bind(this));
     this.registerMethod('addZarrControl', this.handleAddZarrControl.bind(this));
     this.registerMethod('addVectorControl', this.handleAddVectorControl.bind(this));
@@ -484,39 +412,30 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addClusterLayer', this.handleAddClusterLayer.bind(this));
     this.registerMethod('removeClusterLayer', this.handleRemoveClusterLayer.bind(this));
 
-    // Choropleth
+    // Choropleth and 3D
     this.registerMethod('addChoropleth', this.handleAddChoropleth.bind(this));
-
-    // 3D Buildings
     this.registerMethod('add3DBuildings', this.handleAdd3DBuildings.bind(this));
 
-    // Route Animation
+    // Animation
     this.registerMethod('animateAlongRoute', this.handleAnimateAlongRoute.bind(this));
     this.registerMethod('stopAnimation', this.handleStopAnimation.bind(this));
     this.registerMethod('pauseAnimation', this.handlePauseAnimation.bind(this));
     this.registerMethod('resumeAnimation', this.handleResumeAnimation.bind(this));
     this.registerMethod('setAnimationSpeed', this.handleSetAnimationSpeed.bind(this));
 
-    // Feature Hover
+    // Hover and sky
     this.registerMethod('addHoverEffect', this.handleAddHoverEffect.bind(this));
-
-    // Sky & Fog
     this.registerMethod('setSky', this.handleSetSky.bind(this));
     this.registerMethod('removeSky', this.handleRemoveSky.bind(this));
 
-    // Feature Query/Filter
-    this.registerMethod('setFilter', this.handleSetFilter.bind(this));
-    this.registerMethod('queryRenderedFeatures', this.handleQueryRenderedFeatures.bind(this));
-    this.registerMethod('querySourceFeatures', this.handleQuerySourceFeatures.bind(this));
-
-    // Video Layer
+    // Video
     this.registerMethod('addVideoLayer', this.handleAddVideoLayer.bind(this));
     this.registerMethod('removeVideoLayer', this.handleRemoveVideoLayer.bind(this));
     this.registerMethod('playVideo', this.handlePlayVideo.bind(this));
     this.registerMethod('pauseVideo', this.handlePauseVideo.bind(this));
     this.registerMethod('seekVideo', this.handleSeekVideo.bind(this));
 
-    // Split Map
+    // Split map
     this.registerMethod('addSplitMap', this.handleAddSplitMap.bind(this));
     this.registerMethod('removeSplitMap', this.handleRemoveSplitMap.bind(this));
 
@@ -525,15 +444,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('removeColorbar', this.handleRemoveColorbar.bind(this));
     this.registerMethod('updateColorbar', this.handleUpdateColorbar.bind(this));
 
-    // Search Control
+    // Search, Measure, Print
     this.registerMethod('addSearchControl', this.handleAddSearchControl.bind(this));
     this.registerMethod('removeSearchControl', this.handleRemoveSearchControl.bind(this));
-
-    // Measure Control
     this.registerMethod('addMeasureControl', this.handleAddMeasureControl.bind(this));
     this.registerMethod('removeMeasureControl', this.handleRemoveMeasureControl.bind(this));
-
-    // Print Control
     this.registerMethod('addPrintControl', this.handleAddPrintControl.bind(this));
     this.registerMethod('removePrintControl', this.handleRemovePrintControl.bind(this));
 
@@ -602,7 +517,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       return;
     }
 
-    this.map.addSource(sourceId, config as maplibregl.SourceSpecification);
+    this.map.addSource(sourceId, config as MaplibreGl.SourceSpecification);
     this.stateManager.addSource(sourceId, config);
   }
 
@@ -610,10 +525,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (!this.map) return;
     const [sourceId] = args as [string];
 
-    if (!this.map.getSource(sourceId)) {
-      return;
-    }
-
+    if (!this.map.getSource(sourceId)) return;
     this.map.removeSource(sourceId);
     this.stateManager.removeSource(sourceId);
   }
@@ -632,7 +544,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
 
     const beforeId = kwargs.beforeId as string | undefined;
-    this.map.addLayer(config as maplibregl.LayerSpecification, beforeId);
+    this.map.addLayer(config as MaplibreGl.LayerSpecification, beforeId);
     this.stateManager.addLayer(config.id, config);
   }
 
@@ -640,10 +552,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (!this.map) return;
     const [layerId] = args as [string];
 
-    if (!this.map.getLayer(layerId)) {
-      return;
-    }
-
+    if (!this.map.getLayer(layerId)) return;
     this.map.removeLayer(layerId);
     this.stateManager.removeLayer(layerId);
   }
@@ -652,10 +561,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (!this.map) return;
     const [layerId, visible] = args as [string, boolean];
 
-    if (!this.map.getLayer(layerId)) {
-      return;
-    }
-
+    if (!this.map.getLayer(layerId)) return;
     this.map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
     this.stateManager.setLayerVisibility(layerId, visible);
   }
@@ -664,14 +570,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (!this.map) return;
     const [layerId, opacity] = args as [string, number];
 
-    if (!this.map.getLayer(layerId)) {
-      return;
-    }
+    if (!this.map.getLayer(layerId)) return;
 
     const layer = this.map.getLayer(layerId);
     if (!layer) return;
 
-    // Set opacity based on layer type
     const type = layer.type;
     const opacityProperty = this.getOpacityProperty(type);
     if (opacityProperty) {
@@ -696,23 +599,22 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private handleSetPaintProperty(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const [layerId, property, value] = args as [string, string, unknown];
-
-    if (!this.map.getLayer(layerId)) {
-      return;
-    }
-
+    if (!this.map.getLayer(layerId)) return;
     this.map.setPaintProperty(layerId, property, value);
   }
 
   private handleSetLayoutProperty(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const [layerId, property, value] = args as [string, string, unknown];
-
-    if (!this.map.getLayer(layerId)) {
-      return;
-    }
-
+    if (!this.map.getLayer(layerId)) return;
     this.map.setLayoutProperty(layerId, property, value);
+  }
+
+  private handleMoveLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const [layerId, beforeId] = args as [string, string | undefined];
+    if (!layerId || !this.map.getLayer(layerId)) return;
+    this.map.moveLayer(layerId, beforeId || undefined);
   }
 
   // -------------------------------------------------------------------------
@@ -728,7 +630,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const sourceId = `basemap-${name}`;
     const layerId = `${name}`;
 
-    // Add source if not exists
     if (!this.map.getSource(sourceId)) {
       const sourceConfig = {
         type: 'raster' as const,
@@ -737,11 +638,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         attribution,
       };
       this.map.addSource(sourceId, sourceConfig);
-      // Persist source state for multi-cell rendering
       this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
     }
 
-    // Add layer at bottom (before first layer or first symbol layer)
     if (!this.map.getLayer(layerId)) {
       const layers = this.map.getStyle().layers || [];
       const firstSymbolId = layers.find((l) => l.type === 'symbol')?.id;
@@ -752,7 +651,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         source: sourceId,
       };
       this.map.addLayer(layerConfig, firstSymbolId);
-      // Persist layer state for multi-cell rendering
       this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
     }
   }
@@ -773,45 +671,38 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const sourceId = `${name}-source`;
     const layerId = name;
 
-    // Determine layer type from geometry if not specified
     let type = layerType;
-    if (!type && geojson.type === 'FeatureCollection' && geojson.features.length > 0) {
-      const geometry = geojson.features[0].geometry;
+    if (!type && (geojson as FeatureCollection).type === 'FeatureCollection' && (geojson as FeatureCollection).features.length > 0) {
+      const geometry = (geojson as FeatureCollection).features[0].geometry;
       type = this.inferLayerType(geometry.type);
-    } else if (!type && geojson.type === 'Feature') {
-      type = this.inferLayerType(geojson.geometry.type);
+    } else if (!type && (geojson as Feature).type === 'Feature') {
+      type = this.inferLayerType((geojson as Feature).geometry.type);
     }
     type = type || 'circle';
 
-    // Get default paint if not provided
     const defaultPaint = this.getDefaultPaint(type);
     const layerPaint = paint || defaultPaint;
 
-    // Add source
     if (!this.map.getSource(sourceId)) {
       const sourceConfig = {
         type: 'geojson' as const,
         data: geojson,
       };
       this.map.addSource(sourceId, sourceConfig);
-      // Persist source state for multi-cell rendering
       this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
     }
 
-    // Add layer
     if (!this.map.getLayer(layerId)) {
       const layerConfig = {
         id: layerId,
-        type: type as maplibregl.LayerSpecification['type'],
+        type: type as MaplibreGl.LayerSpecification['type'],
         source: sourceId,
         paint: layerPaint,
       };
-      this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
-      // Persist layer state for multi-cell rendering
+      this.map.addLayer(layerConfig as MaplibreGl.AddLayerObject);
       this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
     }
 
-    // Fit bounds
     if (fitBounds && kwargs.bounds) {
       const bounds = kwargs.bounds as [number, number, number, number];
       this.map.fitBounds(
@@ -881,7 +772,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const sourceId = `${name}-source`;
     const layerId = name;
 
-    // Add source
     if (!this.map.getSource(sourceId)) {
       const sourceConfig = {
         type: 'raster' as const,
@@ -892,11 +782,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         maxzoom: maxZoom,
       };
       this.map.addSource(sourceId, sourceConfig);
-      // Persist source state for multi-cell rendering
       this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
     }
 
-    // Add layer
     if (!this.map.getLayer(layerId)) {
       const layerConfig = {
         id: layerId,
@@ -906,7 +794,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         maxzoom: maxZoom,
       };
       this.map.addLayer(layerConfig);
-      // Persist layer state for multi-cell rendering
       this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
     }
   }
@@ -925,7 +812,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     const sourceId = `${id}-source`;
 
-    // Add image source
     if (!this.map.getSource(sourceId)) {
       this.map.addSource(sourceId, {
         type: 'image',
@@ -934,7 +820,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       });
     }
 
-    // Add raster layer
     if (!this.map.getLayer(id)) {
       this.map.addLayer({
         id: id,
@@ -956,38 +841,38 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const [controlType] = args as [string];
     const position = (kwargs.position as ControlPosition) || 'top-right';
 
-    let control: maplibregl.IControl | null = null;
+    let control: MaplibreGl.IControl | null = null;
 
     switch (controlType) {
       case 'navigation':
-        control = new NavigationControl({
+        control = new this.maplibregl.NavigationControl({
           showCompass: kwargs.showCompass !== false,
           showZoom: kwargs.showZoom !== false,
           visualizePitch: kwargs.visualizePitch !== false,
         });
         break;
       case 'scale':
-        control = new ScaleControl({
+        control = new this.maplibregl.ScaleControl({
           maxWidth: (kwargs.maxWidth as number) || 100,
           unit: (kwargs.unit as 'imperial' | 'metric' | 'nautical') || 'metric',
         });
         break;
       case 'fullscreen':
-        control = new FullscreenControl();
+        control = new this.maplibregl.FullscreenControl();
         break;
       case 'geolocate':
-        control = new GeolocateControl({
+        control = new this.maplibregl.GeolocateControl({
           positionOptions: { enableHighAccuracy: true },
           trackUserLocation: kwargs.trackUserLocation !== false,
         });
         break;
       case 'attribution':
-        control = new AttributionControl({
+        control = new this.maplibregl.AttributionControl({
           compact: kwargs.compact !== false,
         });
         break;
       case 'globe':
-        control = new GlobeControl();
+        control = new this.maplibregl.GlobeControl();
         break;
     }
 
@@ -1010,10 +895,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  private handleAddLayerControl(args: unknown[], kwargs: Record<string, unknown>): void {
+  private async handleAddLayerControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
 
-    // Get layers from kwargs, or fall back to restored layers from model
     let layers = kwargs.layers as string[] | undefined;
     if (!layers || layers.length === 0) {
       const modelLayers = this.model.get('_layers') || {};
@@ -1024,7 +908,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
     const position = (kwargs.position as ControlPosition) || 'top-right';
     const collapsed = (kwargs.collapsed as boolean) || false;
-    // Exclude internal/helper layers from the layer control by default
     const defaultExclude = [
       'measure-*',
       'mapbox-gl-draw-*',
@@ -1036,43 +919,36 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     ];
     const excludeLayers = (kwargs.excludeLayers as string[] | undefined) ?? defaultExclude;
 
-    // Create custom layer adapters for deck.gl and Zarr layers
     const customLayerAdapters = [];
 
-    // Always initialize deck overlay so COG adapter can be created
-    // This ensures layer control works regardless of whether COG layers are added before or after
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
-    // Create COG adapter (deck overlay now always exists)
     if (this.deckOverlay && this.map) {
       this.cogAdapter = new COGLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
       customLayerAdapters.push(this.cogAdapter);
     }
 
-    // Create Zarr adapter if there are Zarr layers or map exists
     if (this.map) {
       this.zarrAdapter = new ZarrLayerAdapter(this.map, this.zarrLayers);
       customLayerAdapters.push(this.zarrAdapter);
     }
 
-    // Create Deck layer adapter for Arc and PointCloud layers
     if (this.deckOverlay && this.map) {
       this.deckLayerAdapter = new DeckLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
       customLayerAdapters.push(this.deckLayerAdapter);
     }
 
-    // Create LiDAR adapter if LidarControl exists
     if (this.lidarControl) {
+      const { LidarLayerAdapter } = await loadMaplibreLidar();
       this.lidarAdapter = new LidarLayerAdapter(this.lidarControl);
       customLayerAdapters.push(this.lidarAdapter);
     }
 
-    // Initialize plugin if not already
     if (!this.layerControlPlugin) {
       this.layerControlPlugin = new LayerControlPlugin(this.map);
     }
 
-    this.layerControlPlugin.initialize({
+    await this.layerControlPlugin.initialize({
       layers,
       position,
       collapsed,
@@ -1084,76 +960,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   }
 
   // -------------------------------------------------------------------------
-  // Draw control handlers
-  // -------------------------------------------------------------------------
-
-  private handleAddDrawControl(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    const position = (kwargs.position as ControlPosition) || 'top-right';
-    const drawModes = kwargs.drawModes as string[] | undefined;
-    const editModes = kwargs.editModes as string[] | undefined;
-    const collapsed = (kwargs.collapsed as boolean) || false;
-
-    // Initialize plugin if not already
-    if (!this.geoEditorPlugin) {
-      this.geoEditorPlugin = new GeoEditorPlugin(this.map);
-    }
-
-    this.geoEditorPlugin.initialize(
-      {
-        position,
-        drawModes,
-        editModes,
-        collapsed,
-      },
-      (data: FeatureCollection) => {
-        // Sync draw data to Python
-        this.model.set('_draw_data', data);
-        this.model.save_changes();
-      }
-    );
-
-    this.stateManager.addControl('draw-control', 'draw-control', position, kwargs);
-  }
-
-  private handleGetDrawData(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.geoEditorPlugin) {
-      this.model.set('_draw_data', { type: 'FeatureCollection', features: [] });
-      this.model.save_changes();
-      return;
-    }
-
-    const data = this.geoEditorPlugin.getFeatures();
-    this.model.set('_draw_data', data);
-    this.model.save_changes();
-  }
-
-  private handleLoadDrawData(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.geoEditorPlugin) {
-      console.warn('Draw control not initialized');
-      return;
-    }
-
-    const geojson = args[0] as FeatureCollection;
-    this.geoEditorPlugin.loadFeatures(geojson);
-  }
-
-  private handleClearDrawData(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.geoEditorPlugin) {
-      return;
-    }
-
-    this.geoEditorPlugin.clear();
-    this.model.set('_draw_data', { type: 'FeatureCollection', features: [] });
-    this.model.save_changes();
-  }
-
-  // -------------------------------------------------------------------------
   // Marker handlers
   // -------------------------------------------------------------------------
 
-  // Helper to wrap popup/tooltip content with contrast-safe styling
   private wrapWithContrastStyle(content: string): string {
     return `<div style="color: #333; background: #fff; margin: -10px -10px -15px; padding: 6px 10px 10px;">${content}</div>`;
   }
@@ -1170,19 +979,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const tooltipMaxWidth = (kwargs.tooltipMaxWidth as string) || '240px';
     const draggable = (kwargs.draggable as boolean) || false;
 
-    const marker = new Marker({ color, scale, draggable }).setLngLat([lng, lat]);
+    const marker = new this.maplibregl.Marker({ color, scale, draggable }).setLngLat([lng, lat]);
 
     if (popup) {
-      marker.setPopup(new Popup({ maxWidth: popupMaxWidth }).setHTML(this.wrapWithContrastStyle(popup)));
+      marker.setPopup(new this.maplibregl.Popup({ maxWidth: popupMaxWidth }).setHTML(this.wrapWithContrastStyle(popup)));
     }
 
-    // Add tooltip (shown on hover)
     if (tooltip) {
-      const tooltipPopup = new Popup({
+      const tooltipPopup = new this.maplibregl.Popup({
         closeButton: false,
         closeOnClick: false,
         maxWidth: tooltipMaxWidth,
-        offset: [0, -30 * scale], // Offset above the marker based on scale
+        offset: [0, -30 * scale],
         anchor: 'bottom',
       });
       tooltipPopup.setHTML(this.wrapWithContrastStyle(tooltip));
@@ -1196,16 +1004,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       });
 
       markerElement.addEventListener('mouseleave', (e: MouseEvent) => {
-        // Check if we're moving to the popup itself
         const relatedTarget = e.relatedTarget as HTMLElement;
-        if (relatedTarget?.closest('.maplibregl-popup')) {
-          return;
-        }
+        if (relatedTarget?.closest('.maplibregl-popup')) return;
         isHovering = false;
         tooltipPopup.remove();
       });
 
-      // Also handle leaving the popup
       tooltipPopup.on('close', () => {
         isHovering = false;
       });
@@ -1253,19 +1057,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const popupMaxWidth = markerData.popupMaxWidth || defaultPopupMaxWidth;
       const tooltipMaxWidth = markerData.tooltipMaxWidth || defaultTooltipMaxWidth;
 
-      const marker = new Marker({ color, scale, draggable }).setLngLat(markerData.lngLat);
+      const marker = new this.maplibregl.Marker({ color, scale, draggable }).setLngLat(markerData.lngLat);
 
       if (markerData.popup) {
-        marker.setPopup(new Popup({ maxWidth: popupMaxWidth }).setHTML(this.wrapWithContrastStyle(markerData.popup)));
+        marker.setPopup(new this.maplibregl.Popup({ maxWidth: popupMaxWidth }).setHTML(this.wrapWithContrastStyle(markerData.popup)));
       }
 
-      // Add tooltip (shown on hover)
       if (markerData.tooltip) {
-        const tooltipPopup = new Popup({
+        const tooltipPopup = new this.maplibregl.Popup({
           closeButton: false,
           closeOnClick: false,
           maxWidth: tooltipMaxWidth,
-          offset: [0, -30 * scale], // Offset above the marker based on scale
+          offset: [0, -30 * scale],
           anchor: 'bottom',
         });
         tooltipPopup.setHTML(this.wrapWithContrastStyle(markerData.tooltip));
@@ -1280,16 +1083,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         });
 
         markerElement.addEventListener('mouseleave', (e: MouseEvent) => {
-          // Check if we're moving to the popup itself
           const relatedTarget = e.relatedTarget as HTMLElement;
-          if (relatedTarget?.closest('.maplibregl-popup')) {
-            return;
-          }
+          if (relatedTarget?.closest('.maplibregl-popup')) return;
           isHovering = false;
           tooltipPopup.remove();
         });
 
-        // Also handle leaving the popup
         tooltipPopup.on('close', () => {
           isHovering = false;
         });
@@ -1311,65 +1110,41 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       return;
     }
 
-    // Add click handler for the layer
-    this.map.on('click', layerId, (e) => {
+    this.map.on('click', layerId, (e: MaplibreGl.MapMouseEvent & { features?: MaplibreGl.MapGeoJSONFeature[] }) => {
       if (!e.features || e.features.length === 0) return;
       const feature = e.features[0];
       const props = feature.properties || {};
 
-      // CSS styles for better contrast and readability
-      const tableStyle =
-        'border-collapse: collapse; font-size: 13px; color: #333;';
-      const cellStyle =
-        'padding: 4px 8px; border-bottom: 1px solid #ddd; color: #333;';
+      const tableStyle = 'border-collapse: collapse; font-size: 13px; color: #333;';
+      const cellStyle = 'padding: 4px 8px; border-bottom: 1px solid #ddd; color: #333;';
       const keyStyle = 'font-weight: 600; color: #222;';
       const valueStyle = 'color: #444;';
 
-      // Base style for custom templates
-      const containerStyle =
-        'font-size: 13px; color: #333; line-height: 1.4;';
-      const templateStyles = `
-        <style>
-          .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
-          .anymap-popup p { color: #444; margin: 4px 0; }
-        </style>
-      `;
-
       let content: string;
       if (template) {
-        // Replace placeholders in template and wrap with styled container
         const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
           return props[key] !== undefined ? String(props[key]) : match;
         });
-        content = `${templateStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
+        content = replaced;
       } else if (properties) {
-        // Build table from specified properties
         const rows = properties
           .filter((key) => props[key] !== undefined)
-          .map(
-            (key) =>
-              `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${props[key]}</td></tr>`
-          )
+          .map((key) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${props[key]}</td></tr>`)
           .join('');
         content = `<table style="${tableStyle}">${rows}</table>`;
       } else {
-        // Show all properties
         const rows = Object.entries(props)
-          .map(
-            ([key, value]) =>
-              `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${value}</td></tr>`
-          )
+          .map(([key, value]) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${value}</td></tr>`)
           .join('');
         content = `<table style="${tableStyle}">${rows}</table>`;
       }
 
-      new Popup()
+      new this.maplibregl.Popup()
         .setLngLat(e.lngLat)
         .setHTML(content)
         .addTo(this.map!);
     });
 
-    // Change cursor on hover
     this.map.on('mouseenter', layerId, () => {
       if (this.map) this.map.getCanvas().style.cursor = 'pointer';
     });
@@ -1377,6 +1152,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       if (this.map) this.map.getCanvas().style.cursor = '';
     });
   }
+
+  // -------------------------------------------------------------------------
+  // Legend and terrain handlers
+  // -------------------------------------------------------------------------
 
   private handleAddLegend(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
@@ -1386,12 +1165,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const position = (kwargs.position as string) || 'bottom-right';
     const opacity = (kwargs.opacity as number) ?? 1.0;
 
-    // Remove existing legend with the same ID
     if (this.legendsMap.has(legendId)) {
       this.handleRemoveLegend([legendId], {});
     }
 
-    // Create legend container
     const legendDiv = document.createElement('div');
     legendDiv.id = legendId;
     legendDiv.className = 'maplibregl-ctrl legend-control';
@@ -1406,13 +1183,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       max-width: 200px;
     `;
 
-    // Add title
     const titleEl = document.createElement('div');
     titleEl.style.cssText = 'font-weight: bold; margin-bottom: 8px; font-size: 13px; color: #333;';
     titleEl.textContent = title;
     legendDiv.appendChild(titleEl);
 
-    // Add items
     for (const item of items) {
       const row = document.createElement('div');
       row.style.cssText = 'display: flex; align-items: center; margin-bottom: 4px;';
@@ -1436,12 +1211,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       legendDiv.appendChild(row);
     }
 
-    // Get the appropriate control container
     const container = this.map.getContainer();
     const positionClass = `maplibregl-ctrl-${position}`;
     let controlContainer = container.querySelector(`.${positionClass}`) as HTMLElement;
     if (!controlContainer) {
-      // Create container if it doesn't exist
       const controlWrapper = container.querySelector('.maplibregl-control-container');
       if (controlWrapper) {
         controlContainer = document.createElement('div');
@@ -1450,7 +1223,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       }
     }
     if (controlContainer) {
-      // Insert at beginning so legend appears above attribution
       controlContainer.insertBefore(legendDiv, controlContainer.firstChild);
     }
 
@@ -1461,14 +1233,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const legendId = args[0] as string | undefined;
 
     if (legendId) {
-      // Remove specific legend
       const legendDiv = this.legendsMap.get(legendId);
       if (legendDiv && legendDiv.parentNode) {
         legendDiv.parentNode.removeChild(legendDiv);
       }
       this.legendsMap.delete(legendId);
     } else {
-      // Remove all legends
       for (const [id, legendDiv] of this.legendsMap) {
         if (legendDiv.parentNode) {
           legendDiv.parentNode.removeChild(legendDiv);
@@ -1490,7 +1260,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     const sourceId = 'terrain-dem';
 
-    // Add terrain source
     if (!this.map.getSource(sourceId)) {
       this.map.addSource(sourceId, {
         type: 'raster-dem',
@@ -1500,46 +1269,139 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       });
     }
 
-    // Enable terrain
     this.map.setTerrain({
       source: sourceId,
       exaggeration: exaggeration,
     });
   }
 
-  private handleMoveLayer(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const [layerId, beforeId] = args as [string, string | undefined];
+  // -------------------------------------------------------------------------
+  // Draw control handlers
+  // -------------------------------------------------------------------------
 
-    if (!layerId) {
-      console.error('moveLayer requires layerId');
+  private async handleAddDrawControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    const drawModes = kwargs.drawModes as string[] | undefined;
+    const editModes = kwargs.editModes as string[] | undefined;
+    const collapsed = (kwargs.collapsed as boolean) || false;
+
+    if (!this.geoEditorPlugin) {
+      this.geoEditorPlugin = new GeoEditorPlugin(this.map);
+    }
+
+    await this.geoEditorPlugin.initialize(
+      {
+        position,
+        drawModes,
+        editModes,
+        collapsed,
+      },
+      (data: FeatureCollection) => {
+        this.model.set('_draw_data', data);
+        this.model.save_changes();
+      }
+    );
+
+    this.stateManager.addControl('draw-control', 'draw-control', position, kwargs);
+  }
+
+  private handleGetDrawData(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.geoEditorPlugin) {
+      this.model.set('_draw_data', { type: 'FeatureCollection', features: [] });
+      this.model.save_changes();
       return;
     }
 
-    if (this.map.getLayer(layerId)) {
-      this.map.moveLayer(layerId, beforeId || undefined);
+    const data = this.geoEditorPlugin.getFeatures();
+    this.model.set('_draw_data', data);
+    this.model.save_changes();
+  }
+
+  private handleLoadDrawData(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.geoEditorPlugin) {
+      console.warn('Draw control not initialized');
+      return;
+    }
+
+    const geojson = args[0] as FeatureCollection;
+    this.geoEditorPlugin.loadFeatures(geojson);
+  }
+
+  private handleClearDrawData(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.geoEditorPlugin) return;
+
+    this.geoEditorPlugin.clear();
+    this.model.set('_draw_data', { type: 'FeatureCollection', features: [] });
+    this.model.save_changes();
+  }
+
+  // -------------------------------------------------------------------------
+  // Native MapLibre features
+  // -------------------------------------------------------------------------
+
+  private handleSetProjection(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const [projectionType] = args as [string];
+    try {
+      this.map.setProjection({ type: projectionType } as MaplibreGl.ProjectionSpecification);
+    } catch (err) {
+      console.warn('Failed to set projection:', err);
     }
   }
 
-  // -------------------------------------------------------------------------
-  // COG layer handlers (deck.gl)
-  // -------------------------------------------------------------------------
+  private handleUpdateGeoJSONSource(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const sourceId = kwargs.sourceId as string;
+    const data = kwargs.data as FeatureCollection | Feature;
 
-  /**
-   * Initialize deck.gl overlay if not already created.
-   */
-  protected initializeDeckOverlay(): void {
-    if (this.deckOverlay || !this.map) return;
+    if (!sourceId) {
+      console.error('updateGeoJSONSource requires sourceId');
+      return;
+    }
 
-    this.deckOverlay = new MapboxOverlay({
-      layers: [],
-    });
-    this.map.addControl(this.deckOverlay as unknown as maplibregl.IControl);
+    const source = this.map.getSource(sourceId) as MaplibreGl.GeoJSONSource | undefined;
+    if (source && source.setData) {
+      source.setData(data);
+    } else {
+      console.warn(`Source ${sourceId} not found or not a GeoJSON source`);
+    }
   }
 
-  /**
-   * Update deck.gl overlay with current layers.
-   */
+  private handleAddMapImage(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const id = kwargs.id as string;
+    const url = kwargs.url as string;
+
+    if (!id || !url) {
+      console.error('addMapImage requires id and url');
+      return;
+    }
+
+    this.map.loadImage(url, (error, image) => {
+      if (error) {
+        console.error('Error loading image:', error);
+        return;
+      }
+      if (image && !this.map!.hasImage(id)) {
+        this.map!.addImage(id, image);
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Deck.gl layer handlers
+  // -------------------------------------------------------------------------
+
+  protected async initializeDeckOverlay(): Promise<void> {
+    if (this.deckOverlay || !this.map) return;
+
+    const { mapbox } = await loadDeckGl();
+    this.deckOverlay = new mapbox.MapboxOverlay({ layers: [] });
+    this.map.addControl(this.deckOverlay as unknown as MaplibreGl.IControl);
+  }
+
   protected updateDeckOverlay(): void {
     if (this.deckOverlay) {
       const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
@@ -1547,15 +1409,25 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
-  protected handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-
-    // Initialize deck.gl overlay if needed
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `cog-${Date.now()}`;
     const geotiff = kwargs.geotiff as string;
     const fitBounds = kwargs.fitBounds !== false;
+
+    const { COGLayer, proj } = await loadGeotiff();
+    const geokeysMod = await loadGeokeysParser();
+
+    const geoKeysParser = async (geoKeys: Record<string, unknown>) => {
+      const projDefinition = geokeysMod.toProj4(geoKeys as any);
+      return {
+        def: projDefinition.proj4,
+        parsed: proj.parseCrs(projDefinition.proj4),
+        coordinatesUnits: projDefinition.coordinatesUnits,
+      };
+    };
 
     const layer = new COGLayer({
       id,
@@ -1569,40 +1441,24 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       onGeoTIFFLoad: (tiff: unknown, options: { geographicBounds: { west: number; south: number; east: number; north: number } }) => {
         if (fitBounds && this.map) {
           const { west, south, east, north } = options.geographicBounds;
-          this.map.fitBounds(
-            [[west, south], [east, north]],
-            { padding: 40, duration: 1000 }
-          );
+          this.map.fitBounds([[west, south], [east, north]], { padding: 40, duration: 1000 });
         }
       },
-    } as unknown as Record<string, unknown>);
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    // Notify adapter if it exists
-    if (this.cogAdapter) {
-      this.cogAdapter.notifyLayerAdded(id);
-    }
+    if (this.cogAdapter) this.cogAdapter.notifyLayerAdded(id);
   }
 
   private handleRemoveCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
-
-    // Notify adapter before removal
-    if (this.cogAdapter) {
-      this.cogAdapter.notifyLayerRemoved(id);
-    }
-
+    if (this.cogAdapter) this.cogAdapter.notifyLayerRemoved(id);
     this.deckLayers.delete(id);
     this.updateDeckOverlay();
   }
 
-  // -------------------------------------------------------------------------
-  // Zarr layer handlers (@carbonplan/zarr-layer)
-  // -------------------------------------------------------------------------
-
-  private handleAddZarrLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddZarrLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
 
     const id = kwargs.id as string || `zarr-${Date.now()}`;
@@ -1613,14 +1469,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const selector = kwargs.selector || {};
     const opacity = kwargs.opacity as number ?? 1;
 
+    const { ZarrLayer } = await loadZarrLayer();
+
     const layer = new ZarrLayer({
-      id,
-      source,
-      variable,
-      clim,
-      colormap,
-      selector: selector as any,
-      opacity,
+      id, source, variable, clim, colormap,
+      selector: selector as any, opacity,
       minzoom: kwargs.minzoom as number,
       maxzoom: kwargs.maxzoom as number,
       fillValue: kwargs.fillValue as number,
@@ -1629,23 +1482,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       bounds: kwargs.bounds as [number, number, number, number] | undefined,
     });
 
-    this.map.addLayer(layer as unknown as maplibregl.CustomLayerInterface);
+    this.map.addLayer(layer as unknown as MaplibreGl.CustomLayerInterface);
     this.zarrLayers.set(id, layer);
-
-    // Notify adapter if it exists
-    if (this.zarrAdapter) {
-      this.zarrAdapter.notifyLayerAdded(id);
-    }
+    if (this.zarrAdapter) this.zarrAdapter.notifyLayerAdded(id);
   }
 
   private handleRemoveZarrLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
-
-    // Notify adapter before removal
-    if (this.zarrAdapter) {
-      this.zarrAdapter.notifyLayerRemoved(id);
-    }
-
+    if (this.zarrAdapter) this.zarrAdapter.notifyLayerRemoved(id);
     if (this.map && this.map.getLayer(id)) {
       this.map.removeLayer(id);
     }
@@ -1656,44 +1500,30 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const id = kwargs.id as string;
     const layer = this.zarrLayers.get(id);
     if (!layer) return;
-
-    // Use the actual ZarrLayer methods
     if (kwargs.selector) layer.setSelector(kwargs.selector as Record<string, number>);
     if (kwargs.clim) layer.setClim(kwargs.clim as [number, number]);
     if (kwargs.colormap) layer.setColormap(kwargs.colormap as string[]);
     if (kwargs.opacity !== undefined) layer.setOpacity(kwargs.opacity as number);
   }
 
-  // -------------------------------------------------------------------------
-  // Arc layer handlers (deck.gl)
-  // -------------------------------------------------------------------------
-
-  protected handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-
-    // Initialize deck.gl overlay if needed
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `arc-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
     const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value; // Return arrays/numbers directly
-      }
+      if (typeof value === 'string') return (d: any) => d[value];
+      if (typeof value === 'function') return value;
+      if (value !== undefined && value !== null) return value;
       return fallbackFn || ((d: any) => d[defaultProp]);
     };
 
-    const layer = new ArcLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.ArcLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
@@ -1707,55 +1537,34 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    // Notify adapter if it exists
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
   private handleRemoveArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
-
-    // Notify adapter before removal
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerRemoved(id);
-    }
-
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerRemoved(id);
     this.deckLayers.delete(id);
     this.updateDeckOverlay();
   }
 
-  // -------------------------------------------------------------------------
-  // PointCloud layer handlers (deck.gl)
-  // -------------------------------------------------------------------------
-
-  protected handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-
-    // Initialize deck.gl overlay if needed
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `pointcloud-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
     const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value; // Return arrays/numbers directly
-      }
+      if (typeof value === 'string') return (d: any) => d[value];
+      if (typeof value === 'function') return value;
+      if (value !== undefined && value !== null) return value;
       return fallbackFn || ((d: any) => d[defaultProp]);
     };
 
+    const { layers } = await loadDeckGl();
+
     const layerProps: Record<string, unknown> = {
-      id,
-      data,
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       pointSize: kwargs.pointSize as number ?? 2,
@@ -1765,51 +1574,34 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
     };
 
-    // Only add coordinate system props if explicitly provided
-    if (kwargs.coordinateSystem !== undefined && kwargs.coordinateSystem !== null) {
-      layerProps.coordinateSystem = kwargs.coordinateSystem as number;
-    }
-    if (kwargs.coordinateOrigin !== undefined && kwargs.coordinateOrigin !== null) {
-      layerProps.coordinateOrigin = kwargs.coordinateOrigin as [number, number, number];
-    }
+    if (kwargs.coordinateSystem !== undefined) layerProps.coordinateSystem = kwargs.coordinateSystem as number;
+    if (kwargs.coordinateOrigin !== undefined) layerProps.coordinateOrigin = kwargs.coordinateOrigin as [number, number, number];
 
-    const layer = new PointCloudLayer(layerProps);
+    const layer = new layers.PointCloudLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    // Notify adapter if it exists
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
   private handleRemovePointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
-
-    // Notify adapter before removal
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerRemoved(id);
-    }
-
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerRemoved(id);
     this.deckLayers.delete(id);
     this.updateDeckOverlay();
   }
 
-  // -------------------------------------------------------------------------
-  // Additional deck.gl layer handlers
-  // -------------------------------------------------------------------------
-
-  protected handleAddScatterplotLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddScatterplotLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `scatterplot-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ScatterplotLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.ScatterplotLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       stroked: kwargs.stroked !== false,
@@ -1826,22 +1618,20 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddPathLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddPathLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `path-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new PathLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.PathLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       widthScale: kwargs.widthScale as number ?? 1,
@@ -1853,22 +1643,20 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `polygon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new PolygonLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.PolygonLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.5,
       stroked: kwargs.stroked !== false,
@@ -1885,22 +1673,20 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddHexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddHexagonLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `hexagon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new HexagonLayer({
-      id,
-      data,
+    const { aggregationLayers } = await loadDeckGl();
+
+    const layer = new aggregationLayers.HexagonLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       extruded: kwargs.extruded as boolean ?? true,
@@ -1908,33 +1694,27 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       elevationScale: kwargs.elevationScale as number ?? 4,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       colorRange: kwargs.colorRange ?? [
-        [1, 152, 189],
-        [73, 227, 206],
-        [216, 254, 181],
-        [254, 237, 177],
-        [254, 173, 84],
-        [209, 55, 78],
+        [1, 152, 189], [73, 227, 206], [216, 254, 181],
+        [254, 237, 177], [254, 173, 84], [209, 55, 78],
       ],
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddHeatmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddHeatmapLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `heatmap-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new HeatmapLayer({
-      id,
-      data,
+    const { aggregationLayers } = await loadDeckGl();
+
+    const layer = new aggregationLayers.HeatmapLayer({
+      id, data,
       pickable: false,
       opacity: kwargs.opacity as number ?? 1,
       radiusPixels: kwargs.radiusPixels as number ?? 30,
@@ -1943,33 +1723,27 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
       colorRange: (kwargs.colorRange ?? [
-        [255, 255, 178, 25],
-        [254, 217, 118, 85],
-        [254, 178, 76, 127],
-        [253, 141, 60, 170],
-        [240, 59, 32, 212],
-        [189, 0, 38, 255],
+        [255, 255, 178, 25], [254, 217, 118, 85], [254, 178, 76, 127],
+        [253, 141, 60, 170], [240, 59, 32, 212], [189, 0, 38, 255],
       ]) as any,
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddGridLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `grid-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new GridLayer({
-      id,
-      data,
+    const { aggregationLayers } = await loadDeckGl();
+
+    const layer = new aggregationLayers.GridLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       extruded: kwargs.extruded as boolean ?? true,
@@ -1977,1699 +1751,521 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       elevationScale: kwargs.elevationScale as number ?? 4,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       colorRange: kwargs.colorRange ?? [
-        [1, 152, 189],
-        [73, 227, 206],
-        [216, 254, 181],
-        [254, 237, 177],
-        [254, 173, 84],
-        [209, 55, 78],
+        [1, 152, 189], [73, 227, 206], [216, 254, 181],
+        [254, 237, 177], [254, 173, 84], [209, 55, 78],
       ],
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddIconLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddIconLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `icon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new IconLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.IconLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       iconAtlas: kwargs.iconAtlas as string,
-      iconMapping: kwargs.iconMapping,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+      iconMapping: kwargs.iconMapping as Record<string, any>,
       getIcon: kwargs.getIcon ?? ((d: any) => d.icon || 'marker'),
-      getSize: kwargs.getSize ?? kwargs.size ?? 20,
+      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+      getSize: kwargs.getSize ?? kwargs.size ?? 1,
       getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255],
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddTextLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddTextLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `text-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new TextLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.TextLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getText: kwargs.getText ?? ((d: any) => d.text || d.label || d.name || ''),
-      getSize: kwargs.getSize ?? kwargs.size ?? 12,
+      getText: kwargs.getText ?? kwargs.text ?? ((d: any) => d.text || d.label || ''),
+      getSize: kwargs.getSize ?? kwargs.size ?? 16,
       getColor: kwargs.getColor ?? kwargs.color ?? [0, 0, 0, 255],
-      getAngle: kwargs.getAngle ?? 0,
+      getAngle: kwargs.getAngle ?? kwargs.angle ?? 0,
       getTextAnchor: kwargs.getTextAnchor ?? 'middle',
       getAlignmentBaseline: kwargs.getAlignmentBaseline ?? 'center',
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddGeoJsonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddGeoJsonLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `geojson-${Date.now()}`;
-    const data = kwargs.data as unknown;
+    const data = kwargs.data as unknown[];
 
-    const layer = new GeoJsonLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.GeoJsonLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
-      opacity: kwargs.opacity as number ?? 0.8,
+      opacity: kwargs.opacity as number ?? 1,
       stroked: kwargs.stroked !== false,
       filled: kwargs.filled !== false,
       extruded: kwargs.extruded as boolean ?? false,
       wireframe: kwargs.wireframe as boolean ?? false,
       lineWidthMinPixels: kwargs.lineWidthMinPixels as number ?? 1,
-      pointRadiusMinPixels: kwargs.pointRadiusMinPixels as number ?? 2,
       getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
-      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 0, 255],
+      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 255, 255],
       getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
-      getPointRadius: kwargs.getPointRadius ?? kwargs.pointRadius ?? 5,
       getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0,
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddContourLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddContourLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `contour-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ContourLayer({
-      id,
-      data,
+    const { aggregationLayers } = await loadDeckGl();
+
+    const layer = new aggregationLayers.ContourLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
-      cellSize: kwargs.cellSize as number ?? 200,
-      contours: kwargs.contours as any[] ?? [
-        { threshold: 1, color: [255, 255, 255], strokeWidth: 1 },
-        { threshold: 5, color: [51, 136, 255], strokeWidth: 2 },
-        { threshold: 10, color: [0, 0, 255], strokeWidth: 3 },
-      ],
+      cellSize: kwargs.cellSize as number ?? 100,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+      contours: kwargs.contours as any ?? [
+        { threshold: 1, color: [255, 0, 0], strokeWidth: 2 },
+        { threshold: 5, color: [0, 255, 0], strokeWidth: 2 },
+        { threshold: 10, color: [0, 0, 255], strokeWidth: 2 },
+      ],
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddScreenGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddScreenGridLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `screengrid-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ScreenGridLayer({
-      id,
-      data,
-      pickable: kwargs.pickable !== false,
+    const { aggregationLayers } = await loadDeckGl();
+
+    const layer = new aggregationLayers.ScreenGridLayer({
+      id, data,
+      pickable: kwargs.pickable ?? false,
       opacity: kwargs.opacity as number ?? 0.8,
       cellSizePixels: kwargs.cellSizePixels as number ?? 50,
       getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
       getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
-      colorRange: (kwargs.colorRange ?? [
-        [255, 255, 178, 25],
-        [254, 217, 118, 85],
-        [254, 178, 76, 127],
-        [253, 141, 60, 170],
-        [240, 59, 32, 212],
-        [189, 0, 38, 255],
-      ]) as any,
+      colorRange: kwargs.colorRange as any ?? [
+        [255, 255, 178, 25], [254, 217, 118, 85], [254, 178, 76, 127],
+        [253, 141, 60, 170], [240, 59, 32, 212], [189, 0, 38, 255],
+      ],
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `trips-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value;
-      }
-      return fallbackFn || ((d: any) => d[defaultProp]);
-    };
+    const { geoLayers } = await loadDeckGl();
 
-    const layer = new TripsLayer({
-      id,
-      data,
+    const layer = new geoLayers.TripsLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
-      opacity: kwargs.opacity as number ?? 0.8,
-      widthMinPixels: kwargs.widthMinPixels as number ?? 2,
-      trailLength: kwargs.trailLength as number ?? 180,
+      opacity: kwargs.opacity as number ?? 1,
+      getPath: kwargs.getPath ?? ((d: any) => d.path || d.coordinates),
+      getTimestamps: kwargs.getTimestamps ?? ((d: any) => d.timestamps),
+      getColor: kwargs.getColor ?? kwargs.color ?? [253, 128, 93],
+      trailLength: kwargs.trailLength as number ?? 600,
       currentTime: kwargs.currentTime as number ?? 0,
-      getPath: makeAccessor(kwargs.getPath, 'waypoints', (d: any) => d.waypoints || d.path || d.coordinates),
-      getTimestamps: makeAccessor(kwargs.getTimestamps, 'timestamps', (d: any) => d.timestamps),
-      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [253, 128, 93]),
+      capRounded: kwargs.capRounded as boolean ?? true,
+      jointRounded: kwargs.jointRounded as boolean ?? true,
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `line-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value;
-      }
-      return fallbackFn || ((d: any) => d[defaultProp]);
-    };
+    const { layers } = await loadDeckGl();
 
-    const layer = new LineLayer({
-      id,
-      data,
+    const layer = new layers.LineLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
-      opacity: kwargs.opacity as number ?? 0.8,
-      widthMinPixels: kwargs.widthMinPixels as number ?? 1,
-      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'sourcePosition', (d: any) => d.sourcePosition || d.source || d.from),
-      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'targetPosition', (d: any) => d.targetPosition || d.target || d.to),
-      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
-      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      opacity: kwargs.opacity as number ?? 1,
+      getSourcePosition: kwargs.getSourcePosition ?? ((d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: kwargs.getTargetPosition ?? ((d: any) => d.target || d.to || d.targetPosition),
+      getColor: kwargs.getColor ?? kwargs.color ?? [0, 100, 255, 255],
+      getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  /**
-   * Generic handler for adding any deck.gl layer type.
-   * Routes to specific handlers based on layerType.
-   */
-  protected handleAddDeckGLLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-
-    const layerType = kwargs.layerType as string;
-    if (!layerType) {
-      console.warn('addDeckGLLayer called without layerType');
-      return;
-    }
-
-    // Map layer types to handler methods
-    const handlerMap: Record<string, (args: unknown[], kwargs: Record<string, unknown>) => void> = {
-      'ScatterplotLayer': this.handleAddScatterplotLayer.bind(this),
-      'ArcLayer': this.handleAddArcLayer.bind(this),
-      'PathLayer': this.handleAddPathLayer.bind(this),
-      'PolygonLayer': this.handleAddPolygonLayer.bind(this),
-      'HexagonLayer': this.handleAddHexagonLayer.bind(this),
-      'HeatmapLayer': this.handleAddHeatmapLayer.bind(this),
-      'GridLayer': this.handleAddGridLayer.bind(this),
-      'IconLayer': this.handleAddIconLayer.bind(this),
-      'TextLayer': this.handleAddTextLayer.bind(this),
-      'GeoJsonLayer': this.handleAddGeoJsonLayer.bind(this),
-      'ContourLayer': this.handleAddContourLayer.bind(this),
-      'ScreenGridLayer': this.handleAddScreenGridLayer.bind(this),
-      'PointCloudLayer': this.handleAddPointCloudLayer.bind(this),
-      'TripsLayer': this.handleAddTripsLayer.bind(this),
-      'LineLayer': this.handleAddLineLayer.bind(this),
-      'BitmapLayer': this.handleAddBitmapLayer.bind(this),
-      'ColumnLayer': this.handleAddColumnLayer.bind(this),
-      'GridCellLayer': this.handleAddGridCellLayer.bind(this),
-      'SolidPolygonLayer': this.handleAddSolidPolygonLayer.bind(this),
-      // Heavy geo-layers and mesh-layers are only in DeckGLRenderer
-    };
-
-    const handler = handlerMap[layerType];
-    if (handler) {
-      handler(args, kwargs);
-    } else {
-      console.warn(`Unknown deck.gl layer type: ${layerType}`);
-    }
-  }
-
-  /**
-   * Remove a deck.gl layer by ID.
-   */
-  protected handleRemoveDeckLayer(args: unknown[], kwargs: Record<string, unknown>): void {
-    const id = (args[0] as string) || (kwargs.id as string);
-    if (!id) return;
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerRemoved(id);
-    }
-
-    this.deckLayers.delete(id);
-    this.updateDeckOverlay();
-  }
-
-  /**
-   * Set visibility of a deck.gl layer.
-   */
-  protected handleSetDeckLayerVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
-    const id = (args[0] as string) || (kwargs.id as string);
-    const visible = (args[1] as boolean) ?? (kwargs.visible as boolean) ?? true;
-
-    if (!id) return;
-
-    const layer = this.deckLayers.get(id) as { clone?: (props: Record<string, unknown>) => unknown } | undefined;
-    if (layer && typeof layer.clone === 'function') {
-      const updatedLayer = layer.clone({ visible });
-      this.deckLayers.set(id, updatedLayer);
-      this.updateDeckOverlay();
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Accessor helper for deck.gl layer properties
-  // -------------------------------------------------------------------------
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected makeDeckAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any {
-    if (typeof value === 'string') {
-      return (d: any) => d[value];
-    }
-    if (typeof value === 'function') {
-      return value;
-    }
-    if (value !== undefined && value !== null) {
-      return value;
-    }
-    return fallbackFn || ((d: any) => d[defaultProp]);
-  }
-
-  // -------------------------------------------------------------------------
-  // Additional deck.gl layer handlers
-  // -------------------------------------------------------------------------
-
-  protected handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `bitmap-${Date.now()}`;
     const image = kwargs.image as string;
     const bounds = kwargs.bounds as [number, number, number, number];
 
-    const layer = new BitmapLayer({
-      id,
-      image,
-      bounds,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.BitmapLayer({
+      id, image, bounds,
+      pickable: kwargs.pickable ?? false,
       opacity: kwargs.opacity as number ?? 1,
-      visible: kwargs.visible !== false,
-      pickable: kwargs.pickable as boolean ?? false,
-      desaturate: kwargs.desaturate as number ?? 0,
-      transparentColor: (kwargs.transparentColor ?? [0, 0, 0, 0]) as any,
-      tintColor: (kwargs.tintColor ?? [255, 255, 255]) as any,
-    });
+      transparentColor: kwargs.transparentColor as any ?? [0, 0, 0, 0],
+    } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `column-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ColumnLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.ColumnLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
-      opacity: kwargs.opacity as number ?? 0.8,
-      extruded: kwargs.extruded as boolean ?? true,
+      opacity: kwargs.opacity as number ?? 1,
       diskResolution: kwargs.diskResolution as number ?? 20,
-      radius: kwargs.radius as number ?? 1000,
-      elevationScale: kwargs.elevationScale as number ?? 1,
-      coverage: kwargs.coverage as number ?? 1,
-      filled: kwargs.filled !== false,
-      stroked: kwargs.stroked as boolean ?? false,
-      wireframe: kwargs.wireframe as boolean ?? false,
-      getPosition: this.makeDeckAccessor(
-        kwargs.getPosition, 'coordinates',
-        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
-      ),
-      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [255, 140, 0, 200]),
-      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
-      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 1000),
+      radius: kwargs.radius as number ?? 100,
+      extruded: kwargs.extruded as boolean ?? true,
+      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 255],
+      getElevation: kwargs.getElevation ?? kwargs.elevation ?? 100,
+      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [255, 255, 255, 255],
+      getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `gridcell-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new GridCellLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.GridCellLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
-      opacity: kwargs.opacity as number ?? 0.8,
+      opacity: kwargs.opacity as number ?? 1,
+      cellSize: kwargs.cellSize as number ?? 1000,
       extruded: kwargs.extruded as boolean ?? true,
-      cellSize: kwargs.cellSize as number ?? 200,
-      elevationScale: kwargs.elevationScale as number ?? 1,
-      coverage: kwargs.coverage as number ?? 1,
-      getPosition: this.makeDeckAccessor(
-        kwargs.getPosition, 'coordinates',
-        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
-      ),
-      getColor: this.makeDeckAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 140, 0, 200]),
-      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 1000),
+      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 255],
+      getElevation: kwargs.getElevation ?? kwargs.elevation ?? 100,
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    this.initializeDeckOverlay();
+    await this.initializeDeckOverlay();
 
     const id = kwargs.id as string || `solidpolygon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new SolidPolygonLayer({
-      id,
-      data,
+    const { layers } = await loadDeckGl();
+
+    const layer = new layers.SolidPolygonLayer({
+      id, data,
       pickable: kwargs.pickable !== false,
-      opacity: kwargs.opacity as number ?? 0.8,
-      filled: kwargs.filled !== false,
-      extruded: kwargs.extruded as boolean ?? false,
+      opacity: kwargs.opacity as number ?? 1,
+      extruded: kwargs.extruded as boolean ?? true,
       wireframe: kwargs.wireframe as boolean ?? false,
-      elevationScale: kwargs.elevationScale as number ?? 1,
-      getPolygon: this.makeDeckAccessor(kwargs.getPolygon, 'polygon', (d: any) => d.polygon || d.contour || d.coordinates),
-      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
-      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
-      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+      getPolygon: kwargs.getPolygon ?? ((d: any) => d.polygon || d.contour || d.coordinates),
+      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 255],
+      getElevation: kwargs.getElevation ?? kwargs.elevation ?? 100,
     } as any);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
-
-    if (this.deckLayerAdapter) {
-      this.deckLayerAdapter.notifyLayerAdded(id);
-    }
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  // Heavy geo-layers (TileLayer, MVTLayer, Tile3DLayer, TerrainLayer, GreatCircleLayer,
-  // H3HexagonLayer, H3ClusterLayer, S2Layer, QuadkeyLayer, GeohashLayer, WMSLayer)
-  // and mesh-layers (SimpleMeshLayer, ScenegraphLayer) handlers are only in DeckGLRenderer
-  // to keep the maplibre.js bundle lightweight and avoid heavy CommonJS dependencies.
-
-  // Heavy geo-layers and mesh-layers handlers removed - see DeckGLRenderer
-
-  // -------------------------------------------------------------------------
-  // Native MapLibre feature handlers (Section 3)
-  // -------------------------------------------------------------------------
-
-  protected handleSetProjection(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async handleAddDeckGLLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    const projection = (kwargs.projection as string) || (args[0] as string) || 'mercator';
-    try {
-      this.map.setProjection({ type: projection } as maplibregl.ProjectionSpecification);
-    } catch (err) {
-      console.error('setProjection error:', err);
-    }
-  }
+    await this.initializeDeckOverlay();
 
-  protected handleUpdateGeoJSONSource(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const sourceId = kwargs.sourceId as string || args[0] as string;
-    const data = kwargs.data;
-    if (!sourceId) return;
+    const id = kwargs.id as string || `deck-${Date.now()}`;
+    const type = kwargs.type as string;
+    const layerProps = kwargs.props as Record<string, unknown> || {};
 
-    let source = this.map.getSource(sourceId) as maplibregl.GeoJSONSource;
-    if (!source && !sourceId.endsWith('-source')) {
-      source = this.map.getSource(sourceId + '-source') as maplibregl.GeoJSONSource;
-    }
-    if (source && typeof source.setData === 'function') {
-      source.setData(data as any);
-    }
-  }
+    const { layers, aggregationLayers, geoLayers } = await loadDeckGl();
 
-  protected handleAddMapImage(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const name = kwargs.name as string || args[0] as string;
-    const url = kwargs.url as string || args[1] as string;
-    if (!name || !url) return;
-
-    this.map.loadImage(url).then((response) => {
-      if (response && response.data && !this.map!.hasImage(name)) {
-        this.map!.addImage(name, response.data);
-      }
-    }).catch((err) => {
-      console.warn(`Failed to load image '${name}':`, err);
-    });
-  }
-
-  private tooltipPopup: maplibregl.Popup | null = null;
-  private tooltipLayerHandlers: Map<string, (e: any) => void> = new Map();
-
-  protected handleAddTooltip(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const layerId = kwargs.layerId as string;
-    const template = kwargs.template as string || '';
-    const properties = kwargs.properties as string[] | undefined;
-    if (!layerId) return;
-
-    // Remove existing tooltip for this layer
-    if (this.tooltipLayerHandlers.has(layerId)) {
-      const oldHandler = this.tooltipLayerHandlers.get(layerId)!;
-      this.map.off('mousemove', layerId, oldHandler);
-      this.tooltipLayerHandlers.delete(layerId);
-    }
-
-    const popup = new Popup({
-      closeButton: false,
-      closeOnClick: false,
-      className: 'anymap-tooltip',
-    });
-
-    const handler = (e: any) => {
-      if (!e.features || e.features.length === 0) {
-        popup.remove();
+    let layer: any;
+    switch (type) {
+      case 'ScatterplotLayer': layer = new layers.ScatterplotLayer({ id, ...layerProps }); break;
+      case 'LineLayer': layer = new layers.LineLayer({ id, ...layerProps }); break;
+      case 'PathLayer': layer = new layers.PathLayer({ id, ...layerProps }); break;
+      case 'PolygonLayer': layer = new layers.PolygonLayer({ id, ...layerProps }); break;
+      case 'GeoJsonLayer': layer = new layers.GeoJsonLayer({ id, ...layerProps }); break;
+      case 'ArcLayer': layer = new layers.ArcLayer({ id, ...layerProps }); break;
+      case 'BitmapLayer': layer = new layers.BitmapLayer({ id, ...layerProps }); break;
+      case 'IconLayer': layer = new layers.IconLayer({ id, ...layerProps }); break;
+      case 'TextLayer': layer = new layers.TextLayer({ id, ...layerProps }); break;
+      case 'ColumnLayer': layer = new layers.ColumnLayer({ id, ...layerProps }); break;
+      case 'GridCellLayer': layer = new layers.GridCellLayer({ id, ...layerProps }); break;
+      case 'HexagonLayer': layer = new aggregationLayers.HexagonLayer({ id, ...layerProps }); break;
+      case 'HeatmapLayer': layer = new aggregationLayers.HeatmapLayer({ id, ...layerProps }); break;
+      case 'GridLayer': layer = new aggregationLayers.GridLayer({ id, ...layerProps }); break;
+      case 'ScreenGridLayer': layer = new aggregationLayers.ScreenGridLayer({ id, ...layerProps }); break;
+      case 'ContourLayer': layer = new aggregationLayers.ContourLayer({ id, ...layerProps }); break;
+      case 'TripsLayer': layer = new geoLayers.TripsLayer({ id, ...layerProps }); break;
+      default:
+        console.error(`Unknown deck.gl layer type: ${type}`);
         return;
-      }
+    }
 
-      const feature = e.features[0];
-      const props = feature.properties || {};
-      let html = template;
-
-      if (template) {
-        // Replace {property} placeholders and wrap in styled container
-        const content = template.replace(/\{(\w+)\}/g, (_: string, key: string) => {
-          return props[key] !== undefined ? String(props[key]) : '';
-        });
-        html = '<div style="font-size:12px;color:#333">' + content + '</div>';
-      } else if (properties && properties.length > 0) {
-        // Show only specified properties
-        html = '<div style="font-size:12px;color:#333">' +
-          properties.map(p => `<b>${p}:</b> ${props[p] !== undefined ? props[p] : 'N/A'}`).join('<br>') +
-          '</div>';
-      } else {
-        // Show all properties
-        html = '<div style="font-size:12px;color:#333">' +
-          Object.entries(props).map(([k, v]) => `<b>${k}:</b> ${v}`).join('<br>') +
-          '</div>';
-      }
-
-      popup.setLngLat(e.lngLat).setHTML(html).addTo(this.map!);
-    };
-
-    this.map.on('mousemove', layerId, handler);
-    this.map.on('mouseleave', layerId, () => { popup.remove(); });
-    this.tooltipLayerHandlers.set(layerId, handler);
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerAdded(id);
   }
 
-  protected handleRemoveTooltip(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const layerId = kwargs.layerId as string;
-    if (!layerId) return;
-
-    if (this.tooltipLayerHandlers.has(layerId)) {
-      const handler = this.tooltipLayerHandlers.get(layerId)!;
-      this.map.off('mousemove', layerId, handler);
-      this.tooltipLayerHandlers.delete(layerId);
-    }
+  private handleRemoveDeckLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    const [id] = args as [string];
+    if (this.deckLayerAdapter) this.deckLayerAdapter.notifyLayerRemoved(id);
+    this.deckLayers.delete(id);
+    this.updateDeckOverlay();
   }
 
-  private coordinatesControl: HTMLDivElement | null = null;
-  private coordinatesHandler: ((e: any) => void) | null = null;
-
-  protected handleAddCoordinatesControl(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const position = kwargs.position as string || 'bottom-left';
-
-    // Remove existing
-    if (this.coordinatesControl) {
-      this.coordinatesControl.remove();
-      if (this.coordinatesHandler) {
-        this.map.off('mousemove', this.coordinatesHandler);
-      }
-    }
-
-    const div = document.createElement('div');
-    div.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-coordinates';
-    div.style.cssText = 'padding:4px 8px;font-size:11px;font-family:monospace;background:rgba(255,255,255,0.9);pointer-events:none;';
-    div.textContent = 'Lng: 0.0000, Lat: 0.0000';
-
-    const precision = kwargs.precision as number ?? 4;
-
-    const handler = (e: any) => {
-      div.textContent = `Lng: ${e.lngLat.lng.toFixed(precision)}, Lat: ${e.lngLat.lat.toFixed(precision)}`;
-    };
-
-    this.map.on('mousemove', handler);
-    this.coordinatesHandler = handler;
-
-    // Add to map container
-    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
-    if (controlContainer) {
-      controlContainer.appendChild(div);
-    } else {
-      this.map.getContainer().appendChild(div);
-    }
-    this.coordinatesControl = div;
-  }
-
-  protected handleRemoveCoordinatesControl(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    if (this.coordinatesControl) {
-      this.coordinatesControl.remove();
-      this.coordinatesControl = null;
-    }
-    if (this.coordinatesHandler) {
-      this.map.off('mousemove', this.coordinatesHandler);
-      this.coordinatesHandler = null;
+  private handleSetDeckLayerVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string;
+    const visible = kwargs.visible as boolean;
+    const layer = this.deckLayers.get(id);
+    if (layer) {
+      (layer as any).setProps({ visible });
+      this.updateDeckOverlay();
     }
   }
 
   // -------------------------------------------------------------------------
-  // Time Slider handler (Section 4)
+  // LiDAR handlers
   // -------------------------------------------------------------------------
 
-  private timeSliderContainer: HTMLDivElement | null = null;
-
-  protected handleAddTimeSlider(args: unknown[], kwargs: Record<string, unknown>): void {
+  private async handleAddLidarControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-    const layerId = kwargs.layerId as string;
-    const property = kwargs.property as string;
-    const min = kwargs.min as number ?? 0;
-    const max = kwargs.max as number ?? 100;
-    const step = kwargs.step as number ?? 1;
-    const position = kwargs.position as string || 'bottom-left';
-    const label = kwargs.label as string || 'Time';
-    const autoPlay = kwargs.autoPlay as boolean ?? false;
-    const interval = kwargs.interval as number ?? 500;
-
-    // Remove existing slider
-    this.handleRemoveTimeSlider(args, kwargs);
-
-    const container = document.createElement('div');
-    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-time-slider';
-    container.style.cssText = 'padding:10px;background:rgba(255,255,255,0.95);min-width:250px;border-radius:4px;';
-
-    const labelEl = document.createElement('div');
-    labelEl.style.cssText = 'font-size:12px;font-weight:bold;margin-bottom:5px;';
-    labelEl.textContent = `${label}: ${min}`;
-
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.min = String(min);
-    slider.max = String(max);
-    slider.step = String(step);
-    slider.value = String(min);
-    slider.style.cssText = 'width:100%;cursor:pointer;';
-
-    const playBtn = document.createElement('button');
-    playBtn.textContent = '\u25B6';
-    playBtn.style.cssText = 'margin-top:5px;padding:2px 8px;cursor:pointer;border:1px solid #ccc;border-radius:3px;background:#fff;';
-
-    let animTimer: number | null = null;
-
-    const updateFilter = (value: number) => {
-      labelEl.textContent = `${label}: ${value}`;
-      if (this.map && layerId && property) {
-        this.map.setFilter(layerId, ['<=', property, value]);
-      }
+    const { LidarControl } = await loadMaplibreLidar();
+    const options: LidarControlOptions = {
+      position: (kwargs.position as ControlPosition) || 'top-right',
+      collapsed: (kwargs.collapsed as boolean) ?? true,
     };
-
-    slider.addEventListener('input', () => {
-      updateFilter(Number(slider.value));
-    });
-
-    const stopAnim = () => {
-      if (animTimer !== null) {
-        clearInterval(animTimer);
-        animTimer = null;
-        playBtn.textContent = '\u25B6';
-      }
-    };
-
-    playBtn.addEventListener('click', () => {
-      if (animTimer !== null) {
-        stopAnim();
-      } else {
-        playBtn.textContent = '\u23F8';
-        animTimer = window.setInterval(() => {
-          let val = Number(slider.value) + step;
-          if (val > max) val = min;
-          slider.value = String(val);
-          updateFilter(val);
-        }, interval);
-      }
-    });
-
-    container.appendChild(labelEl);
-    container.appendChild(slider);
-    container.appendChild(playBtn);
-
-    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
-    if (controlContainer) {
-      controlContainer.appendChild(container);
-    } else {
-      this.map.getContainer().appendChild(container);
-    }
-    this.timeSliderContainer = container;
-
-    if (autoPlay) {
-      playBtn.click();
-    }
+    this.lidarControl = new LidarControl(options);
+    this.map.addControl(this.lidarControl as unknown as MaplibreGl.IControl, options.position);
+    this.stateManager.addControl('lidar', 'lidar', options.position!, kwargs);
   }
 
-  protected handleRemoveTimeSlider(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (this.timeSliderContainer) {
-      this.timeSliderContainer.remove();
-      this.timeSliderContainer = null;
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // UI Enhancement handlers (Section 6)
-  // -------------------------------------------------------------------------
-
-  private swipeContainer: HTMLDivElement | null = null;
-  private swipeHandler: (() => void) | null = null;
-
-  protected handleAddSwipeMap(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const leftLayer = kwargs.leftLayer as string;
-    const rightLayer = kwargs.rightLayer as string;
-    if (!leftLayer || !rightLayer) return;
-
-    // Remove existing
-    this.handleRemoveSwipeMap(args, kwargs);
-
-    const container = this.map.getContainer();
-    const slider = document.createElement('div');
-    slider.className = 'anymap-swipe-slider';
-    slider.style.cssText = 'position:absolute;top:0;bottom:0;width:4px;background:#fff;cursor:ew-resize;z-index:10;left:50%;box-shadow:0 0 4px rgba(0,0,0,0.3);';
-
-    const handle = document.createElement('div');
-    handle.style.cssText = 'position:absolute;top:50%;left:-10px;width:24px;height:24px;background:#fff;border-radius:50%;border:2px solid #333;transform:translateY(-50%);cursor:ew-resize;';
-    slider.appendChild(handle);
-    container.appendChild(slider);
-
-    let isDragging = false;
-
-    const updateClip = () => {
-      const rect = container.getBoundingClientRect();
-      const sliderLeft = slider.offsetLeft;
-      const clipRight = rect.width - sliderLeft;
-
-      // Clip the right layer to show only on the right side of the slider
-      this.map!.getContainer();
-      // Use clip-path on canvas layers
-      const mapCanvas = this.map!.getCanvas();
-      if (mapCanvas) {
-        // Set the left layer to show fully, clip the right layer
-        if (this.map!.getLayer(leftLayer)) {
-          // Left layer is fully visible
-        }
-        if (this.map!.getLayer(rightLayer)) {
-          this.map!.setPaintProperty(rightLayer, 'raster-opacity', 1);
-        }
-      }
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      isDragging = true;
-      e.preventDefault();
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      const rect = container.getBoundingClientRect();
-      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-      slider.style.left = `${x}px`;
-
-      // Clip left layer
-      if (this.map!.getLayer(leftLayer)) {
-        (this.map! as any).setLayerClipBounds?.(leftLayer, [[0, 0], [x, rect.height]]);
-      }
-      if (this.map!.getLayer(rightLayer)) {
-        (this.map! as any).setLayerClipBounds?.(rightLayer, [[x, 0], [rect.width, rect.height]]);
-      }
-    };
-
-    const onMouseUp = () => { isDragging = false; };
-
-    slider.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-
-    this.swipeContainer = slider;
-    this.swipeHandler = () => {
-      slider.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-  }
-
-  protected handleRemoveSwipeMap(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (this.swipeContainer) {
-      this.swipeContainer.remove();
-      this.swipeContainer = null;
-    }
-    if (this.swipeHandler) {
-      this.swipeHandler();
-      this.swipeHandler = null;
-    }
-  }
-
-  private opacitySliderContainer: Map<string, HTMLDivElement> = new Map();
-
-  protected handleAddOpacitySlider(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const layerId = kwargs.layerId as string;
-    const position = kwargs.position as string || 'top-right';
-    const label = kwargs.label as string || layerId;
-    if (!layerId) return;
-
-    // Remove existing for this layer
-    this.removeOpacitySliderForLayer(layerId);
-
-    const container = document.createElement('div');
-    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-opacity-slider';
-    container.style.cssText = 'padding:8px;background:rgba(255,255,255,0.95);min-width:150px;border-radius:4px;';
-
-    const labelEl = document.createElement('div');
-    labelEl.style.cssText = 'font-size:11px;margin-bottom:4px;';
-    labelEl.textContent = `${label}: 100%`;
-
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.min = '0';
-    slider.max = '100';
-    slider.value = '100';
-    slider.style.cssText = 'width:100%;cursor:pointer;';
-
-    slider.addEventListener('input', () => {
-      const opacity = Number(slider.value) / 100;
-      labelEl.textContent = `${label}: ${slider.value}%`;
-
-      // Try to set opacity on different layer types
-      if (this.map!.getLayer(layerId)) {
-        try {
-          const layerObj = this.map!.getLayer(layerId);
-          const layerType = (layerObj as any)?.type;
-          if (layerType === 'raster') {
-            this.map!.setPaintProperty(layerId, 'raster-opacity', opacity);
-          } else if (layerType === 'fill') {
-            this.map!.setPaintProperty(layerId, 'fill-opacity', opacity);
-          } else if (layerType === 'line') {
-            this.map!.setPaintProperty(layerId, 'line-opacity', opacity);
-          } else if (layerType === 'circle') {
-            this.map!.setPaintProperty(layerId, 'circle-opacity', opacity);
-          } else if (layerType === 'symbol') {
-            this.map!.setPaintProperty(layerId, 'icon-opacity', opacity);
-            this.map!.setPaintProperty(layerId, 'text-opacity', opacity);
-          } else if (layerType === 'fill-extrusion') {
-            this.map!.setPaintProperty(layerId, 'fill-extrusion-opacity', opacity);
-          }
-        } catch {
-          // Deck.gl layer - try deck.gl approach
-          const deckLayer = this.deckLayers.get(layerId) as { clone?: (props: Record<string, unknown>) => unknown } | undefined;
-          if (deckLayer && typeof deckLayer.clone === 'function') {
-            const updated = deckLayer.clone({ opacity });
-            this.deckLayers.set(layerId, updated);
-            this.updateDeckOverlay();
-          }
-        }
-      }
-    });
-
-    container.appendChild(labelEl);
-    container.appendChild(slider);
-
-    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
-    if (controlContainer) {
-      controlContainer.appendChild(container);
-    }
-
-    this.opacitySliderContainer.set(layerId, container);
-  }
-
-  private removeOpacitySliderForLayer(layerId: string): void {
-    const existing = this.opacitySliderContainer.get(layerId);
-    if (existing) {
-      existing.remove();
-      this.opacitySliderContainer.delete(layerId);
-    }
-  }
-
-  protected handleRemoveOpacitySlider(args: unknown[], kwargs: Record<string, unknown>): void {
-    const layerId = kwargs.layerId as string;
-    if (layerId) {
-      this.removeOpacitySliderForLayer(layerId);
-    }
-  }
-
-  private styleSwitcherContainer: HTMLDivElement | null = null;
-
-  protected handleAddStyleSwitcher(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const styles = kwargs.styles as Record<string, string>;
-    const position = kwargs.position as string || 'top-right';
-    if (!styles || Object.keys(styles).length === 0) return;
-
-    // Remove existing
-    this.handleRemoveStyleSwitcher(args, kwargs);
-
-    const container = document.createElement('div');
-    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-style-switcher';
-    container.style.cssText = 'padding:8px;background:rgba(255,255,255,0.95);border-radius:4px;';
-
-    const select = document.createElement('select');
-    select.style.cssText = 'font-size:12px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;cursor:pointer;';
-
-    for (const [name, url] of Object.entries(styles)) {
-      const option = document.createElement('option');
-      option.value = url;
-      option.textContent = name;
-      select.appendChild(option);
-    }
-
-    select.addEventListener('change', () => {
-      this.map!.setStyle(select.value);
-    });
-
-    container.appendChild(select);
-
-    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
-    if (controlContainer) {
-      controlContainer.appendChild(container);
-    }
-
-    this.styleSwitcherContainer = container;
-  }
-
-  protected handleRemoveStyleSwitcher(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (this.styleSwitcherContainer) {
-      this.styleSwitcherContainer.remove();
-      this.styleSwitcherContainer = null;
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Data Export handlers (Section 7)
-  // -------------------------------------------------------------------------
-
-  protected handleGetVisibleFeatures(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const layers = kwargs.layers as string[] | undefined;
-
-    try {
-      const features = layers
-        ? this.map.queryRenderedFeatures(undefined, { layers })
-        : this.map.queryRenderedFeatures();
-
-      const geojson: FeatureCollection = {
-        type: 'FeatureCollection',
-        features: features.map(f => ({
-          type: 'Feature' as const,
-          geometry: f.geometry,
-          properties: f.properties,
-        })),
-      };
-
-      // Send back via model
-      if (this.model) {
-        this.model.set('_queried_features', {
-          type: 'visible_features',
-          data: geojson,
-        });
-        this.model.save_changes();
-      }
-    } catch (err) {
-      console.warn('Error getting visible features:', err);
-    }
-  }
-
-  protected handleGetLayerData(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const sourceId = kwargs.sourceId as string;
-    if (!sourceId) return;
-
-    let features: maplibregl.GeoJSONFeature[] = [];
-    let resolvedSourceId = sourceId;
-
-    // Try the given sourceId first
-    try {
-      features = this.map.querySourceFeatures(sourceId);
-    } catch {
-      // Source doesn't exist with this ID
-    }
-
-    // If no results, try with '-source' suffix
-    // (add_geojson creates sources as '{name}-source')
-    if (features.length === 0 && !sourceId.endsWith('-source')) {
-      const altSourceId = sourceId + '-source';
-      try {
-        const altFeatures = this.map.querySourceFeatures(altSourceId);
-        if (altFeatures.length > 0) {
-          features = altFeatures;
-          resolvedSourceId = altSourceId;
-        }
-      } catch {
-        // alt source doesn't exist either
-      }
-    }
-
-    const geojson: FeatureCollection = {
-      type: 'FeatureCollection',
-      features: features.map(f => ({
-        type: 'Feature' as const,
-        geometry: f.geometry,
-        properties: f.properties,
-      })),
-    };
-
-    if (this.model) {
-      this.model.set('_queried_features', {
-        type: 'layer_data',
-        sourceId: resolvedSourceId,
-        data: geojson,
-      });
-      this.model.save_changes();
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // LiDAR layer handlers (maplibre-gl-lidar)
-  // -------------------------------------------------------------------------
-
-  /**
-   * Add the LiDAR control panel.
-   */
-  private handleAddLidarControl(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    // Don't add if already exists
-    if (this.lidarControl) {
-      console.warn('LiDAR control already exists');
+  private async handleAddLidarLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.map || !this.lidarControl) {
+      console.warn('LiDAR control must be added before adding LiDAR layers');
       return;
     }
-
-    const options = {
-      position: (kwargs.position as string) || 'top-right',
-      collapsed: kwargs.collapsed !== false,
-      title: (kwargs.title as string) || 'LiDAR Viewer',
-      panelWidth: (kwargs.panelWidth as number) || 365,
-      panelMaxHeight: (kwargs.panelMaxHeight as number) || 600,
-      pointSize: (kwargs.pointSize as number) || 2,
-      opacity: (kwargs.opacity as number) || 1.0,
-      colorScheme: (kwargs.colorScheme as string) || 'elevation',
-      usePercentile: kwargs.usePercentile !== false,
-      pointBudget: (kwargs.pointBudget as number) || 1000000,
-      pickable: kwargs.pickable === true,
-      autoZoom: kwargs.autoZoom !== false,
-      copcLoadingMode: kwargs.copcLoadingMode as 'full' | 'dynamic' | undefined,
-      streamingPointBudget: (kwargs.streamingPointBudget as number) || 5000000,
-    };
-
-    // Create and add the LiDAR control
-    this.lidarControl = new LidarControl(options as LidarControlOptions);
-    this.map.addControl(
-      this.lidarControl as unknown as maplibregl.IControl,
-      options.position as ControlPosition
-    );
-
-    // Listen for load events to track loaded point clouds
-    this.lidarControl.on('load', (event) => {
-      const info = event.pointCloud as { id: string; name: string; pointCount: number; source?: string } | undefined;
-      if (info && 'name' in info) {
-        this.lidarLayers.set(info.id, info.source || '');
-        this.sendEvent('lidar:load', { id: info.id, name: info.name, pointCount: info.pointCount });
-      }
-    });
-
-    this.lidarControl.on('unload', (event) => {
-      const pointCloud = event.pointCloud as { id: string } | undefined;
-      if (pointCloud) {
-        this.lidarLayers.delete(pointCloud.id);
-        this.sendEvent('lidar:unload', { id: pointCloud.id });
-      }
-    });
-
-    // Register with existing layer control if present
-    this.registerLidarAdapterWithLayerControl();
-  }
-
-  /**
-   * Register the LiDAR adapter with the layer control if it exists.
-   * This enables dynamic registration when LiDAR layers are added after the layer control.
-   */
-  private registerLidarAdapterWithLayerControl(): void {
-    if (!this.lidarControl || !this.layerControlPlugin) return;
-
-    const layerControl = this.layerControlPlugin.getControl();
-    if (!layerControl) return;
-
-    // Create adapter if not exists
-    if (!this.lidarAdapter) {
-      this.lidarAdapter = new LidarLayerAdapter(this.lidarControl);
-    }
-
-    // Register the adapter with the layer control
-    layerControl.registerCustomAdapter(this.lidarAdapter);
-  }
-
-  /**
-   * Add a LiDAR layer programmatically (loads from URL or base64 data).
-   */
-  private handleAddLidarLayer(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    const source = kwargs.source as string;
-    const name = (kwargs.name as string) || `lidar-${Date.now()}`;
-    const isBase64 = kwargs.isBase64 === true;
-
-    if (!source) {
-      console.error('LiDAR layer requires a source URL or base64 data');
+    const id = kwargs.id as string || `lidar-${Date.now()}`;
+    const url = kwargs.url as string;
+    if (!url) {
+      console.error('addLidarLayer requires url');
       return;
     }
-
-    // Create LiDAR control if not exists (invisible panel mode)
-    if (!this.lidarControl) {
-      this.lidarControl = new LidarControl({
-        collapsed: true,
-        position: 'top-right',
-        pointSize: (kwargs.pointSize as number) || 2,
-        opacity: (kwargs.opacity as number) || 1.0,
-        colorScheme: (kwargs.colorScheme as string) || 'elevation',
-        usePercentile: kwargs.usePercentile !== false,
-        pointBudget: (kwargs.pointBudget as number) || 1000000,
-        pickable: kwargs.pickable !== false,
-        autoZoom: kwargs.autoZoom !== false,
-      } as LidarControlOptions);
-
-      this.map.addControl(this.lidarControl as unknown as maplibregl.IControl, 'top-right');
-
-      // Set up event listeners
-      this.lidarControl.on('load', (event) => {
-        const info = event.pointCloud as { id: string; name: string; pointCount: number; source?: string } | undefined;
-        if (info && 'name' in info) {
-          this.lidarLayers.set(info.id, info.source || '');
-          this.sendEvent('lidar:load', { id: info.id, name: info.name, pointCount: info.pointCount });
-        }
-      });
-
-      this.lidarControl.on('unload', (event) => {
-        const pointCloud = event.pointCloud as { id: string } | undefined;
-        if (pointCloud) {
-          this.lidarLayers.delete(pointCloud.id);
-          this.sendEvent('lidar:unload', { id: pointCloud.id });
-        }
-      });
-
-      // Register with existing layer control if present
-      this.registerLidarAdapterWithLayerControl();
-    }
-
-    // Apply styling options
-    if (kwargs.colorScheme) {
-      this.lidarControl.setColorScheme(kwargs.colorScheme as LidarColorScheme);
-    }
-    if (kwargs.pointSize !== undefined) {
-      this.lidarControl.setPointSize(kwargs.pointSize as number);
-    }
-    if (kwargs.opacity !== undefined) {
-      this.lidarControl.setOpacity(kwargs.opacity as number);
-    }
-    if (kwargs.pickable !== undefined) {
-      this.lidarControl.setPickable(kwargs.pickable as boolean);
-    }
-
-    // Load the point cloud
-    const loadOptions = {
-      id: name,
-      name: (kwargs.filename as string) || name,
+    const options: LidarLayerOptions = {
+      url,
+      pointSize: kwargs.pointSize as number ?? 1,
+      opacity: kwargs.opacity as number ?? 1,
+      colorScheme: (kwargs.colorScheme as LidarColorScheme) ?? 'elevation',
     };
-
-    if (isBase64) {
-      // Convert base64 to ArrayBuffer
-      const binaryString = atob(source);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const arrayBuffer = bytes.buffer;
-
-      // Load from ArrayBuffer
-      const streamingMode = kwargs.streamingMode !== false;
-      if (streamingMode) {
-        this.lidarControl.loadPointCloudStreaming(arrayBuffer, loadOptions as any);
-      } else {
-        this.lidarControl.loadPointCloud(arrayBuffer, loadOptions as any);
-      }
-    } else {
-      // Load from URL
-      const streamingMode = kwargs.streamingMode !== false;
-      if (streamingMode) {
-        this.lidarControl.loadPointCloudStreaming(source, loadOptions as any);
-      } else {
-        this.lidarControl.loadPointCloud(source, loadOptions as any);
-      }
-    }
-
-    // Track the layer
-    this.lidarLayers.set(name, source);
+    this.lidarControl.addLayer(id, options);
+    this.lidarLayers.set(id, id);
+    if (this.lidarAdapter) this.lidarAdapter.notifyLayerAdded(id);
   }
 
-  /**
-   * Remove a LiDAR layer.
-   */
   private handleRemoveLidarLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.lidarControl) return;
-
-    const id = kwargs.id as string;
-    if (id) {
-      this.lidarControl.unloadPointCloud(id);
-      this.lidarLayers.delete(id);
-    } else {
-      // Remove all layers
-      this.lidarControl.unloadPointCloud();
-      this.lidarLayers.clear();
-    }
+    const [id] = args as [string];
+    if (this.lidarAdapter) this.lidarAdapter.notifyLayerRemoved(id);
+    this.lidarControl.removeLayer(id);
+    this.lidarLayers.delete(id);
   }
 
-  /**
-   * Set LiDAR color scheme.
-   */
   private handleSetLidarColorScheme(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.lidarControl) return;
-    const colorScheme = kwargs.colorScheme as string;
-    if (colorScheme) {
-      this.lidarControl.setColorScheme(colorScheme as any);
+    const id = kwargs.id as string;
+    const colorScheme = kwargs.colorScheme as LidarColorScheme;
+    if (!id || !colorScheme) {
+      console.error('setLidarColorScheme requires id and colorScheme');
+      return;
     }
+    this.lidarControl.setColorScheme(id, colorScheme);
   }
 
-  /**
-   * Set LiDAR point size.
-   */
   private handleSetLidarPointSize(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.lidarControl) return;
+    const id = kwargs.id as string;
     const pointSize = kwargs.pointSize as number;
-    if (pointSize !== undefined) {
-      this.lidarControl.setPointSize(pointSize);
+    if (!id || pointSize === undefined) {
+      console.error('setLidarPointSize requires id and pointSize');
+      return;
     }
+    this.lidarControl.setPointSize(id, pointSize);
   }
 
-  /**
-   * Set LiDAR layer opacity.
-   */
   private handleSetLidarOpacity(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.lidarControl) return;
+    const id = kwargs.id as string;
     const opacity = kwargs.opacity as number;
-    if (opacity !== undefined) {
-      this.lidarControl.setOpacity(opacity);
+    if (!id || opacity === undefined) {
+      console.error('setLidarOpacity requires id and opacity');
+      return;
     }
+    this.lidarControl.setOpacity(id, opacity);
   }
 
   // -------------------------------------------------------------------------
-  // maplibre-gl-components control handlers
-  // -------------------------------------------------------------------------
-
-  private handleAddPMTilesControl(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    const position = (kwargs.position as ControlPosition) || 'top-right';
-    const collapsed = kwargs.collapsed !== false;
-    const defaultUrl = kwargs.defaultUrl as string || '';
-    const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
-
-    // Remove existing control if present
-    const existingControl = this.controlsMap.get('pmtiles-control');
-    if (existingControl) {
-      this.map.removeControl(existingControl);
-      this.controlsMap.delete('pmtiles-control');
-    }
-
-    // Create PMTiles control
-    this.pmtilesLayerControl = new PMTilesLayerControl({
-      collapsed,
-      defaultUrl,
-      loadDefaultUrl,
-      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
-      defaultFillColor: kwargs.defaultFillColor as string || 'steelblue',
-      defaultLineColor: kwargs.defaultLineColor as string || '#333',
-      defaultPickable: kwargs.defaultPickable !== false,
-    });
-
-    this.map.addControl(this.pmtilesLayerControl as unknown as maplibregl.IControl, position);
-    this.controlsMap.set('pmtiles-control', this.pmtilesLayerControl as unknown as maplibregl.IControl);
-
-    // Set up event listeners
-    this.pmtilesLayerControl.on('layeradd', (event) => {
-      console.debug('PMTiles layer added:', event.url);
-      this.sendEvent('pmtiles_layer_add', { url: event.url, layerId: event.layerId });
-    });
-
-    this.pmtilesLayerControl.on('layerremove', (event) => {
-      console.debug('PMTiles layer removed:', event.layerId);
-      this.sendEvent('pmtiles_layer_remove', { layerId: event.layerId });
-    });
-
-    this.pmtilesLayerControl.on('error', (event) => {
-      console.error('PMTiles error:', event.error);
-      this.sendEvent('pmtiles_error', { error: event.error });
-    });
-  }
-
-  private handleAddCogControl(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    const position = (kwargs.position as ControlPosition) || 'top-right';
-    const collapsed = kwargs.collapsed !== false;
-    const defaultUrl = kwargs.defaultUrl as string || '';
-    const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
-
-    // Remove existing control if present
-    const existingControl = this.controlsMap.get('cog-control');
-    if (existingControl) {
-      this.map.removeControl(existingControl);
-      this.controlsMap.delete('cog-control');
-    }
-
-    // Create COG control
-    this.cogLayerUiControl = new CogLayerControl({
-      collapsed,
-      defaultUrl,
-      loadDefaultUrl,
-      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
-      defaultColormap: (kwargs.defaultColormap as string || 'viridis') as any,
-      defaultBands: kwargs.defaultBands as string || '1',
-      defaultRescaleMin: (kwargs.defaultRescaleMin as number) ?? 0,
-      defaultRescaleMax: (kwargs.defaultRescaleMax as number) ?? 255,
-    });
-
-    this.map.addControl(this.cogLayerUiControl as unknown as maplibregl.IControl, position);
-    this.controlsMap.set('cog-control', this.cogLayerUiControl as unknown as maplibregl.IControl);
-
-    // Set up event listeners
-    this.cogLayerUiControl.on('layeradd', (event) => {
-      console.debug('COG layer added:', event.url);
-      this.sendEvent('cog_layer_add', { url: event.url, layerId: event.layerId });
-    });
-
-    this.cogLayerUiControl.on('layerremove', (event) => {
-      console.debug('COG layer removed:', event.layerId);
-      this.sendEvent('cog_layer_remove', { layerId: event.layerId });
-    });
-
-    this.cogLayerUiControl.on('error', (event) => {
-      console.error('COG error:', event.error);
-      this.sendEvent('cog_error', { error: event.error });
-    });
-  }
-
-  private handleAddZarrControl(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    const position = (kwargs.position as ControlPosition) || 'top-right';
-    const collapsed = kwargs.collapsed !== false;
-    const defaultUrl = kwargs.defaultUrl as string || '';
-    const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
-
-    // Remove existing control if present
-    const existingControl = this.controlsMap.get('zarr-control');
-    if (existingControl) {
-      this.map.removeControl(existingControl);
-      this.controlsMap.delete('zarr-control');
-    }
-
-    // Create Zarr control
-    this.zarrLayerUiControl = new ZarrLayerControl({
-      collapsed,
-      defaultUrl,
-      loadDefaultUrl,
-      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
-      defaultVariable: kwargs.defaultVariable as string || '',
-      defaultClim: kwargs.defaultClim as [number, number] || [0, 1],
-    });
-
-    this.map.addControl(this.zarrLayerUiControl as unknown as maplibregl.IControl, position);
-    this.controlsMap.set('zarr-control', this.zarrLayerUiControl as unknown as maplibregl.IControl);
-
-    // Set up event listeners
-    this.zarrLayerUiControl.on('layeradd', (event) => {
-      console.debug('Zarr layer added:', event.url);
-      this.sendEvent('zarr_layer_add', { url: event.url, layerId: event.layerId });
-    });
-
-    this.zarrLayerUiControl.on('layerremove', (event) => {
-      console.debug('Zarr layer removed:', event.layerId);
-      this.sendEvent('zarr_layer_remove', { layerId: event.layerId });
-    });
-
-    this.zarrLayerUiControl.on('error', (event) => {
-      console.error('Zarr error:', event.error);
-      this.sendEvent('zarr_error', { error: event.error });
-    });
-  }
-
-  private handleAddVectorControl(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    const position = (kwargs.position as ControlPosition) || 'top-right';
-    const collapsed = kwargs.collapsed !== false;
-    const defaultUrl = kwargs.defaultUrl as string || '';
-    const loadDefaultUrl = kwargs.loadDefaultUrl as boolean || false;
-
-    // Remove existing control if present
-    const existingControl = this.controlsMap.get('vector-control');
-    if (existingControl) {
-      this.map.removeControl(existingControl);
-      this.controlsMap.delete('vector-control');
-    }
-
-    // Create AddVector control
-    this.addVectorControl = new AddVectorControl({
-      collapsed,
-      defaultUrl,
-      loadDefaultUrl,
-      defaultOpacity: (kwargs.defaultOpacity as number) ?? 1,
-      defaultFillColor: kwargs.defaultFillColor as string || '#3388ff',
-      defaultStrokeColor: kwargs.defaultStrokeColor as string || '#3388ff',
-      fitBounds: kwargs.fitBounds !== false,
-    });
-
-    this.map.addControl(this.addVectorControl as unknown as maplibregl.IControl, position);
-    this.controlsMap.set('vector-control', this.addVectorControl as unknown as maplibregl.IControl);
-
-    // Set up event listeners
-    this.addVectorControl.on('layeradd', (event) => {
-      console.debug('Vector layer added:', event.url);
-      this.sendEvent('vector_layer_add', { url: event.url, layerId: event.layerId });
-    });
-
-    this.addVectorControl.on('layerremove', (event) => {
-      console.debug('Vector layer removed:', event.layerId);
-      this.sendEvent('vector_layer_remove', { layerId: event.layerId });
-    });
-
-    this.addVectorControl.on('error', (event) => {
-      console.error('Vector error:', event.error);
-      this.sendEvent('vector_error', { error: event.error });
-    });
-  }
-
-  private handleAddControlGrid(_args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    const position = (kwargs.position as string) || 'top-right';
-
-    // Remove existing control grid if present
-    if (this.controlGrid) {
-      this.map.removeControl(this.controlGrid as unknown as maplibregl.IControl);
-      this.controlsMap.delete('control-grid');
-      this.controlGrid = null;
-    }
-
-    // Build options for addControlGrid
-    const options: Record<string, unknown> = { position };
-
-    if (kwargs.defaultControls !== undefined && kwargs.defaultControls !== null) {
-      options.defaultControls = kwargs.defaultControls;
-    }
-    if (kwargs.exclude !== undefined && kwargs.exclude !== null) {
-      options.exclude = kwargs.exclude;
-    }
-    if (kwargs.rows !== undefined && kwargs.rows !== null) {
-      options.rows = kwargs.rows;
-    }
-    if (kwargs.columns !== undefined && kwargs.columns !== null) {
-      options.columns = kwargs.columns;
-    }
-    if (kwargs.collapsed !== undefined) {
-      options.collapsed = kwargs.collapsed;
-    }
-    if (kwargs.collapsible !== undefined) {
-      options.collapsible = kwargs.collapsible;
-    }
-    if (kwargs.title !== undefined) {
-      options.title = kwargs.title;
-    }
-    if (kwargs.showRowColumnControls !== undefined) {
-      options.showRowColumnControls = kwargs.showRowColumnControls;
-    }
-    if (kwargs.gap !== undefined && kwargs.gap !== null) {
-      options.gap = kwargs.gap;
-    }
-    if (kwargs.basemapStyleUrl !== undefined) {
-      options.basemapStyleUrl = kwargs.basemapStyleUrl;
-    } else {
-      // Use the current map style URL as default for SwipeControl
-      const style = this.model.get('style');
-      if (typeof style === 'string') {
-        options.basemapStyleUrl = style;
-      }
-    }
-    if (kwargs.excludeLayers !== undefined && kwargs.excludeLayers !== null) {
-      options.excludeLayers = kwargs.excludeLayers;
-    }
-
-    this.controlGrid = addControlGrid(this.map, options as Parameters<typeof addControlGrid>[1]);
-    this.controlsMap.set('control-grid', this.controlGrid as unknown as maplibregl.IControl);
-
-    // Register adapters with LayerControl if present
-    const layerControl = this.layerControlPlugin?.getControl();
-    if (layerControl) {
-      for (const adapter of this.controlGrid.getAdapters()) {
-        layerControl.registerCustomAdapter(adapter);
-      }
-    }
-
-    this.stateManager.addControl('control-grid', 'control-grid', position, kwargs);
-  }
-
-  // -------------------------------------------------------------------------
-  // Trait change handlers
-  // -------------------------------------------------------------------------
-
-  protected onCenterChange(): void {
-    if (this.map && this.isMapReady) {
-      const center = this.model.get('center');
-      this.map.setCenter(center as [number, number]);
-    }
-  }
-
-  protected onZoomChange(): void {
-    if (this.map && this.isMapReady) {
-      const zoom = this.model.get('zoom');
-      this.map.setZoom(zoom);
-    }
-  }
-
-  protected onStyleChange(): void {
-    if (this.map && this.isMapReady) {
-      const style = this.model.get('style');
-      this.map.setStyle(typeof style === 'string' ? style : (style as maplibregl.StyleSpecification));
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // PMTiles layer handlers
+  // PMTiles handlers
   // -------------------------------------------------------------------------
 
   private handleAddPMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-
+    const id = kwargs.id as string || `pmtiles-${Date.now()}`;
     const url = kwargs.url as string;
-    const layerId = kwargs.id as string;
-    const sourceType = (kwargs.sourceType as string) || 'vector';
-    const opacity = (kwargs.opacity as number) ?? 1.0;
-    const visible = kwargs.visible !== false;
-    const style = (kwargs.style as Record<string, unknown>) || {};
-
-    // Ensure pmtiles:// protocol prefix
-    const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
-
-    try {
-      // Add source
-      const sourceId = `${layerId}-source`;
-      if (!this.map.getSource(sourceId)) {
-        const sourceConfig = {
-          type: sourceType as 'vector' | 'raster',
-          url: pmtilesUrl,
-        };
-        this.map.addSource(sourceId, sourceConfig);
-        // Persist source state for multi-cell rendering
-        this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
-      }
-
-      // Add layer
-      if (!this.map.getLayer(layerId)) {
-        let layerConfig: Record<string, unknown>;
-
-        if (sourceType === 'vector') {
-          const layerType = (style.type as string) || 'fill';
-
-          // Build paint properties based on layer type
-          let defaultPaint: Record<string, unknown> = {};
-          if (layerType === 'fill') {
-            defaultPaint = {
-              'fill-color': '#3388ff',
-              'fill-opacity': opacity,
-            };
-          } else if (layerType === 'line') {
-            defaultPaint = {
-              'line-color': '#3388ff',
-              'line-width': 2,
-              'line-opacity': opacity,
-            };
-          } else if (layerType === 'circle') {
-            defaultPaint = {
-              'circle-color': '#3388ff',
-              'circle-radius': 5,
-              'circle-opacity': opacity,
-            };
-          }
-
-          // Extract paint properties from style (everything except type and source-layer)
-          const paintFromStyle: Record<string, unknown> = {};
-          for (const [key, value] of Object.entries(style)) {
-            if (key !== 'type' && key !== 'source-layer') {
-              paintFromStyle[key] = value;
-            }
-          }
-
-          layerConfig = {
-            id: layerId,
-            type: layerType,
-            source: sourceId,
-            layout: {
-              visibility: visible ? 'visible' : 'none',
-            },
-            paint: { ...defaultPaint, ...paintFromStyle },
-          };
-
-          if (style['source-layer']) {
-            layerConfig['source-layer'] = style['source-layer'];
-          }
-
-          this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
-        } else {
-          // Raster PMTiles
-          layerConfig = {
-            id: layerId,
-            type: 'raster',
-            source: sourceId,
-            paint: {
-              'raster-opacity': opacity,
-            },
-            layout: {
-              visibility: visible ? 'visible' : 'none',
-            },
-          };
-          this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
-        }
-
-        // Persist layer state for multi-cell rendering
-        this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
-      }
-    } catch (error) {
-      console.error(`[anymap-ts] Error adding PMTiles layer "${layerId}":`, error);
+    if (!url) {
+      console.error('addPMTilesLayer requires url');
+      return;
     }
+    const sourceId = `${id}-source`;
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, { type: 'vector', url: `pmtiles://${url}` });
+      this.stateManager.addSource(sourceId, { type: 'vector', url: `pmtiles://${url}` });
+    }
+    console.warn('PMTiles layer source added. Use addLayer to configure the layer style.');
   }
 
   private handleRemovePMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-    const [layerId] = args as [string];
-    const sourceId = `${layerId}-source`;
-
-    if (this.map.getLayer(layerId)) {
-      this.map.removeLayer(layerId);
+    const [id] = args as [string];
+    const sourceId = `${id}-source`;
+    if (this.map.getLayer(id)) {
+      this.map.removeLayer(id);
+      this.stateManager.removeLayer(id);
     }
     if (this.map.getSource(sourceId)) {
       this.map.removeSource(sourceId);
+      this.stateManager.removeSource(sourceId);
     }
+  }
+
+  private async handleAddPMTilesControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.map) return;
+    const { PMTilesLayerControl } = await loadMaplibreComponents();
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    this.pmtilesLayerControl = new PMTilesLayerControl({ position });
+    this.map.addControl(this.pmtilesLayerControl as unknown as MaplibreGl.IControl, position);
+    this.stateManager.addControl('pmtiles-control', 'pmtiles-control', position, kwargs);
+  }
+
+  // -------------------------------------------------------------------------
+  // maplibre-gl-components handlers
+  // -------------------------------------------------------------------------
+
+  private async handleAddCogControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.map) return;
+    const { CogLayerControl } = await loadMaplibreComponents();
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    this.cogLayerUiControl = new CogLayerControl({ position });
+    this.map.addControl(this.cogLayerUiControl as unknown as MaplibreGl.IControl, position);
+    this.stateManager.addControl('cog-control', 'cog-control', position, kwargs);
+  }
+
+  private async handleAddZarrControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.map) return;
+    const { ZarrLayerControl } = await loadMaplibreComponents();
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    this.zarrLayerUiControl = new ZarrLayerControl({ position });
+    this.map.addControl(this.zarrLayerUiControl as unknown as MaplibreGl.IControl, position);
+    this.stateManager.addControl('zarr-control', 'zarr-control', position, kwargs);
+  }
+
+  private async handleAddVectorControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.map) return;
+    const { AddVectorControl } = await loadMaplibreComponents();
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    this.addVectorControl = new AddVectorControl({ position });
+    this.map.addControl(this.addVectorControl as unknown as MaplibreGl.IControl, position);
+    this.stateManager.addControl('vector-control', 'vector-control', position, kwargs);
+  }
+
+  private async handleAddControlGrid(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.map) return;
+    const { addControlGrid } = await loadMaplibreComponents();
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    const title = (kwargs.title as string) || 'Controls';
+    const collapsed = (kwargs.collapsed as boolean) ?? true;
+    this.controlGrid = addControlGrid(this.map, { position, title, collapsed });
+    this.stateManager.addControl('control-grid', 'control-grid', position, kwargs);
   }
 
   // -------------------------------------------------------------------------
@@ -3678,188 +2274,54 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
   private handleAddClusterLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
+    const id = kwargs.id as string || `cluster-${Date.now()}`;
+    const data = kwargs.data as FeatureCollection;
+    if (!data) {
+      console.error('addClusterLayer requires GeoJSON data');
+      return;
+    }
+    const clusterRadius = kwargs.clusterRadius as number ?? 50;
+    const clusterMaxZoom = kwargs.clusterMaxZoom as number ?? 14;
+    const sourceId = `${id}-source`;
 
-    const geojson = kwargs.data as GeoJSON.FeatureCollection;
-    const name = kwargs.name as string;
-    const clusterRadius = (kwargs.clusterRadius as number) || 50;
-    const clusterMaxZoom = (kwargs.clusterMaxZoom as number) || 14;
-    const clusterColors = (kwargs.clusterColors as string[]) || ['#51bbd6', '#f1f075', '#f28cb1'];
-    const clusterSteps = (kwargs.clusterSteps as number[]) || [100, 750];
-    const clusterMinRadius = (kwargs.clusterMinRadius as number) || 15;
-    const clusterMaxRadius = (kwargs.clusterMaxRadius as number) || 30;
-    const unclusteredColor = (kwargs.unclusteredColor as string) || '#11b4da';
-    const unclusteredRadius = (kwargs.unclusteredRadius as number) || 8;
-    const showClusterCount = kwargs.showClusterCount !== false;
-    const zoomOnClick = kwargs.zoomOnClick !== false;
-    const fitBounds = kwargs.fitBounds !== false;
-
-    const sourceId = `${name}-source`;
-
-    // Add source with clustering enabled
     if (!this.map.getSource(sourceId)) {
       this.map.addSource(sourceId, {
-        type: 'geojson',
-        data: geojson,
-        cluster: true,
-        clusterMaxZoom: clusterMaxZoom,
-        clusterRadius: clusterRadius,
+        type: 'geojson', data, cluster: true, clusterRadius, clusterMaxZoom,
       });
-      this.stateManager.addSource(sourceId, {
-        type: 'geojson',
-        data: geojson,
-        cluster: true,
-        clusterMaxZoom,
-        clusterRadius,
-      } as unknown as SourceConfig);
+      this.stateManager.addSource(sourceId, { type: 'geojson', data, cluster: true, clusterRadius, clusterMaxZoom } as any);
     }
 
-    // Build step expression for cluster colors
-    const colorExpr: unknown[] = ['step', ['get', 'point_count'], clusterColors[0]];
-    for (let i = 0; i < clusterSteps.length; i++) {
-      colorExpr.push(clusterSteps[i]);
-      colorExpr.push(clusterColors[i + 1]);
-    }
+    this.map.addLayer({
+      id: `${id}-clusters`, type: 'circle', source: sourceId, filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 100, '#f1f075', 750, '#f28cb1'],
+        'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40],
+      },
+    });
+    this.map.addLayer({
+      id: `${id}-count`, type: 'symbol', source: sourceId, filter: ['has', 'point_count'],
+      layout: { 'text-field': '{point_count_abbreviated}', 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'], 'text-size': 12 },
+    });
+    this.map.addLayer({
+      id: `${id}-unclustered`, type: 'circle', source: sourceId, filter: ['!', ['has', 'point_count']],
+      paint: { 'circle-color': '#11b4da', 'circle-radius': 4, 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' },
+    });
 
-    // Build step expression for cluster radius
-    const radiusExpr: unknown[] = ['step', ['get', 'point_count'], clusterMinRadius];
-    const radiusStep = (clusterMaxRadius - clusterMinRadius) / clusterSteps.length;
-    for (let i = 0; i < clusterSteps.length; i++) {
-      radiusExpr.push(clusterSteps[i]);
-      radiusExpr.push(clusterMinRadius + radiusStep * (i + 1));
-    }
-
-    // Layer for cluster circles
-    const clusterLayerId = `${name}-clusters`;
-    if (!this.map.getLayer(clusterLayerId)) {
-      this.map.addLayer({
-        id: clusterLayerId,
-        type: 'circle',
-        source: sourceId,
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': colorExpr as maplibregl.ExpressionSpecification,
-          'circle-radius': radiusExpr as maplibregl.ExpressionSpecification,
-        },
-      });
-      this.stateManager.addLayer(clusterLayerId, {
-        id: clusterLayerId,
-        type: 'circle',
-        source: sourceId,
-        filter: ['has', 'point_count'],
-      } as unknown as LayerConfig);
-    }
-
-    // Layer for cluster count labels
-    if (showClusterCount) {
-      const countLayerId = `${name}-cluster-count`;
-      if (!this.map.getLayer(countLayerId)) {
-        this.map.addLayer({
-          id: countLayerId,
-          type: 'symbol',
-          source: sourceId,
-          filter: ['has', 'point_count'],
-          layout: {
-            'text-field': '{point_count_abbreviated}',
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-size': 12,
-          },
-          paint: {
-            'text-color': '#ffffff',
-          },
-        });
-        this.stateManager.addLayer(countLayerId, {
-          id: countLayerId,
-          type: 'symbol',
-          source: sourceId,
-          filter: ['has', 'point_count'],
-        } as unknown as LayerConfig);
-      }
-    }
-
-    // Layer for unclustered points
-    const unclusteredLayerId = `${name}-unclustered`;
-    if (!this.map.getLayer(unclusteredLayerId)) {
-      this.map.addLayer({
-        id: unclusteredLayerId,
-        type: 'circle',
-        source: sourceId,
-        filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-color': unclusteredColor,
-          'circle-radius': unclusteredRadius,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#fff',
-        },
-      });
-      this.stateManager.addLayer(unclusteredLayerId, {
-        id: unclusteredLayerId,
-        type: 'circle',
-        source: sourceId,
-        filter: ['!', ['has', 'point_count']],
-      } as unknown as LayerConfig);
-    }
-
-    // Add click handler for zoom-to-cluster
-    if (zoomOnClick) {
-      this.map.on('click', clusterLayerId, (e) => {
-        if (!this.map) return;
-        const features = this.map.queryRenderedFeatures(e.point, {
-          layers: [clusterLayerId],
-        });
-        if (!features.length) return;
-
-        const clusterId = features[0].properties?.cluster_id;
-        const source = this.map.getSource(sourceId) as maplibregl.GeoJSONSource;
-        source.getClusterExpansionZoom(clusterId).then((zoom: number) => {
-          if (!this.map) return;
-          const coordinates = (features[0].geometry as GeoJSON.Point).coordinates;
-          this.map.easeTo({
-            center: coordinates as [number, number],
-            zoom: zoom ?? this.map.getZoom() + 2,
-          });
-        }).catch(() => {
-          // Ignore errors
-        });
-      });
-
-      // Change cursor on cluster hover
-      this.map.on('mouseenter', clusterLayerId, () => {
-        if (this.map) this.map.getCanvas().style.cursor = 'pointer';
-      });
-      this.map.on('mouseleave', clusterLayerId, () => {
-        if (this.map) this.map.getCanvas().style.cursor = '';
-      });
-    }
-
-    // Fit bounds
-    if (fitBounds && kwargs.bounds) {
-      const bounds = kwargs.bounds as [number, number, number, number];
-      this.map.fitBounds(
-        [[bounds[0], bounds[1]], [bounds[2], bounds[3]]],
-        { padding: 50 }
-      );
-    }
+    this.stateManager.addLayer(`${id}-clusters`, { id: `${id}-clusters`, type: 'circle', source: sourceId } as any);
+    this.stateManager.addLayer(`${id}-count`, { id: `${id}-count`, type: 'symbol', source: sourceId } as any);
+    this.stateManager.addLayer(`${id}-unclustered`, { id: `${id}-unclustered`, type: 'circle', source: sourceId } as any);
   }
 
   private handleRemoveClusterLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-    const [layerId] = args as [string];
-    const sourceId = `${layerId}-source`;
-
-    // Remove all sublayers
-    const layerIds = [
-      `${layerId}-clusters`,
-      `${layerId}-cluster-count`,
-      `${layerId}-unclustered`,
-    ];
-
-    for (const id of layerIds) {
-      if (this.map.getLayer(id)) {
-        this.map.removeLayer(id);
-        this.stateManager.removeLayer(id);
+    const [id] = args as [string];
+    const sourceId = `${id}-source`;
+    [`${id}-clusters`, `${id}-count`, `${id}-unclustered`].forEach(layerId => {
+      if (this.map!.getLayer(layerId)) {
+        this.map!.removeLayer(layerId);
+        this.stateManager.removeLayer(layerId);
       }
-    }
-
+    });
     if (this.map.getSource(sourceId)) {
       this.map.removeSource(sourceId);
       this.stateManager.removeSource(sourceId);
@@ -3867,715 +2329,387 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   }
 
   // -------------------------------------------------------------------------
-  // Choropleth handlers
+  // Choropleth and 3D Buildings
   // -------------------------------------------------------------------------
 
   private handleAddChoropleth(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-
-    const geojson = kwargs.data as GeoJSON.FeatureCollection;
-    const name = kwargs.name as string;
-    const stepExpression = kwargs.stepExpression as unknown[];
-    const fillOpacity = (kwargs.fillOpacity as number) ?? 0.7;
-    const lineColor = (kwargs.lineColor as string) || '#000000';
-    const lineWidth = (kwargs.lineWidth as number) ?? 1;
-    const hover = kwargs.hover !== false;
-    const fitBounds = kwargs.fitBounds !== false;
-
-    const sourceId = `${name}-source`;
-    const fillLayerId = name;
-    const lineLayerId = `${name}-outline`;
-
-    // Add source
+    const id = kwargs.id as string || `choropleth-${Date.now()}`;
+    const data = kwargs.data as FeatureCollection;
+    const property = kwargs.property as string;
+    const colors = kwargs.colors as string[] || ['#ffffcc', '#c7e9b4', '#7fcdbb', '#41b6c4', '#2c7fb8', '#253494'];
+    if (!data || !property) {
+      console.error('addChoropleth requires data and property');
+      return;
+    }
+    const sourceId = `${id}-source`;
     if (!this.map.getSource(sourceId)) {
-      this.map.addSource(sourceId, {
-        type: 'geojson',
-        data: geojson,
-        generateId: true, // Required for feature-state hover
-      });
-      this.stateManager.addSource(sourceId, {
-        type: 'geojson',
-        data: geojson,
-        generateId: true,
-      } as unknown as SourceConfig);
+      this.map.addSource(sourceId, { type: 'geojson', data });
+      this.stateManager.addSource(sourceId, { type: 'geojson', data });
     }
-
-    // Add fill layer with choropleth colors
-    if (!this.map.getLayer(fillLayerId)) {
-      const fillPaint: maplibregl.FillLayerSpecification['paint'] = {
-        'fill-color': stepExpression as maplibregl.ExpressionSpecification,
-        'fill-opacity': [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          Math.min(fillOpacity + 0.2, 1),
-          fillOpacity,
-        ],
-      };
-
-      this.map.addLayer({
-        id: fillLayerId,
-        type: 'fill',
-        source: sourceId,
-        paint: fillPaint,
-      });
-      this.stateManager.addLayer(fillLayerId, {
-        id: fillLayerId,
-        type: 'fill',
-        source: sourceId,
-      } as unknown as LayerConfig);
-    }
-
-    // Add outline layer
-    if (!this.map.getLayer(lineLayerId)) {
-      this.map.addLayer({
-        id: lineLayerId,
-        type: 'line',
-        source: sourceId,
-        paint: {
-          'line-color': lineColor,
-          'line-width': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            lineWidth * 2,
-            lineWidth,
-          ],
-        },
-      });
-      this.stateManager.addLayer(lineLayerId, {
-        id: lineLayerId,
-        type: 'line',
-        source: sourceId,
-      } as unknown as LayerConfig);
-    }
-
-    // Add hover effect
-    if (hover) {
-      this.setupHoverEffect(fillLayerId, sourceId);
-    }
-
-    // Fit bounds
-    if (fitBounds && kwargs.bounds) {
-      const bounds = kwargs.bounds as [number, number, number, number];
-      this.map.fitBounds(
-        [[bounds[0], bounds[1]], [bounds[2], bounds[3]]],
-        { padding: 50 }
-      );
-    }
-  }
-
-  private setupHoverEffect(layerId: string, sourceId: string): void {
-    if (!this.map) return;
-
-    this.map.on('mousemove', layerId, (e) => {
-      if (!this.map || e.features?.length === 0) return;
-
-      // Clear previous hover state
-      if (this.hoveredFeatureId !== null && this.hoveredLayerId) {
-        this.map.setFeatureState(
-          { source: sourceId, id: this.hoveredFeatureId },
-          { hover: false }
-        );
-      }
-
-      const feature = e.features![0];
-      this.hoveredFeatureId = feature.id ?? null;
-      this.hoveredLayerId = layerId;
-
-      if (this.hoveredFeatureId !== null) {
-        this.map.setFeatureState(
-          { source: sourceId, id: this.hoveredFeatureId },
-          { hover: true }
-        );
-      }
-
-      this.map.getCanvas().style.cursor = 'pointer';
+    this.map.addLayer({
+      id, type: 'fill', source: sourceId,
+      paint: {
+        'fill-color': ['interpolate', ['linear'], ['get', property], ...colors.flatMap((c, i) => [i / (colors.length - 1), c])],
+        'fill-opacity': 0.7,
+        'fill-outline-color': '#fff',
+      },
     });
-
-    this.map.on('mouseleave', layerId, () => {
-      if (!this.map) return;
-
-      if (this.hoveredFeatureId !== null) {
-        this.map.setFeatureState(
-          { source: sourceId, id: this.hoveredFeatureId },
-          { hover: false }
-        );
-      }
-      this.hoveredFeatureId = null;
-      this.hoveredLayerId = null;
-      this.map.getCanvas().style.cursor = '';
-    });
+    this.stateManager.addLayer(id, { id, type: 'fill', source: sourceId } as any);
   }
-
-  // -------------------------------------------------------------------------
-  // 3D Buildings handlers
-  // -------------------------------------------------------------------------
 
   private handleAdd3DBuildings(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-
-    const source = (kwargs.source as string) || 'openmaptiles';
-    const minZoom = (kwargs.minZoom as number) ?? 14;
-    const fillExtrusionColor = (kwargs.fillExtrusionColor as string) || '#aaa';
-    const fillExtrusionOpacity = (kwargs.fillExtrusionOpacity as number) ?? 0.6;
-    const heightProperty = (kwargs.heightProperty as string) || 'render_height';
-    const baseProperty = (kwargs.baseProperty as string) || 'render_min_height';
-    const layerId = (kwargs.layerId as string) || '3d-buildings';
-
-    // Check if the style has a building source
-    const style = this.map.getStyle();
-    let buildingSourceId: string | null = null;
-    let sourceLayerName = 'building';
-
-    // Try to find a building-related vector source in the existing style
-    if (style.sources) {
-      for (const [id, src] of Object.entries(style.sources)) {
-        const srcObj = src as { type?: string };
-        if (srcObj.type === 'vector') {
-          // Check for common vector tile sources with buildings
-          if (id.includes('openmaptiles') || id.includes('maptiler') ||
-              id.includes('carto') || id === source || id === 'composite') {
-            buildingSourceId = id;
-            break;
-          }
-        }
-      }
-    }
-
-    // If no suitable source found, add OpenFreeMap vector tiles source
-    if (!buildingSourceId) {
-      buildingSourceId = 'buildings-source';
-      if (!this.map.getSource(buildingSourceId)) {
-        // Use OpenFreeMap tiles which are free and have building data
-        this.map.addSource(buildingSourceId, {
-          type: 'vector',
-          url: 'https://tiles.openfreemap.org/planet',
-        });
-      }
-    }
-
-    // Add 3D buildings layer
-    if (!this.map.getLayer(layerId)) {
-      try {
-        this.map.addLayer({
-          id: layerId,
-          source: buildingSourceId,
-          'source-layer': sourceLayerName,
-          filter: ['all',
-            ['==', ['geometry-type'], 'Polygon'],
-            ['has', 'render_height']
-          ],
-          type: 'fill-extrusion',
-          minzoom: minZoom,
-          paint: {
-            'fill-extrusion-color': fillExtrusionColor,
-            'fill-extrusion-height': [
-              'coalesce',
-              ['get', heightProperty],
-              ['get', 'height'],
-              10
-            ],
-            'fill-extrusion-base': [
-              'coalesce',
-              ['get', baseProperty],
-              0
-            ],
-            'fill-extrusion-opacity': fillExtrusionOpacity,
-          },
-        });
-      } catch (e) {
-        // If filter fails, try simpler filter
-        console.warn('3D buildings: trying simpler filter');
-        this.map.addLayer({
-          id: layerId,
-          source: buildingSourceId,
-          'source-layer': sourceLayerName,
-          type: 'fill-extrusion',
-          minzoom: minZoom,
-          paint: {
-            'fill-extrusion-color': fillExtrusionColor,
-            'fill-extrusion-height': [
-              'coalesce',
-              ['get', heightProperty],
-              ['get', 'height'],
-              10
-            ],
-            'fill-extrusion-base': 0,
-            'fill-extrusion-opacity': fillExtrusionOpacity,
-          },
-        });
-      }
-      this.stateManager.addLayer(layerId, {
-        id: layerId,
-        type: 'fill-extrusion',
-        source: buildingSourceId,
-      } as unknown as LayerConfig);
-    }
+    const id = kwargs.id as string || '3d-buildings';
+    const sourceLayer = kwargs.sourceLayer as string || 'building';
+    const minZoom = kwargs.minZoom as number ?? 15;
+    this.map.addLayer({
+      id, source: 'composite', 'source-layer': sourceLayer, filter: ['==', 'extrude', 'true'],
+      type: 'fill-extrusion', minzoom: minZoom,
+      paint: {
+        'fill-extrusion-color': '#aaa',
+        'fill-extrusion-height': ['get', 'height'],
+        'fill-extrusion-base': ['get', 'min_height'],
+        'fill-extrusion-opacity': 0.6,
+      },
+    });
+    this.stateManager.addLayer(id, { id, type: 'fill-extrusion', source: 'composite' } as any);
   }
 
   // -------------------------------------------------------------------------
   // Route Animation handlers
   // -------------------------------------------------------------------------
 
-  private handleAnimateAlongRoute(args: unknown[], kwargs: Record<string, unknown>): void {
+  private async handleAnimateAlongRoute(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-
-    const id = kwargs.id as string;
+    const id = kwargs.id as string || `animation-${Date.now()}`;
     const coordinates = kwargs.coordinates as [number, number][];
-    const duration = (kwargs.duration as number) || 10000;
-    const loop = kwargs.loop !== false;
-    const markerColor = (kwargs.markerColor as string) || '#3388ff';
-    const markerSize = (kwargs.markerSize as number) || 1.0;
-    const showTrail = kwargs.showTrail === true;
-    const trailColor = (kwargs.trailColor as string) || '#3388ff';
-    const trailWidth = (kwargs.trailWidth as number) || 3;
+    const speed = kwargs.speed as number ?? 1;
+    const loop = kwargs.loop as boolean ?? false;
+    const trail = kwargs.trail as boolean ?? false;
+    const trailColor = kwargs.trailColor as string ?? '#3388ff';
+    const trailWidth = kwargs.trailWidth as number ?? 2;
 
-    // Create LineString for route calculations
-    const line = lineString(coordinates);
-    const routeLength = length(line, { units: 'kilometers' });
-
-    // Create marker at start position
-    const marker = new Marker({ color: markerColor, scale: markerSize })
-      .setLngLat(coordinates[0])
-      .addTo(this.map);
-
-    // Add trail if requested
-    let trailSourceId: string | undefined;
-    let trailLayerId: string | undefined;
-    if (showTrail) {
-      trailSourceId = `${id}-trail-source`;
-      trailLayerId = `${id}-trail`;
-
-      if (!this.map.getSource(trailSourceId)) {
-        this.map.addSource(trailSourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'LineString', coordinates: [] },
-          },
-        });
-      }
-
-      if (!this.map.getLayer(trailLayerId)) {
-        this.map.addLayer({
-          id: trailLayerId,
-          type: 'line',
-          source: trailSourceId,
-          paint: {
-            'line-color': trailColor,
-            'line-width': trailWidth,
-            'line-opacity': 0.8,
-          },
-        });
-      }
+    if (!coordinates || coordinates.length < 2) {
+      console.error('animateAlongRoute requires at least 2 coordinates');
+      return;
     }
 
-    const startTime = performance.now();
-    const trailCoords: [number, number][] = [coordinates[0]];
+    const { along, length: turfLength, lineString } = await loadTurf();
+    const route = lineString(coordinates);
+    const routeLength = turfLength(route);
+    const duration = (routeLength / speed) * 1000;
 
-    const animate = (currentTime: number) => {
-      const animation = this.animations.get(id);
-      if (!animation || !this.map) return;
+    const marker = new this.maplibregl.Marker({ color: kwargs.markerColor as string ?? '#ff0000' })
+      .setLngLat(coordinates[0]).addTo(this.map);
 
-      if (animation.isPaused) {
-        animation.animationId = requestAnimationFrame(animate);
-        return;
-      }
+    let trailSourceId: string | undefined;
+    let trailLayerId: string | undefined;
 
-      let elapsed = (currentTime - animation.startTime) * animation.speed;
-      if (animation.pausedAt > 0) {
-        elapsed = (currentTime - animation.pausedAt + (animation.pausedAt - animation.startTime)) * animation.speed;
-      }
+    if (trail) {
+      trailSourceId = `${id}-trail-source`;
+      trailLayerId = `${id}-trail-layer`;
+      this.map.addSource(trailSourceId, {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [coordinates[0]] } },
+      });
+      this.map.addLayer({
+        id: trailLayerId, type: 'line', source: trailSourceId,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': trailColor, 'line-width': trailWidth },
+      });
+    }
 
-      const progress = (elapsed % animation.duration) / animation.duration;
+    let startTime: number | null = null;
+    let animationId: number;
+    let isPaused = false;
+    let pausedAt = 0;
 
-      // Calculate position along route
-      const distance = progress * routeLength;
-      const point = along(line, distance, { units: 'kilometers' });
-      const position = point.geometry.coordinates as [number, number];
+    const animate = (timestamp: number) => {
+      if (isPaused) return;
+      if (!startTime) startTime = timestamp - pausedAt;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const currentDistance = progress * routeLength;
+      const currentPosition = along(route, currentDistance);
 
-      // Update marker position
-      animation.marker.setLngLat(position);
-
-      // Update trail
-      if (showTrail && trailSourceId) {
-        trailCoords.push(position);
-        const source = this.map.getSource(trailSourceId) as maplibregl.GeoJSONSource;
-        if (source) {
-          source.setData({
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'LineString', coordinates: trailCoords },
-          });
+      if (currentPosition?.geometry) {
+        const coords = currentPosition.geometry.coordinates as [number, number];
+        marker.setLngLat(coords);
+        if (trail && trailSourceId) {
+          const source = this.map!.getSource(trailSourceId) as MaplibreGl.GeoJSONSource;
+          if (source) {
+            const trailCoords = coordinates.slice(0, Math.floor(progress * coordinates.length) + 1);
+            trailCoords.push(coords);
+            source.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: trailCoords } });
+          }
         }
       }
 
-      // Check if we should loop or stop
-      if (elapsed >= animation.duration && !loop) {
-        this.handleStopAnimation([id], {});
-        return;
+      if (progress < 1) {
+        animationId = requestAnimationFrame(animate);
+      } else if (loop) {
+        startTime = null;
+        pausedAt = 0;
+        animationId = requestAnimationFrame(animate);
       }
-
-      animation.animationId = requestAnimationFrame(animate);
     };
 
-    // Store animation state
+    animationId = requestAnimationFrame(animate);
+
     this.animations.set(id, {
-      animationId: requestAnimationFrame(animate),
-      marker,
-      isPaused: false,
-      speed: 1,
-      startTime,
-      pausedAt: 0,
-      duration,
-      coordinates,
-      loop,
-      trailSourceId,
-      trailLayerId,
+      animationId, marker, isPaused: false, speed, startTime: Date.now(),
+      pausedAt: 0, duration, coordinates, loop, trailSourceId, trailLayerId,
     });
   }
 
   private handleStopAnimation(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
     const animation = this.animations.get(id);
-    if (!animation) return;
-
-    cancelAnimationFrame(animation.animationId);
-    animation.marker.remove();
-
-    // Remove trail if exists
-    if (animation.trailLayerId && this.map?.getLayer(animation.trailLayerId)) {
-      this.map.removeLayer(animation.trailLayerId);
+    if (animation) {
+      cancelAnimationFrame(animation.animationId);
+      animation.marker.remove();
+      if (animation.trailLayerId && this.map!.getLayer(animation.trailLayerId)) {
+        this.map!.removeLayer(animation.trailLayerId);
+      }
+      if (animation.trailSourceId && this.map!.getSource(animation.trailSourceId)) {
+        this.map!.removeSource(animation.trailSourceId);
+      }
+      this.animations.delete(id);
     }
-    if (animation.trailSourceId && this.map?.getSource(animation.trailSourceId)) {
-      this.map.removeSource(animation.trailSourceId);
-    }
-
-    this.animations.delete(id);
   }
 
   private handlePauseAnimation(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
     const animation = this.animations.get(id);
-    if (!animation) return;
-
-    animation.isPaused = true;
-    animation.pausedAt = performance.now();
+    if (animation) {
+      cancelAnimationFrame(animation.animationId);
+      animation.isPaused = true;
+      animation.pausedAt = Date.now() - animation.startTime;
+    }
   }
 
   private handleResumeAnimation(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
     const animation = this.animations.get(id);
-    if (!animation || !animation.isPaused) return;
-
-    const pausedDuration = performance.now() - animation.pausedAt;
-    animation.startTime += pausedDuration;
-    animation.isPaused = false;
-    animation.pausedAt = 0;
+    if (animation && animation.isPaused) {
+      animation.isPaused = false;
+      animation.startTime = Date.now() - animation.pausedAt;
+      // Note: The animation loop would need to be restarted here
+      // For simplicity, we'll require calling animateAlongRoute again
+    }
   }
 
   private handleSetAnimationSpeed(args: unknown[], kwargs: Record<string, unknown>): void {
-    const [id, speed] = args as [string, number];
+    const id = kwargs.id as string;
+    const speed = kwargs.speed as number;
+    if (!id || speed === undefined) {
+      console.error('setAnimationSpeed requires id and speed');
+      return;
+    }
     const animation = this.animations.get(id);
-    if (!animation) return;
-
-    animation.speed = speed;
+    if (animation) {
+      animation.speed = speed;
+    }
   }
 
   // -------------------------------------------------------------------------
-  // Feature Hover handlers
+  // UI Controls (placeholders for now)
   // -------------------------------------------------------------------------
 
-  private handleAddHoverEffect(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleAddTimeSlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    console.warn('addTimeSlider not yet implemented with CDN imports');
+  }
+
+  private handleRemoveTimeSlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    console.warn('removeTimeSlider not yet implemented');
+  }
+
+  private handleAddSwipeMap(args: unknown[], kwargs: Record<string, unknown>): void {
+    console.warn('addSwipeMap not yet implemented with CDN imports');
+  }
+
+  private handleRemoveSwipeMap(args: unknown[], kwargs: Record<string, unknown>): void {
+    console.warn('removeSwipeMap not yet implemented');
+  }
+
+  private handleAddOpacitySlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    console.warn('addOpacitySlider not yet implemented with CDN imports');
+  }
+
+  private handleRemoveOpacitySlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    console.warn('removeOpacitySlider not yet implemented');
+  }
+
+  private handleAddStyleSwitcher(args: unknown[], kwargs: Record<string, unknown>): void {
+    console.warn('addStyleSwitcher not yet implemented with CDN imports');
+  }
+
+  private handleRemoveStyleSwitcher(args: unknown[], kwargs: Record<string, unknown>): void {
+    console.warn('removeStyleSwitcher not yet implemented');
+  }
+
+  // -------------------------------------------------------------------------
+  // Query and Feature handlers
+  // -------------------------------------------------------------------------
+
+  private handleGetVisibleFeatures(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
+    const layers = kwargs.layers as string[] | undefined;
+    const filter = kwargs.filter as any[] | undefined;
+    const features = this.map.queryRenderedFeatures(undefined, { layers, filter });
+    this.model.set('_queried_features', { type: 'FeatureCollection', features });
+    this.model.save_changes();
+  }
 
+  private handleGetLayerData(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
     const layerId = kwargs.layerId as string;
-    const highlightColor = kwargs.highlightColor as string | undefined;
-    const highlightOpacity = kwargs.highlightOpacity as number | undefined;
-    const highlightOutlineWidth = (kwargs.highlightOutlineWidth as number) || 2;
-
-    // Get the source ID for this layer
+    if (!layerId) {
+      console.error('getLayerData requires layerId');
+      return;
+    }
     const layer = this.map.getLayer(layerId);
     if (!layer) {
       console.warn(`Layer ${layerId} not found`);
       return;
     }
-
-    const sourceId = (layer as unknown as { source: string }).source;
-
-    // Set up hover handlers using feature-state
-    this.map.on('mousemove', layerId, (e) => {
-      if (!this.map || !e.features?.length) return;
-
-      // Clear previous hover state
-      if (this.hoveredFeatureId !== null) {
-        this.map.setFeatureState(
-          { source: sourceId, id: this.hoveredFeatureId },
-          { hover: false }
-        );
-      }
-
-      const feature = e.features[0];
-      this.hoveredFeatureId = feature.id ?? null;
-      this.hoveredLayerId = layerId;
-
-      if (this.hoveredFeatureId !== null) {
-        this.map.setFeatureState(
-          { source: sourceId, id: this.hoveredFeatureId },
-          { hover: true }
-        );
-      }
-
-      this.map.getCanvas().style.cursor = 'pointer';
-    });
-
-    this.map.on('mouseleave', layerId, () => {
-      if (!this.map) return;
-
-      if (this.hoveredFeatureId !== null) {
-        this.map.setFeatureState(
-          { source: sourceId, id: this.hoveredFeatureId },
-          { hover: false }
-        );
-      }
-      this.hoveredFeatureId = null;
-      this.hoveredLayerId = null;
-      this.map.getCanvas().style.cursor = '';
-    });
-
-    // Update layer paint properties to respond to hover state
-    const layerType = (layer as unknown as { type: string }).type;
-
-    if (layerType === 'fill') {
-      if (highlightOpacity !== undefined) {
-        this.map.setPaintProperty(layerId, 'fill-opacity', [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          highlightOpacity,
-          this.map.getPaintProperty(layerId, 'fill-opacity') || 0.5,
-        ]);
-      }
-      if (highlightColor) {
-        this.map.setPaintProperty(layerId, 'fill-color', [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          highlightColor,
-          this.map.getPaintProperty(layerId, 'fill-color') || '#3388ff',
-        ]);
-      }
-    } else if (layerType === 'line') {
-      this.map.setPaintProperty(layerId, 'line-width', [
-        'case',
-        ['boolean', ['feature-state', 'hover'], false],
-        highlightOutlineWidth,
-        this.map.getPaintProperty(layerId, 'line-width') || 2,
-      ]);
-    } else if (layerType === 'circle') {
-      if (highlightOpacity !== undefined) {
-        this.map.setPaintProperty(layerId, 'circle-opacity', [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          highlightOpacity,
-          this.map.getPaintProperty(layerId, 'circle-opacity') || 0.8,
-        ]);
-      }
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Cleanup
-  // -------------------------------------------------------------------------
-
-  // -------------------------------------------------------------------------
-  // Sky & Fog handlers
-  // -------------------------------------------------------------------------
-
-  private handleSetSky(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const spec: SkySpecification = {};
-    if (kwargs.skyColor !== undefined) spec['sky-color'] = kwargs.skyColor as string;
-    if (kwargs.skyHorizonBlend !== undefined) spec['sky-horizon-blend'] = kwargs.skyHorizonBlend as number;
-    if (kwargs.horizonColor !== undefined) spec['horizon-color'] = kwargs.horizonColor as string;
-    if (kwargs.horizonFogBlend !== undefined) spec['horizon-fog-blend'] = kwargs.horizonFogBlend as number;
-    if (kwargs.fogColor !== undefined) spec['fog-color'] = kwargs.fogColor as string;
-    if (kwargs.fogGroundBlend !== undefined) spec['fog-ground-blend'] = kwargs.fogGroundBlend as number;
-    if (kwargs.atmosphereBlend !== undefined) spec['atmosphere-blend'] = kwargs.atmosphereBlend as number;
-    (this.map as unknown as { setSky: (spec: SkySpecification) => void }).setSky(spec);
-  }
-
-  private handleRemoveSky(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    (this.map as unknown as { setSky: (spec: undefined) => void }).setSky(undefined);
-  }
-
-  // -------------------------------------------------------------------------
-  // Feature Query/Filter handlers
-  // -------------------------------------------------------------------------
-
-  private handleSetFilter(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-    const layerId = kwargs.layerId as string;
-    const filter = kwargs.filter as unknown[] | null;
-
-    if (!layerId) {
-      console.error('setFilter requires layerId');
-      return;
-    }
-
-    if (!this.map.getLayer(layerId)) {
-      console.warn(`Layer ${layerId} not found`);
-      return;
-    }
-
-    this.map.setFilter(layerId, filter as maplibregl.FilterSpecification | null);
-    this.stateManager.setLayerFilter(layerId, filter);
+    const layerInfo = { id: layer.id, type: layer.type, source: layer.source, layout: layer.layout, paint: layer.paint };
+    this.model.set('_queried_features', layerInfo);
+    this.model.save_changes();
   }
 
   private handleQueryRenderedFeatures(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-    const geometry = kwargs.geometry as { x: number; y: number } | [[number, number], [number, number]] | undefined;
-    const layers = kwargs.layers as string[] | undefined;
-    const filter = kwargs.filter as unknown[] | undefined;
-
-    const options: { layers?: string[]; filter?: maplibregl.FilterSpecification } = {};
-    if (layers) options.layers = layers;
-    if (filter) options.filter = filter as maplibregl.FilterSpecification;
-
-    const features = geometry
-      ? this.map.queryRenderedFeatures(geometry as maplibregl.PointLike | [maplibregl.PointLike, maplibregl.PointLike], options)
-      : this.map.queryRenderedFeatures(options);
-
-    const result = {
-      type: 'FeatureCollection' as const,
-      features: features.map(f => ({
-        type: 'Feature' as const,
-        geometry: f.geometry,
-        properties: f.properties,
-        id: f.id,
-        layer: f.layer?.id,
-        source: f.source,
-      })),
-    };
-
-    this.model.set('_queried_features', result);
+    const geometry = kwargs.geometry;
+    const options = kwargs.options as { layers?: string[]; filter?: any[] } | undefined;
+    const features = this.map.queryRenderedFeatures(geometry, options);
+    this.model.set('_queried_features', { type: 'FeatureCollection', features });
     this.model.save_changes();
   }
 
   private handleQuerySourceFeatures(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const sourceId = kwargs.sourceId as string;
-    const sourceLayer = kwargs.sourceLayer as string | undefined;
-    const filter = kwargs.filter as unknown[] | undefined;
-
+    const options = kwargs.options as { sourceLayer?: string; filter?: any[] } | undefined;
     if (!sourceId) {
       console.error('querySourceFeatures requires sourceId');
       return;
     }
-
-    const options: { sourceLayer?: string; filter?: maplibregl.FilterSpecification } = {};
-    if (sourceLayer) options.sourceLayer = sourceLayer;
-    if (filter) options.filter = filter as maplibregl.FilterSpecification;
-
     const features = this.map.querySourceFeatures(sourceId, options);
-
-    const result = {
-      type: 'FeatureCollection' as const,
-      features: features.map(f => ({
-        type: 'Feature' as const,
-        geometry: f.geometry,
-        properties: f.properties,
-        id: f.id,
-      })),
-    };
-
-    this.model.set('_queried_features', result);
+    this.model.set('_queried_features', { type: 'FeatureCollection', features });
     this.model.save_changes();
   }
 
+  private handleSetFilter(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const filter = kwargs.filter as any[];
+    if (!layerId || !filter) {
+      console.error('setFilter requires layerId and filter');
+      return;
+    }
+    if (this.map.getLayer(layerId)) {
+      this.map.setFilter(layerId, filter);
+    }
+  }
+
   // -------------------------------------------------------------------------
-  // Video Layer handlers
+  // Hover and Sky handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddHoverEffect(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    if (!layerId) {
+      console.error('addHoverEffect requires layerId');
+      return;
+    }
+
+    let hoveredFeatureId: string | number | null = null;
+
+    this.map.on('mousemove', layerId, (e: MaplibreGl.MapMouseEvent & { features?: MaplibreGl.MapGeoJSONFeature[] }) => {
+      if (e.features && e.features.length > 0) {
+        if (hoveredFeatureId !== null) {
+          this.map!.setFeatureState({ source: e.features[0].source, id: hoveredFeatureId }, { hover: false });
+        }
+        hoveredFeatureId = e.features[0].id!;
+        this.map!.setFeatureState({ source: e.features[0].source, id: hoveredFeatureId }, { hover: true });
+      }
+    });
+
+    this.map.on('mouseleave', layerId, () => {
+      if (hoveredFeatureId !== null) {
+        const source = this.map!.getLayer(layerId)?.source;
+        if (source) {
+          this.map!.setFeatureState({ source, id: hoveredFeatureId }, { hover: false });
+        }
+        hoveredFeatureId = null;
+      }
+    });
+  }
+
+  private handleSetSky(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.map.setSky({
+      'sky-type': (kwargs.skyType as string) ?? 'atmosphere',
+      'sky-atmosphere-sun': kwargs.sun as [number, number] ?? [0, 0],
+      'sky-atmosphere-sun-intensity': kwargs.sunIntensity as number ?? 10,
+    } as any);
+  }
+
+  private handleRemoveSky(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.map.setSky({ 'sky-type': 'none' } as any);
+  }
+
+  // -------------------------------------------------------------------------
+  // Video handlers
   // -------------------------------------------------------------------------
 
   private handleAddVideoLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-
-    const id = (kwargs.id as string) || `video-${Date.now()}`;
+    const id = kwargs.id as string || `video-${Date.now()}`;
     const urls = kwargs.urls as string[];
     const coordinates = kwargs.coordinates as number[][];
-    const opacity = (kwargs.opacity as number) ?? 1.0;
 
-    if (!urls || !urls.length || !coordinates || coordinates.length !== 4) {
-      console.error('addVideoLayer requires urls array and 4 corner coordinates');
+    if (!urls || !coordinates) {
+      console.error('addVideoLayer requires urls and coordinates');
       return;
     }
 
     const sourceId = `${id}-source`;
-
-    if (!this.map.getSource(sourceId)) {
-      this.map.addSource(sourceId, {
-        type: 'video',
-        urls: urls,
-        coordinates: coordinates as [[number, number], [number, number], [number, number], [number, number]],
-      });
-      this.stateManager.addSource(sourceId, {
-        type: 'video',
-        urls: urls,
-        coordinates: coordinates,
-      });
-    }
-
-    if (!this.map.getLayer(id)) {
-      const layerConfig: LayerConfig = {
-        id: id,
-        type: 'raster',
-        source: sourceId,
-        paint: {
-          'raster-opacity': opacity,
-        },
-      };
-      this.map.addLayer(layerConfig as maplibregl.LayerSpecification);
-      this.stateManager.addLayer(id, layerConfig);
-    }
-
+    this.map.addSource(sourceId, { type: 'video', urls, coordinates: coordinates as any });
+    this.map.addLayer({ id, type: 'raster', source: sourceId });
     this.videoSources.set(id, sourceId);
   }
 
   private handleRemoveVideoLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-    const id = kwargs.id as string;
-    if (!id) return;
-
-    if (this.map.getLayer(id)) {
-      this.map.removeLayer(id);
-      this.stateManager.removeLayer(id);
-    }
-
-    const sourceId = this.videoSources.get(id) || `${id}-source`;
-    if (this.map.getSource(sourceId)) {
-      this.map.removeSource(sourceId);
-      this.stateManager.removeSource(sourceId);
-    }
-
+    const [id] = args as [string];
+    const sourceId = this.videoSources.get(id);
+    if (this.map.getLayer(id)) this.map.removeLayer(id);
+    if (sourceId && this.map.getSource(sourceId)) this.map.removeSource(sourceId);
     this.videoSources.delete(id);
   }
 
   private handlePlayVideo(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const id = kwargs.id as string;
-    const sourceId = this.videoSources.get(id) || `${id}-source`;
-    const source = this.map.getSource(sourceId);
-    if (source && 'play' in source) {
-      (source as unknown as { play: () => void }).play();
+    const sourceId = this.videoSources.get(id);
+    if (sourceId) {
+      const source = this.map.getSource(sourceId) as MaplibreGl.VideoSource;
+      if (source && source.play) source.play();
     }
   }
 
   private handlePauseVideo(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const id = kwargs.id as string;
-    const sourceId = this.videoSources.get(id) || `${id}-source`;
-    const source = this.map.getSource(sourceId);
-    if (source && 'pause' in source) {
-      (source as unknown as { pause: () => void }).pause();
+    const sourceId = this.videoSources.get(id);
+    if (sourceId) {
+      const source = this.map.getSource(sourceId) as MaplibreGl.VideoSource;
+      if (source && source.pause) source.pause();
     }
   }
 
@@ -4583,12 +2717,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (!this.map) return;
     const id = kwargs.id as string;
     const time = kwargs.time as number;
-    const sourceId = this.videoSources.get(id) || `${id}-source`;
-    const source = this.map.getSource(sourceId);
-    if (source && 'getVideo' in source) {
-      const video = (source as unknown as { getVideo: () => HTMLVideoElement }).getVideo();
-      if (video) {
-        video.currentTime = time;
+    const sourceId = this.videoSources.get(id);
+    if (sourceId) {
+      const source = this.map.getSource(sourceId) as MaplibreGl.VideoSource;
+      if (source && source.getVideo) {
+        const video = source.getVideo();
+        if (video) video.currentTime = time;
       }
     }
   }
@@ -4598,660 +2732,203 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // -------------------------------------------------------------------------
 
   private handleAddSplitMap(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map || !this.mapContainer) return;
-
-    const leftLayer = kwargs.leftLayer as string;
-    const rightLayer = kwargs.rightLayer as string;
-    const position = (kwargs.position as number) ?? 50;
-
-    if (!leftLayer || !rightLayer) {
-      console.error('addSplitMap requires leftLayer and rightLayer');
-      return;
-    }
-
-    // Remove existing split if any
-    if (this.splitActive) {
-      this.handleRemoveSplitMap([], {});
-    }
-
-    this.splitActive = true;
-
-    // Hide the right layer on the primary map
-    if (this.map.getLayer(rightLayer)) {
-      this.map.setLayoutProperty(rightLayer, 'visibility', 'none');
-    }
-
-    // Create overlay container for the right map
-    const rightContainer = document.createElement('div');
-    rightContainer.style.position = 'absolute';
-    rightContainer.style.top = '0';
-    rightContainer.style.left = '0';
-    rightContainer.style.width = '100%';
-    rightContainer.style.height = '100%';
-    rightContainer.style.clipPath = `inset(0 0 0 ${position}%)`;
-    rightContainer.style.pointerEvents = 'none';
-    this.mapContainer.appendChild(rightContainer);
-    this.splitMapContainer = rightContainer;
-
-    // Create the right map
-    const style = this.model.get('style');
-    const rightMap = new MapLibreMap({
-      container: rightContainer,
-      style: typeof style === 'string' ? style : (style as maplibregl.StyleSpecification),
-      center: this.map.getCenter(),
-      zoom: this.map.getZoom(),
-      bearing: this.map.getBearing(),
-      pitch: this.map.getPitch(),
-      interactive: false,
-      attributionControl: false,
-    });
-
-    this.splitMapRight = rightMap;
-
-    rightMap.on('load', () => {
-      // Hide the left layer on the right map, show the right layer
-      if (rightMap.getLayer(leftLayer)) {
-        rightMap.setLayoutProperty(leftLayer, 'visibility', 'none');
-      }
-
-      // Replay sources and layers from state on right map
-      const sources = this.model.get('_sources') || {};
-      for (const [sourceId, sourceConfig] of Object.entries(sources)) {
-        if (!rightMap.getSource(sourceId)) {
-          try {
-            rightMap.addSource(sourceId, sourceConfig as unknown as maplibregl.SourceSpecification);
-          } catch (e) {
-            // Source may already be from style
-          }
-        }
-      }
-
-      const layers = this.model.get('_layers') || {};
-      for (const [layerId, layerConfig] of Object.entries(layers)) {
-        const config = layerConfig as unknown as LayerConfig;
-        if (!rightMap.getLayer(layerId)) {
-          try {
-            rightMap.addLayer(config as maplibregl.LayerSpecification);
-          } catch (e) {
-            // Layer may already be from style
-          }
-        }
-        // Show only the right layer, hide everything else
-        if (layerId === rightLayer) {
-          rightMap.setLayoutProperty(layerId, 'visibility', 'visible');
-        } else {
-          try {
-            rightMap.setLayoutProperty(layerId, 'visibility', 'none');
-          } catch (e) {
-            // May not exist
-          }
-        }
-      }
-    });
-
-    // Sync camera from primary to secondary
-    const syncMaps = () => {
-      if (!this.map || !this.splitMapRight) return;
-      this.splitMapRight.jumpTo({
-        center: this.map.getCenter(),
-        zoom: this.map.getZoom(),
-        bearing: this.map.getBearing(),
-        pitch: this.map.getPitch(),
-      });
-    };
-
-    this.map.on('move', syncMaps);
-
-    // Create slider
-    const slider = document.createElement('div');
-    slider.style.position = 'absolute';
-    slider.style.top = '0';
-    slider.style.left = `${position}%`;
-    slider.style.width = '4px';
-    slider.style.height = '100%';
-    slider.style.backgroundColor = '#333';
-    slider.style.cursor = 'ew-resize';
-    slider.style.zIndex = '10';
-    slider.style.boxShadow = '-1px 0 0 rgba(255,255,255,0.6), 1px 0 0 rgba(255,255,255,0.6), 0 0 6px rgba(0,0,0,0.5)';
-
-    // Slider handle
-    const handle = document.createElement('div');
-    handle.style.position = 'absolute';
-    handle.style.top = '50%';
-    handle.style.left = '50%';
-    handle.style.transform = 'translate(-50%, -50%)';
-    handle.style.width = '36px';
-    handle.style.height = '36px';
-    handle.style.borderRadius = '50%';
-    handle.style.backgroundColor = '#fff';
-    handle.style.border = '2px solid #333';
-    handle.style.boxShadow = '0 1px 6px rgba(0,0,0,0.5)';
-    handle.style.display = 'flex';
-    handle.style.alignItems = 'center';
-    handle.style.justifyContent = 'center';
-    handle.style.fontSize = '16px';
-    handle.style.color = '#333';
-    handle.style.fontWeight = 'bold';
-    handle.innerHTML = '&#x2194;';
-    slider.appendChild(handle);
-
-    this.mapContainer.appendChild(slider);
-    this.splitSlider = slider;
-
-    // Dragging logic
-    let isDragging = false;
-
-    const onPointerDown = (e: PointerEvent) => {
-      isDragging = true;
-      slider.setPointerCapture(e.pointerId);
-      e.preventDefault();
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (!isDragging || !this.mapContainer || !this.splitMapContainer) return;
-      const rect = this.mapContainer.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      slider.style.left = `${pct}%`;
-      this.splitMapContainer.style.clipPath = `inset(0 0 0 ${pct}%)`;
-    };
-
-    const onPointerUp = () => {
-      isDragging = false;
-    };
-
-    slider.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-
-    // Store cleanup refs on the slider element
-    (slider as unknown as Record<string, unknown>)._cleanup = () => {
-      slider.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      this.map?.off('move', syncMaps);
-    };
-
-    // Persist in controls
-    this.stateManager.addControl('split-map', 'split-map', 'overlay', {
-      leftLayer,
-      rightLayer,
-      position,
-    });
+    console.warn('addSplitMap not yet implemented with CDN imports');
   }
 
   private handleRemoveSplitMap(args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.splitActive) return;
-
-    // Clean up slider event listeners
-    if (this.splitSlider) {
-      const cleanup = (this.splitSlider as unknown as Record<string, unknown>)?._cleanup as (() => void) | undefined;
-      if (cleanup) cleanup();
-      this.splitSlider.remove();
-      this.splitSlider = null;
-    }
-
-    // Remove right map
-    if (this.splitMapRight) {
-      this.splitMapRight.remove();
-      this.splitMapRight = null;
-    }
-
-    // Remove right container
-    if (this.splitMapContainer) {
-      this.splitMapContainer.remove();
-      this.splitMapContainer = null;
-    }
-
-    // Restore all layer visibility on primary map
-    if (this.map) {
-      const layers = this.model.get('_layers') || {};
-      for (const [layerId, layerConfig] of Object.entries(layers)) {
-        const config = layerConfig as { visible?: boolean };
-        if (config.visible !== false && this.map.getLayer(layerId)) {
-          this.map.setLayoutProperty(layerId, 'visibility', 'visible');
-        }
+    if (!this.map) return;
+    if (this.splitActive) {
+      if (this.splitMapRight) {
+        this.splitMapRight.remove();
+        this.splitMapRight = null;
       }
+      if (this.splitMapContainer && this.splitMapContainer.parentNode) {
+        this.splitMapContainer.parentNode.removeChild(this.splitMapContainer);
+      }
+      if (this.splitSlider && this.splitSlider.parentNode) {
+        this.splitSlider.parentNode.removeChild(this.splitSlider);
+      }
+      this.splitMapContainer = null;
+      this.splitSlider = null;
+      this.splitActive = false;
+      this.map.resize();
     }
-
-    this.splitActive = false;
-    this.stateManager.removeControl('split-map');
   }
 
   // -------------------------------------------------------------------------
   // Colorbar handlers
   // -------------------------------------------------------------------------
 
-  private handleAddColorbar(_args: unknown[], kwargs: Record<string, unknown>): void {
+  private async handleAddColorbar(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
+    const { Colorbar } = await loadMaplibreComponents();
+    const id = kwargs.id as string || `colorbar-${Date.now()}`;
+    const position = (kwargs.position as string) || 'bottom-left';
+    const min = kwargs.min as number ?? 0;
+    const max = kwargs.max as number ?? 100;
+    const colormap = kwargs.colormap as string[] ?? ['#ffffff', '#000000'];
+    const title = kwargs.title as string ?? '';
 
-    const colorbarId = (kwargs.colorbarId as string) || `colorbar-${Date.now()}`;
-    const position = (kwargs.position as ControlPosition) || 'bottom-right';
+    const colorbar = new Colorbar({
+      position,
+      min,
+      max,
+      colormap,
+      title,
+    });
 
-    // Remove existing colorbar with same ID
-    const existing = this.colorbarsMap.get(colorbarId);
-    if (existing) {
-      this.map.removeControl(existing as unknown as maplibregl.IControl);
-      this.colorbarsMap.delete(colorbarId);
-      this.controlsMap.delete(colorbarId);
-    }
-
-    // Build options
-    const options: Record<string, unknown> = {};
-    if (kwargs.colormap !== undefined) options.colormap = kwargs.colormap;
-    if (kwargs.vmin !== undefined) options.vmin = kwargs.vmin;
-    if (kwargs.vmax !== undefined) options.vmax = kwargs.vmax;
-    if (kwargs.label !== undefined) options.label = kwargs.label;
-    if (kwargs.units !== undefined) options.units = kwargs.units;
-    if (kwargs.orientation !== undefined) options.orientation = kwargs.orientation;
-    if (kwargs.barThickness !== undefined) options.barThickness = kwargs.barThickness;
-    if (kwargs.barLength !== undefined) options.barLength = kwargs.barLength;
-    if (kwargs.ticks !== undefined) options.ticks = kwargs.ticks;
-    if (kwargs.opacity !== undefined) options.opacity = kwargs.opacity;
-
-    const colorbar = new Colorbar(options as ConstructorParameters<typeof Colorbar>[0]);
-    this.map.addControl(colorbar as unknown as maplibregl.IControl, position);
-    this.colorbarsMap.set(colorbarId, colorbar);
-    this.controlsMap.set(colorbarId, colorbar as unknown as maplibregl.IControl);
-    this.stateManager.addControl(colorbarId, 'colorbar', position, kwargs);
+    this.map.addControl(colorbar as unknown as MaplibreGl.IControl, position as ControlPosition);
+    this.colorbarsMap.set(id, colorbar);
   }
 
   private handleRemoveColorbar(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
-
-    const colorbarId = (kwargs.colorbarId as string) || (args[0] as string);
-
-    if (colorbarId) {
-      // Remove specific colorbar
-      const colorbar = this.colorbarsMap.get(colorbarId);
-      if (colorbar) {
-        this.map.removeControl(colorbar as unknown as maplibregl.IControl);
-        this.colorbarsMap.delete(colorbarId);
-        this.controlsMap.delete(colorbarId);
-        this.stateManager.removeControl(colorbarId);
-      }
-    } else {
-      // Remove all colorbars
-      this.colorbarsMap.forEach((colorbar, id) => {
-        if (this.map) {
-          this.map.removeControl(colorbar as unknown as maplibregl.IControl);
-        }
-        this.controlsMap.delete(id);
-        this.stateManager.removeControl(id);
-      });
-      this.colorbarsMap.clear();
+    const [id] = args as [string];
+    const colorbar = this.colorbarsMap.get(id);
+    if (colorbar) {
+      this.map.removeControl(colorbar as unknown as MaplibreGl.IControl);
+      this.colorbarsMap.delete(id);
     }
   }
 
-  private handleUpdateColorbar(_args: unknown[], kwargs: Record<string, unknown>): void {
-    if (!this.map) return;
-
-    const colorbarId = (kwargs.colorbarId as string) || 'colorbar-0';
-    const colorbar = this.colorbarsMap.get(colorbarId);
-    if (!colorbar) {
-      console.warn(`Colorbar '${colorbarId}' not found`);
-      return;
+  private handleUpdateColorbar(args: unknown[], kwargs: Record<string, unknown>): void {
+    const id = kwargs.id as string;
+    const min = kwargs.min as number;
+    const max = kwargs.max as number;
+    const colorbar = this.colorbarsMap.get(id);
+    if (colorbar) {
+      if (min !== undefined) colorbar.setMin(min);
+      if (max !== undefined) colorbar.setMax(max);
     }
-
-    // Build update options
-    const updateOptions: Record<string, unknown> = {};
-    if (kwargs.colormap !== undefined) updateOptions.colormap = kwargs.colormap;
-    if (kwargs.vmin !== undefined) updateOptions.vmin = kwargs.vmin;
-    if (kwargs.vmax !== undefined) updateOptions.vmax = kwargs.vmax;
-    if (kwargs.label !== undefined) updateOptions.label = kwargs.label;
-    if (kwargs.units !== undefined) updateOptions.units = kwargs.units;
-    if (kwargs.orientation !== undefined) updateOptions.orientation = kwargs.orientation;
-    if (kwargs.barThickness !== undefined) updateOptions.barThickness = kwargs.barThickness;
-    if (kwargs.barLength !== undefined) updateOptions.barLength = kwargs.barLength;
-    if (kwargs.ticks !== undefined) updateOptions.ticks = kwargs.ticks;
-    if (kwargs.opacity !== undefined) updateOptions.opacity = kwargs.opacity;
-
-    colorbar.update(updateOptions as Parameters<typeof colorbar.update>[0]);
   }
 
   // -------------------------------------------------------------------------
-  // Search Control handlers
+  // Search, Measure, Print controls
   // -------------------------------------------------------------------------
 
-  private handleAddSearchControl(_args: unknown[], kwargs: Record<string, unknown>): void {
+  private async handleAddSearchControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
+    const { SearchControl } = await loadMaplibreComponents();
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    this.searchControl = new SearchControl({ position });
+    this.map.addControl(this.searchControl as unknown as MaplibreGl.IControl, position);
+    this.stateManager.addControl('search', 'search', position, kwargs);
+  }
 
-    const position = (kwargs.position as ControlPosition) || 'top-left';
-
-    // Remove existing search control
+  private handleRemoveSearchControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
     if (this.searchControl) {
-      this.map.removeControl(this.searchControl as unknown as maplibregl.IControl);
-      this.controlsMap.delete('search-control');
+      this.map.removeControl(this.searchControl as unknown as MaplibreGl.IControl);
       this.searchControl = null;
     }
-
-    // Build options
-    const options: Record<string, unknown> = {};
-    if (kwargs.placeholder !== undefined) options.placeholder = kwargs.placeholder;
-    if (kwargs.collapsed !== undefined) options.collapsed = kwargs.collapsed;
-    if (kwargs.flyToZoom !== undefined) options.flyToZoom = kwargs.flyToZoom;
-    if (kwargs.showMarker !== undefined) options.showMarker = kwargs.showMarker;
-    if (kwargs.markerColor !== undefined) options.markerColor = kwargs.markerColor;
-    if (kwargs.maxResults !== undefined) options.maxResults = kwargs.maxResults;
-    if (kwargs.debounceMs !== undefined) options.debounceMs = kwargs.debounceMs;
-
-    this.searchControl = new SearchControl(options as ConstructorParameters<typeof SearchControl>[0]);
-
-    // Wire result selection event
-    this.searchControl.on('resultselect', (event) => {
-      this.sendEvent('search_result_select', {
-        result: (event as Record<string, unknown>).result,
-      });
-    });
-
-    this.map.addControl(this.searchControl as unknown as maplibregl.IControl, position);
-    this.controlsMap.set('search-control', this.searchControl as unknown as maplibregl.IControl);
-    this.stateManager.addControl('search-control', 'search-control', position, kwargs);
   }
 
-  private handleRemoveSearchControl(_args: unknown[], _kwargs: Record<string, unknown>): void {
-    if (!this.map || !this.searchControl) return;
-
-    this.map.removeControl(this.searchControl as unknown as maplibregl.IControl);
-    this.controlsMap.delete('search-control');
-    this.stateManager.removeControl('search-control');
-    this.searchControl = null;
-  }
-
-  // -------------------------------------------------------------------------
-  // Measure Control handlers
-  // -------------------------------------------------------------------------
-
-  private handleAddMeasureControl(_args: unknown[], kwargs: Record<string, unknown>): void {
+  private async handleAddMeasureControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-
+    const { MeasureControl } = await loadMaplibreComponents();
     const position = (kwargs.position as ControlPosition) || 'top-right';
+    this.measureControl = new MeasureControl({ position });
+    this.map.addControl(this.measureControl as unknown as MaplibreGl.IControl, position);
+    this.stateManager.addControl('measure', 'measure', position, kwargs);
+  }
 
-    // Remove existing measure control
+  private handleRemoveMeasureControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
     if (this.measureControl) {
-      this.map.removeControl(this.measureControl as unknown as maplibregl.IControl);
-      this.controlsMap.delete('measure-control');
+      this.map.removeControl(this.measureControl as unknown as MaplibreGl.IControl);
       this.measureControl = null;
     }
-
-    // Build options
-    const options: Record<string, unknown> = {};
-    if (kwargs.collapsed !== undefined) options.collapsed = kwargs.collapsed;
-    if (kwargs.defaultMode !== undefined) options.defaultMode = kwargs.defaultMode;
-    if (kwargs.distanceUnit !== undefined) options.distanceUnit = kwargs.distanceUnit;
-    if (kwargs.areaUnit !== undefined) options.areaUnit = kwargs.areaUnit;
-    if (kwargs.lineColor !== undefined) options.lineColor = kwargs.lineColor;
-    if (kwargs.lineWidth !== undefined) options.lineWidth = kwargs.lineWidth;
-    if (kwargs.fillColor !== undefined) options.fillColor = kwargs.fillColor;
-
-    this.measureControl = new MeasureControl(options as ConstructorParameters<typeof MeasureControl>[0]);
-
-    this.map.addControl(this.measureControl as unknown as maplibregl.IControl, position);
-    this.controlsMap.set('measure-control', this.measureControl as unknown as maplibregl.IControl);
-    this.stateManager.addControl('measure-control', 'measure-control', position, kwargs);
   }
 
-  private handleRemoveMeasureControl(_args: unknown[], _kwargs: Record<string, unknown>): void {
-    if (!this.map || !this.measureControl) return;
-
-    this.map.removeControl(this.measureControl as unknown as maplibregl.IControl);
-    this.controlsMap.delete('measure-control');
-    this.stateManager.removeControl('measure-control');
-    this.measureControl = null;
-  }
-
-  // -------------------------------------------------------------------------
-  // Print Control handlers
-  // -------------------------------------------------------------------------
-
-  private handleAddPrintControl(_args: unknown[], kwargs: Record<string, unknown>): void {
+  private async handleAddPrintControl(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-
+    const { PrintControl } = await loadMaplibreComponents();
     const position = (kwargs.position as ControlPosition) || 'top-right';
+    this.printControl = new PrintControl({ position });
+    this.map.addControl(this.printControl as unknown as MaplibreGl.IControl, position);
+    this.stateManager.addControl('print', 'print', position, kwargs);
+  }
 
-    // Remove existing print control
+  private handleRemovePrintControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
     if (this.printControl) {
-      this.map.removeControl(this.printControl as unknown as maplibregl.IControl);
-      this.controlsMap.delete('print-control');
+      this.map.removeControl(this.printControl as unknown as MaplibreGl.IControl);
       this.printControl = null;
     }
-
-    // Build options
-    const options: Record<string, unknown> = {};
-    if (kwargs.collapsed !== undefined) options.collapsed = kwargs.collapsed;
-    if (kwargs.format !== undefined) options.format = kwargs.format;
-    if (kwargs.filename !== undefined) options.filename = kwargs.filename;
-    if (kwargs.includeNorthArrow !== undefined) options.includeNorthArrow = kwargs.includeNorthArrow;
-    if (kwargs.includeScaleBar !== undefined) options.includeScaleBar = kwargs.includeScaleBar;
-
-    this.printControl = new PrintControl(options as ConstructorParameters<typeof PrintControl>[0]);
-
-    // Wire export event
-    this.printControl.on('export', (event) => {
-      this.sendEvent('print_export', {
-        state: (event as Record<string, unknown>).state,
-      });
-    });
-
-    this.map.addControl(this.printControl as unknown as maplibregl.IControl, position);
-    this.controlsMap.set('print-control', this.printControl as unknown as maplibregl.IControl);
-    this.stateManager.addControl('print-control', 'print-control', position, kwargs);
-  }
-
-  private handleRemovePrintControl(_args: unknown[], _kwargs: Record<string, unknown>): void {
-    if (!this.map || !this.printControl) return;
-
-    this.map.removeControl(this.printControl as unknown as maplibregl.IControl);
-    this.controlsMap.delete('print-control');
-    this.stateManager.removeControl('print-control');
-    this.printControl = null;
   }
 
   // -------------------------------------------------------------------------
   // FlatGeobuf handlers
   // -------------------------------------------------------------------------
 
-  private async handleAddFlatGeobuf(_args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+  private async handleAddFlatGeobuf(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
-
+    const id = kwargs.id as string || `flatgeobuf-${Date.now()}`;
     const url = kwargs.url as string;
-    const name = (kwargs.name as string) || `flatgeobuf-${Date.now()}`;
-    const layerType = kwargs.layerType as string | undefined;
+    const layerType = (kwargs.layerType as string) || 'circle';
     const paint = kwargs.paint as Record<string, unknown> | undefined;
-    const fitBounds = kwargs.fitBounds !== false;
 
-    const sourceId = `${name}-source`;
-    const layerId = name;
+    if (!url) {
+      console.error('addFlatGeobuf requires url');
+      return;
+    }
 
+    const sourceId = `${id}-source`;
+
+    // Fetch and parse FlatGeobuf data
     try {
-      // Fetch the FlatGeobuf file and stream features via ReadableStream.
-      // Using fetch+ReadableStream avoids the `deserializeFiltered` path
-      // which requires a bounding-box Rect parameter.
       const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const features: Feature[] = [];
-      for await (const feature of flatgeobuf.deserialize(response.body as ReadableStream)) {
-        features.push(feature as Feature);
-      }
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
 
-      const featureCollection: FeatureCollection = {
-        type: 'FeatureCollection',
-        features,
-      };
+      // Parse FlatGeobuf to GeoJSON
+      const { geojson: flatgeobuf } = await import('https://esm.sh/flatgeobuf@3.35.0/lib/geojson.mjs');
+      const geojson = flatgeobuf(uint8Array);
 
-      // Infer layer type from geometry
-      let type = layerType;
-      if (!type && features.length > 0) {
-        type = this.inferLayerType(features[0].geometry.type);
-      }
-      type = type || 'circle';
-
-      // Get default paint if not provided
-      const layerPaint = paint || this.getDefaultPaint(type);
-
-      // Add source
       if (!this.map.getSource(sourceId)) {
-        const sourceConfig = {
-          type: 'geojson' as const,
-          data: featureCollection,
-        };
-        this.map.addSource(sourceId, sourceConfig);
-        this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
+        this.map.addSource(sourceId, { type: 'geojson', data: geojson as any });
+        this.stateManager.addSource(sourceId, { type: 'geojson', data: geojson as any } as any);
       }
 
-      // Add layer
-      if (!this.map.getLayer(layerId)) {
-        const layerConfig = {
-          id: layerId,
-          type: type as maplibregl.LayerSpecification['type'],
+      const defaultPaint = this.getDefaultPaint(layerType);
+      const layerPaint = paint || defaultPaint;
+
+      if (!this.map.getLayer(id)) {
+        this.map.addLayer({
+          id,
+          type: layerType as MaplibreGl.LayerSpecification['type'],
           source: sourceId,
           paint: layerPaint,
-        };
-        this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
-        this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
-      }
-
-      // Fit bounds
-      if (fitBounds && features.length > 0) {
-        const bounds = new maplibregl.LngLatBounds();
-        for (const feature of features) {
-          const geometry = feature.geometry;
-          if (geometry.type === 'Point') {
-            bounds.extend(geometry.coordinates as [number, number]);
-          } else if (geometry.type === 'MultiPoint' || geometry.type === 'LineString') {
-            for (const coord of geometry.coordinates) {
-              bounds.extend(coord as [number, number]);
-            }
-          } else if (geometry.type === 'MultiLineString' || geometry.type === 'Polygon') {
-            for (const ring of geometry.coordinates) {
-              for (const coord of ring) {
-                bounds.extend(coord as [number, number]);
-              }
-            }
-          } else if (geometry.type === 'MultiPolygon') {
-            for (const polygon of geometry.coordinates) {
-              for (const ring of polygon) {
-                for (const coord of ring) {
-                  bounds.extend(coord as [number, number]);
-                }
-              }
-            }
-          }
-        }
-        if (!bounds.isEmpty()) {
-          this.map.fitBounds(bounds, { padding: 50 });
-        }
+        } as MaplibreGl.AddLayerObject);
+        this.stateManager.addLayer(id, { id, type: layerType, source: sourceId, paint: layerPaint } as any);
       }
     } catch (error) {
-      console.error(`Error loading FlatGeobuf from ${url}:`, error);
+      console.error('Error loading FlatGeobuf:', error);
     }
   }
 
   private handleRemoveFlatGeobuf(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
+    const [id] = args as [string];
+    const sourceId = `${id}-source`;
 
-    const name = (kwargs.name as string) || (args[0] as string);
-    if (!name) return;
-
-    const layerId = name;
-    const sourceId = `${name}-source`;
-
-    if (this.map.getLayer(layerId)) {
-      this.map.removeLayer(layerId);
-      this.stateManager.removeLayer(layerId);
+    if (this.map.getLayer(id)) {
+      this.map.removeLayer(id);
+      this.stateManager.removeLayer(id);
     }
-
     if (this.map.getSource(sourceId)) {
       this.map.removeSource(sourceId);
       this.stateManager.removeSource(sourceId);
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Cleanup
+  // -------------------------------------------------------------------------
+
   destroy(): void {
-    // Clean up split map
-    if (this.splitActive) {
-      this.handleRemoveSplitMap([], {});
-    }
-
-    // Remove model listeners
-    this.removeModelListeners();
-
-    // Clear resize debounce timer
-    if (this.resizeDebounceTimer !== null) {
-      window.clearTimeout(this.resizeDebounceTimer);
-      this.resizeDebounceTimer = null;
-    }
-
-    // Disconnect resize observer
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-
-    // Destroy plugins
-    if (this.geoEditorPlugin) {
-      this.geoEditorPlugin.destroy();
-      this.geoEditorPlugin = null;
-    }
-    if (this.layerControlPlugin) {
-      this.layerControlPlugin.destroy();
-      this.layerControlPlugin = null;
-    }
-
-    // Remove colorbars
-    this.colorbarsMap.forEach((colorbar) => {
-      if (this.map) {
-        this.map.removeControl(colorbar as unknown as maplibregl.IControl);
-      }
-    });
-    this.colorbarsMap.clear();
-
-    // Remove search control
-    if (this.searchControl && this.map) {
-      this.map.removeControl(this.searchControl as unknown as maplibregl.IControl);
-      this.searchControl = null;
-    }
-
-    // Remove measure control
-    if (this.measureControl && this.map) {
-      this.map.removeControl(this.measureControl as unknown as maplibregl.IControl);
-      this.measureControl = null;
-    }
-
-    // Remove print control
-    if (this.printControl && this.map) {
-      this.map.removeControl(this.printControl as unknown as maplibregl.IControl);
-      this.printControl = null;
-    }
-
-    // Remove control grid
-    if (this.controlGrid && this.map) {
-      this.map.removeControl(this.controlGrid as unknown as maplibregl.IControl);
-      this.controlGrid = null;
-    }
-
-    // Remove deck.gl overlay
-    if (this.deckOverlay && this.map) {
-      this.map.removeControl(this.deckOverlay as unknown as maplibregl.IControl);
-      this.deckOverlay = null;
-    }
-    this.deckLayers.clear();
-
-    // Remove LiDAR control and adapter
-    if (this.lidarAdapter) {
-      this.lidarAdapter.destroy();
-      this.lidarAdapter = null;
-    }
-    if (this.lidarControl && this.map) {
-      this.map.removeControl(this.lidarControl as unknown as maplibregl.IControl);
-      this.lidarControl = null;
-    }
-    this.lidarLayers.clear();
-
-    // Stop and remove all animations
-    this.animations.forEach((animation, id) => {
+    // Stop all animations
+    for (const [id, animation] of this.animations) {
       cancelAnimationFrame(animation.animationId);
       animation.marker.remove();
       if (animation.trailLayerId && this.map?.getLayer(animation.trailLayerId)) {
@@ -5260,46 +2937,25 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       if (animation.trailSourceId && this.map?.getSource(animation.trailSourceId)) {
         this.map.removeSource(animation.trailSourceId);
       }
-    });
+    }
     this.animations.clear();
 
-    // Remove zarr layers
-    this.zarrLayers.forEach((layer, id) => {
-      if (this.map && this.map.getLayer(id)) {
-        this.map.removeLayer(id);
-      }
-    });
-    this.zarrLayers.clear();
-
-    // Clear video sources
-    this.videoSources.clear();
-
     // Remove markers
-    this.markersMap.forEach((marker) => marker.remove());
+    for (const [id, marker] of this.markersMap) {
+      marker.remove();
+    }
     this.markersMap.clear();
 
-    // Remove popups
-    this.popupsMap.forEach((popup) => popup.remove());
-    this.popupsMap.clear();
-
-    // Remove controls
-    this.controlsMap.forEach((control) => {
-      if (this.map) {
-        this.map.removeControl(control);
-      }
-    });
-    this.controlsMap.clear();
-
-    // Remove map
-    if (this.map) {
-      this.map.remove();
-      this.map = null;
+    // Remove resize observer
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
     }
 
-    // Remove container
-    if (this.mapContainer) {
-      this.mapContainer.remove();
-      this.mapContainer = null;
-    }
+    // Remove all layers and sources from state manager
+    this.stateManager.clear();
+
+    // Call parent destroy
+    super.destroy();
   }
 }

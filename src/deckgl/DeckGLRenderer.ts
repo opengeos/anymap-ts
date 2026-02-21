@@ -1,25 +1,63 @@
 /**
  * DeckGL renderer implementation.
  * Extends MapLibre with deck.gl layer support.
+ * Uses dynamic CDN imports to keep the bundle size small.
  */
 
-import { MapboxOverlay } from '@deck.gl/mapbox';
-import { ScatterplotLayer, ArcLayer, PathLayer, PolygonLayer, IconLayer, TextLayer, PointCloudLayer, GeoJsonLayer, LineLayer, BitmapLayer, ColumnLayer, GridCellLayer, SolidPolygonLayer } from '@deck.gl/layers';
-import { HexagonLayer, HeatmapLayer, GridLayer, ContourLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
-import { TripsLayer, TileLayer, MVTLayer, Tile3DLayer, TerrainLayer, GreatCircleLayer, H3HexagonLayer, H3ClusterLayer, S2Layer, QuadkeyLayer, GeohashLayer, _WMSLayer as WMSLayer } from '@deck.gl/geo-layers';
-import { SimpleMeshLayer, ScenegraphLayer } from '@deck.gl/mesh-layers';
-import { registerLoaders } from '@loaders.gl/core';
-import { GLTFLoader } from '@loaders.gl/gltf';
-import { OBJLoader } from '@loaders.gl/obj';
-import { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
-
-// Register loaders for mesh files (GLB, glTF, OBJ)
-registerLoaders([GLTFLoader, OBJLoader]);
-import { toProj4 } from 'geotiff-geokeys-to-proj4';
-
 import { MapLibreRenderer } from '../maplibre/MapLibreRenderer';
+import { StateManager } from '../core/StateManager';
 import type { MapWidgetModel } from '../types/anywidget';
-import type { DeckGLLayerConfig, COGLayerProps } from '../types/deckgl';
+import type { DeckGLLayerConfig } from '../types/deckgl';
+
+// Type imports for CDN-loaded modules
+import type * as MaplibreGl from 'maplibre-gl';
+import type { MapboxOverlay } from '@deck.gl/mapbox';
+import type { COGLayer, proj } from '@developmentseed/deck.gl-geotiff';
+
+// Loader types
+import type { Loader } from '@loaders.gl/core';
+
+// Dynamic import helper functions
+async function loadDeckGlCore() {
+  return import('https://esm.sh/@deck.gl/core@9.2.6');
+}
+
+async function loadDeckGlLayers() {
+  return import('https://esm.sh/@deck.gl/layers@9.2.6');
+}
+
+async function loadDeckGlAggregationLayers() {
+  return import('https://esm.sh/@deck.gl/aggregation-layers@9.2.6');
+}
+
+async function loadDeckGlGeoLayers() {
+  return import('https://esm.sh/@deck.gl/geo-layers@9.2.6');
+}
+
+async function loadDeckGlMapbox() {
+  return import('https://esm.sh/@deck.gl/mapbox@9.2.6');
+}
+
+async function loadDeckGlMeshLayers() {
+  return import('https://esm.sh/@deck.gl/mesh-layers@9.2.6');
+}
+
+async function loadLoadersGl() {
+  const [core, gltf, obj] = await Promise.all([
+    import('https://esm.sh/@loaders.gl/core@4.3.3'),
+    import('https://esm.sh/@loaders.gl/gltf@4.3.3'),
+    import('https://esm.sh/@loaders.gl/obj@4.3.3'),
+  ]);
+  return { core, gltf, obj };
+}
+
+async function loadGeotiff() {
+  return import('https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0');
+}
+
+async function loadGeokeysParser() {
+  return import('https://esm.sh/geotiff-geokeys-to-proj4@2024.4.13');
+}
 
 /**
  * Parse GeoKeys to proj4 definition for COG reprojection.
@@ -27,6 +65,7 @@ import type { DeckGLLayerConfig, COGLayerProps } from '../types/deckgl';
 async function geoKeysParser(
   geoKeys: Record<string, unknown>,
 ): Promise<proj.ProjectionInfo> {
+  const { toProj4 } = await loadGeokeysParser();
   const projDefinition = toProj4(geoKeys as unknown as Parameters<typeof toProj4>[0]);
 
   return {
@@ -66,8 +105,56 @@ export class DeckGLRenderer extends MapLibreRenderer {
     currentTime: number;
   }> = new Map();
 
-  constructor(model: MapWidgetModel, el: HTMLElement) {
-    super(model, el);
+  // MapLibre module reference (passed from parent)
+  protected maplibregl: typeof MaplibreGl;
+
+  // State manager
+  private stateManager: StateManager;
+
+  // Loaded loaders
+  private loaders: { GLTFLoader: Loader; OBJLoader: Loader } | null = null;
+
+  // Deck.gl layer classes (loaded dynamically)
+  private deckModules: {
+    MapboxOverlay: any;
+    ScatterplotLayer: any;
+    ArcLayer: any;
+    PathLayer: any;
+    PolygonLayer: any;
+    IconLayer: any;
+    TextLayer: any;
+    PointCloudLayer: any;
+    GeoJsonLayer: any;
+    LineLayer: any;
+    BitmapLayer: any;
+    ColumnLayer: any;
+    GridCellLayer: any;
+    SolidPolygonLayer: any;
+    HexagonLayer: any;
+    HeatmapLayer: any;
+    GridLayer: any;
+    ContourLayer: any;
+    ScreenGridLayer: any;
+    TripsLayer: any;
+    TileLayer: any;
+    MVTLayer: any;
+    Tile3DLayer: any;
+    TerrainLayer: any;
+    GreatCircleLayer: any;
+    H3HexagonLayer: any;
+    H3ClusterLayer: any;
+    S2Layer: any;
+    QuadkeyLayer: any;
+    GeohashLayer: any;
+    WMSLayer: any;
+    SimpleMeshLayer: any;
+    ScenegraphLayer: any;
+  } | null = null;
+
+  constructor(model: MapWidgetModel, el: HTMLElement, maplibregl: typeof MaplibreGl) {
+    super(model, el, maplibregl);
+    this.maplibregl = maplibregl;
+    this.stateManager = new StateManager(model);
     this.registerDeckGLMethods();
   }
 
@@ -75,15 +162,87 @@ export class DeckGLRenderer extends MapLibreRenderer {
    * Initialize with deck.gl overlay.
    */
   async initialize(): Promise<void> {
+    // Load deck.gl modules
+    await this.loadDeckModules();
+
     await super.initialize();
 
     // Create deck.gl overlay
-    if (this.map) {
-      this.deckOverlay = new MapboxOverlay({
+    if (this.map && this.deckModules) {
+      this.deckOverlay = new this.deckModules.MapboxOverlay({
         layers: [],
       });
       this.map.addControl(this.deckOverlay as any);
     }
+  }
+
+  /**
+   * Load all deck.gl modules dynamically.
+   */
+  private async loadDeckModules(): Promise<void> {
+    const [
+      layers,
+      aggregationLayers,
+      geoLayers,
+      mapbox,
+      meshLayers,
+      loaders,
+    ] = await Promise.all([
+      loadDeckGlLayers(),
+      loadDeckGlAggregationLayers(),
+      loadDeckGlGeoLayers(),
+      loadDeckGlMapbox(),
+      loadDeckGlMeshLayers(),
+      loadLoadersGl(),
+    ]);
+
+    // Register loaders for mesh files (GLB, glTF, OBJ)
+    loaders.core.registerLoaders([loaders.gltf.GLTFLoader, loaders.obj.OBJLoader]);
+
+    this.loaders = {
+      GLTFLoader: loaders.gltf.GLTFLoader,
+      OBJLoader: loaders.obj.OBJLoader,
+    };
+
+    this.deckModules = {
+      MapboxOverlay: mapbox.MapboxOverlay,
+      // Layers
+      ScatterplotLayer: layers.ScatterplotLayer,
+      ArcLayer: layers.ArcLayer,
+      PathLayer: layers.PathLayer,
+      PolygonLayer: layers.PolygonLayer,
+      IconLayer: layers.IconLayer,
+      TextLayer: layers.TextLayer,
+      PointCloudLayer: layers.PointCloudLayer,
+      GeoJsonLayer: layers.GeoJsonLayer,
+      LineLayer: layers.LineLayer,
+      BitmapLayer: layers.BitmapLayer,
+      ColumnLayer: layers.ColumnLayer,
+      GridCellLayer: layers.GridCellLayer,
+      SolidPolygonLayer: layers.SolidPolygonLayer,
+      // Aggregation layers
+      HexagonLayer: aggregationLayers.HexagonLayer,
+      HeatmapLayer: aggregationLayers.HeatmapLayer,
+      GridLayer: aggregationLayers.GridLayer,
+      ContourLayer: aggregationLayers.ContourLayer,
+      ScreenGridLayer: aggregationLayers.ScreenGridLayer,
+      // Geo layers
+      TripsLayer: geoLayers.TripsLayer,
+      TileLayer: geoLayers.TileLayer,
+      MVTLayer: geoLayers.MVTLayer,
+      Tile3DLayer: geoLayers.Tile3DLayer,
+      TerrainLayer: geoLayers.TerrainLayer,
+      GreatCircleLayer: geoLayers.GreatCircleLayer,
+      H3HexagonLayer: geoLayers.H3HexagonLayer,
+      H3ClusterLayer: geoLayers.H3ClusterLayer,
+      S2Layer: geoLayers.S2Layer,
+      QuadkeyLayer: geoLayers.QuadkeyLayer,
+      GeohashLayer: geoLayers.GeohashLayer,
+      WMSLayer: geoLayers._WMSLayer,
+      // Mesh layers
+      SimpleMeshLayer: meshLayers.SimpleMeshLayer,
+      ScenegraphLayer: meshLayers.ScenegraphLayer,
+    };
   }
 
   /**
@@ -225,25 +384,27 @@ export class DeckGLRenderer extends MapLibreRenderer {
       const opacity = existing?.props?.opacity ?? cfg.opacity;
 
       // Create a new TripsLayer with updated currentTime (don't use clone)
-      const updatedLayer = new TripsLayer({
-        id: cfg.id,
-        data: cfg.data,
-        pickable: cfg.pickable,
-        opacity,
-        visible,
-        widthMinPixels: cfg.widthMinPixels,
-        trailLength: cfg.trailLength,
-        currentTime: current.currentTime,
-        fadeTrail: cfg.fadeTrail,
-        jointRounded: cfg.jointRounded,
-        capRounded: cfg.capRounded,
-        getPath: cfg.getPath,
-        getTimestamps: cfg.getTimestamps,
-        getColor: cfg.getColor,
-      } as any);
+      if (this.deckModules) {
+        const updatedLayer = new this.deckModules.TripsLayer({
+          id: cfg.id,
+          data: cfg.data,
+          pickable: cfg.pickable,
+          opacity,
+          visible,
+          widthMinPixels: cfg.widthMinPixels,
+          trailLength: cfg.trailLength,
+          currentTime: current.currentTime,
+          fadeTrail: cfg.fadeTrail,
+          jointRounded: cfg.jointRounded,
+          capRounded: cfg.capRounded,
+          getPath: cfg.getPath,
+          getTimestamps: cfg.getTimestamps,
+          getColor: cfg.getColor,
+        });
 
-      this.deckLayers.set(layerId, updatedLayer);
-      this.updateDeckOverlay();
+        this.deckLayers.set(layerId, updatedLayer);
+        this.updateDeckOverlay();
+      }
 
       current.frameId = requestAnimationFrame(animate);
     };
@@ -264,10 +425,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   // -------------------------------------------------------------------------
 
   protected override handleAddScatterplotLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `scatterplot-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ScatterplotLayer({
+    const layer = new this.deckModules.ScatterplotLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -293,10 +456,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddArcLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `arc-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ArcLayer({
+    const layer = new this.deckModules.ArcLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -313,10 +478,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddPathLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `path-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new PathLayer({
+    const layer = new this.deckModules.PathLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -333,10 +500,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `polygon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new PolygonLayer({
+    const layer = new this.deckModules.PolygonLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -358,10 +527,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddHexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `hexagon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new HexagonLayer({
+    const layer = new this.deckModules.HexagonLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -389,10 +560,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddHeatmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `heatmap-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new HeatmapLayer({
+    const layer = new this.deckModules.HeatmapLayer({
       id,
       data,
       pickable: false,
@@ -421,10 +594,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `grid-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new GridLayer({
+    const layer = new this.deckModules.GridLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -452,10 +627,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddIconLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `icon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new IconLayer({
+    const layer = new this.deckModules.IconLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -477,10 +654,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddTextLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `text-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new TextLayer({
+    const layer = new this.deckModules.TextLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -503,10 +682,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddGeoJsonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `geojson-${Date.now()}`;
     const data = kwargs.data;
 
-    const layer = new GeoJsonLayer({
+    const layer = new this.deckModules.GeoJsonLayer({
       id,
       data: data as any,
       pickable: kwargs.pickable !== false,
@@ -529,10 +710,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddContourLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `contour-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ContourLayer({
+    const layer = new this.deckModules.ContourLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -556,10 +739,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddScreenGridLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `screengrid-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ScreenGridLayer({
+    const layer = new this.deckModules.ScreenGridLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -586,6 +771,8 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddPointCloudLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `pointcloud-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -609,13 +796,15 @@ export class DeckGLRenderer extends MapLibreRenderer {
       layerProps.coordinateOrigin = kwargs.coordinateOrigin as [number, number, number];
     }
 
-    const layer = new PointCloudLayer(layerProps);
+    const layer = new this.deckModules.PointCloudLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
 
   protected override handleAddTripsLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `trips-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -652,7 +841,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     // When animating, start with currentTime=0 to avoid showing a static initial segment
     const initialTime = shouldAnimate ? 0 : currentTime;
 
-    const layer = new TripsLayer({
+    const layer = new this.deckModules.TripsLayer({
       id,
       data,
       pickable,
@@ -681,10 +870,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddLineLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `line-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new LineLayer({
+    const layer = new this.deckModules.LineLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -705,11 +896,13 @@ export class DeckGLRenderer extends MapLibreRenderer {
   // -------------------------------------------------------------------------
 
   protected override handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `bitmap-${Date.now()}`;
     const image = kwargs.image as string;
     const bounds = kwargs.bounds as [number, number, number, number];
 
-    const layer = new BitmapLayer({
+    const layer = new this.deckModules.BitmapLayer({
       id,
       image,
       bounds,
@@ -726,10 +919,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `column-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new ColumnLayer({
+    const layer = new this.deckModules.ColumnLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -757,10 +952,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `gridcell-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new GridCellLayer({
+    const layer = new this.deckModules.GridCellLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -783,10 +980,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   protected override handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `solidpolygon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new SolidPolygonLayer({
+    const layer = new this.deckModules.SolidPolygonLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -806,10 +1005,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddDeckTileLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `tile-${Date.now()}`;
     const data = kwargs.data as string | string[];
 
-    const layer = new TileLayer({
+    const layer = new this.deckModules.TileLayer({
       id,
       data,
       minZoom: kwargs.minZoom as number ?? 0,
@@ -820,7 +1021,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
       opacity: kwargs.opacity as number ?? 1,
       renderSubLayers: kwargs.renderSubLayers as any ?? ((props: any) => {
         const { boundingBox } = props.tile;
-        return new BitmapLayer(props, {
+        return new this.deckModules!.BitmapLayer(props, {
           data: undefined,
           image: props.data,
           bounds: [boundingBox[0][0], boundingBox[0][1], boundingBox[1][0], boundingBox[1][1]],
@@ -833,10 +1034,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddMVTLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `mvt-${Date.now()}`;
     const data = kwargs.data as string | string[];
 
-    const layer = new MVTLayer({
+    const layer = new this.deckModules.MVTLayer({
       id,
       data,
       minZoom: kwargs.minZoom as number ?? 0,
@@ -858,6 +1061,8 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddTile3DLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `tile3d-${Date.now()}`;
     const data = kwargs.data as string;
 
@@ -885,17 +1090,19 @@ export class DeckGLRenderer extends MapLibreRenderer {
       layerProps.onTileError = kwargs.onTileError;
     }
 
-    const layer = new Tile3DLayer(layerProps);
+    const layer = new this.deckModules.Tile3DLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
 
   private handleAddTerrainLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `terrain-${Date.now()}`;
     const elevationData = kwargs.elevationData as string | string[];
 
-    const layer = new TerrainLayer({
+    const layer = new this.deckModules.TerrainLayer({
       id,
       elevationData,
       texture: kwargs.texture as string,
@@ -918,10 +1125,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddGreatCircleLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `greatcircle-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new GreatCircleLayer({
+    const layer = new this.deckModules.GreatCircleLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -940,10 +1149,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddH3HexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `h3hexagon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new H3HexagonLayer({
+    const layer = new this.deckModules.H3HexagonLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -966,10 +1177,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddH3ClusterLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `h3cluster-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new H3ClusterLayer({
+    const layer = new this.deckModules.H3ClusterLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -989,10 +1202,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddS2Layer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `s2-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new S2Layer({
+    const layer = new this.deckModules.S2Layer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -1014,10 +1229,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddQuadkeyLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `quadkey-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new QuadkeyLayer({
+    const layer = new this.deckModules.QuadkeyLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -1039,10 +1256,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddGeohashLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `geohash-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    const layer = new GeohashLayer({
+    const layer = new this.deckModules.GeohashLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
@@ -1064,10 +1283,12 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddWMSLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules) return;
+
     const id = kwargs.id as string || `wms-${Date.now()}`;
     const data = kwargs.data as string;
 
-    const layer = new WMSLayer({
+    const layer = new this.deckModules.WMSLayer({
       id,
       data,
       serviceType: kwargs.serviceType as 'wms' | 'template' ?? 'wms',
@@ -1082,6 +1303,8 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   private handleAddSimpleMeshLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules || !this.loaders) return;
+
     const id = kwargs.id as string || `simplemesh-${Date.now()}`;
     const data = kwargs.data as unknown[];
     const mesh = kwargs.mesh;
@@ -1105,7 +1328,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
       getScale: this.makeAccessor(kwargs.getScale, 'scale', () => [1, 1, 1]),
       getTranslation: this.makeAccessor(kwargs.getTranslation, 'translation', () => [0, 0, 0]),
       // Specify loaders explicitly for mesh files
-      loaders: [GLTFLoader, OBJLoader],
+      loaders: [this.loaders.GLTFLoader, this.loaders.OBJLoader],
     };
 
     // Only add mesh if it's provided and not undefined
@@ -1118,13 +1341,15 @@ export class DeckGLRenderer extends MapLibreRenderer {
       layerProps.texture = kwargs.texture as string;
     }
 
-    const layer = new SimpleMeshLayer(layerProps);
+    const layer = new this.deckModules.SimpleMeshLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
   }
 
   private handleAddScenegraphLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.deckModules || !this.loaders) return;
+
     const id = kwargs.id as string || `scenegraph-${Date.now()}`;
     const data = kwargs.data as unknown[];
     const scenegraph = kwargs.scenegraph;
@@ -1148,7 +1373,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
       getScale: this.makeAccessor(kwargs.getScale, 'scale', () => [1, 1, 1]),
       getTranslation: this.makeAccessor(kwargs.getTranslation, 'translation', () => [0, 0, 0]),
       // Specify loaders explicitly for glTF/GLB files
-      loaders: [GLTFLoader],
+      loaders: [this.loaders.GLTFLoader],
     };
 
     // Only add scenegraph if it's provided
@@ -1161,7 +1386,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
       layerProps._animations = kwargs._animations;
     }
 
-    const layer = new ScenegraphLayer(layerProps);
+    const layer = new this.deckModules.ScenegraphLayer(layerProps);
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -1223,12 +1448,15 @@ export class DeckGLRenderer extends MapLibreRenderer {
     }
   }
 
-  protected override handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override async handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     const id = kwargs.id as string || `cog-${Date.now()}`;
     const geotiff = kwargs.geotiff as string;
     const fitBounds = kwargs.fitBounds !== false;
 
-    const layer = new COGLayer({
+    // Load geotiff module dynamically
+    const geotiffMod = await loadGeotiff();
+
+    const layer = new geotiffMod.COGLayer({
       id,
       geotiff,
       opacity: kwargs.opacity as number ?? 1,
@@ -1254,6 +1482,18 @@ export class DeckGLRenderer extends MapLibreRenderer {
     }
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
+  }
+
+  /**
+   * Initialize deck.gl overlay if not already initialized.
+   */
+  private initializeDeckOverlay(): void {
+    if (this.map && this.deckModules && !this.deckOverlay) {
+      this.deckOverlay = new this.deckModules.MapboxOverlay({
+        layers: [],
+      });
+      this.map.addControl(this.deckOverlay as any);
+    }
   }
 
   // -------------------------------------------------------------------------

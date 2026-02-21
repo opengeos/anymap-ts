@@ -1,11 +1,24 @@
 /**
  * MapLibre GL Layer Control plugin integration.
+ * Uses dynamic CDN imports.
  */
 
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { LayerControl } from 'maplibre-gl-layer-control';
-import type { CustomLayerAdapter } from 'maplibre-gl-layer-control';
 import type { ControlPosition } from '../../types/maplibre';
+
+// Dynamic import helper
+async function loadLayerControl() {
+  const mod = await import('https://esm.sh/maplibre-gl-layer-control@0.14.0');
+  return { LayerControl: mod.LayerControl };
+}
+
+// Type for custom layer adapters
+export interface CustomLayerAdapter {
+  id: string;
+  getVisibility(): boolean;
+  setVisibility(visible: boolean): void;
+  getMetadata?(): Record<string, unknown>;
+}
 
 export interface LayerControlOptions {
   layers?: string[];
@@ -20,7 +33,7 @@ export interface LayerControlOptions {
  */
 export class LayerControlPlugin {
   private map: MapLibreMap;
-  private control: LayerControl | null = null;
+  private control: any | null = null;
 
   constructor(map: MapLibreMap) {
     this.map = map;
@@ -29,12 +42,14 @@ export class LayerControlPlugin {
   /**
    * Initialize the layer control.
    */
-  initialize(options: LayerControlOptions): void {
+  async initialize(options: LayerControlOptions): Promise<void> {
     if (this.control) {
       this.destroy();
     }
 
     const { layers, position = 'top-right', collapsed = false, customLayerAdapters, excludeLayers } = options;
+
+    const { LayerControl } = await loadLayerControl();
 
     this.control = new LayerControl({
       layers,
@@ -49,7 +64,7 @@ export class LayerControlPlugin {
   /**
    * Get the layer control instance.
    */
-  getControl(): LayerControl | null {
+  getControl(): any | null {
     return this.control;
   }
 

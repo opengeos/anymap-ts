@@ -97,7 +97,7 @@ class LeafletMap(MapWidget):
 
     # ESM module for frontend
     _esm = STATIC_DIR / "leaflet.js"
-    _css = STATIC_DIR / "leaflet.css"
+    # CSS is loaded dynamically from CDN in the frontend
 
     # Layer tracking
     _layer_dict = traitlets.Dict({}).tag(sync=True)

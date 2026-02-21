@@ -38,7 +38,7 @@ class MapLibreMap(MapWidget):
 
     # ESM module for frontend
     _esm = STATIC_DIR / "maplibre.js"
-    _css = STATIC_DIR / "maplibre.css"
+    # CSS is loaded dynamically from CDN in the frontend
 
     # MapLibre-specific traits
     bearing = traitlets.Float(0.0).tag(sync=True)

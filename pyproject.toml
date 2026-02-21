@@ -99,7 +99,6 @@ dependencies = ["hatch-jupyter-builder>=0.9.1"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
     "anymap_ts/static/maplibre.js",
-    "anymap_ts/static/maplibre.css",
 ]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
