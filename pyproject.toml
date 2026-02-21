@@ -44,8 +44,11 @@ raster = [
     "localtileserver>=0.10.6",
     "matplotlib>=3.8.0",
 ]
+webapps = [
+    "solara>=1.57.2",
+]
 all = [
-    "anymap-ts[vector,raster]",
+    "anymap-ts[vector,raster,webapps]",
 ]
 dev = [
     "pytest>=7.4.0",

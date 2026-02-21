@@ -157,6 +157,7 @@ nav:
           - maplibre/route_animation.ipynb
           - maplibre/search_control.ipynb
           - maplibre/sky_fog.ipynb
+          - maplibre/solara.ipynb
           - maplibre/split_map.ipynb
           - maplibre/style_switcher.ipynb
           - maplibre/terrain_3d.ipynb
