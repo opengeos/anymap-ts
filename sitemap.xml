@@ -93,6 +93,10 @@
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/notebooks/colorbar/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/notebooks/column_layer/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
@@ -110,6 +114,10 @@
     </url>
     <url>
          <loc>https://ts.anymap.dev/notebooks/feature_query_filter/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/flatgeobuf/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
@@ -185,6 +193,10 @@
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/notebooks/measure/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/notebooks/mvt_layer/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
@@ -213,6 +225,10 @@
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/notebooks/print_control/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/notebooks/quadkey_layer/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
@@ -230,6 +246,10 @@
     </url>
     <url>
          <loc>https://ts.anymap.dev/notebooks/scenegraph_layer/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/notebooks/search_control/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
