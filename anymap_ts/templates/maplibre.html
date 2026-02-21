@@ -999,84 +999,49 @@
         }
 
         function addMarkerGroupToggles() {
-            // The maplibre-gl-layer-control library uses '.layer-control-panel'
-            const lcPanel = document.querySelector('.layer-control-panel');
-            if (lcPanel) {
-                // Append marker items into the existing layer control panel
-                for (const [groupId, markers] of markerGroups) {
-                    const item = document.createElement('div');
-                    item.className = 'layer-control-item';
-
-                    const row = document.createElement('div');
-                    row.className = 'layer-control-row';
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = true;
-                    checkbox.className = 'layer-control-checkbox';
-
-                    // Marker symbol (pin icon)
-                    const symbol = document.createElement('span');
-                    symbol.className = 'layer-control-symbol';
-                    symbol.textContent = '\u{1F4CD}';
-                    symbol.style.fontSize = '14px';
-
-                    const name = document.createElement('span');
-                    name.className = 'layer-control-name';
-                    name.textContent = groupId;
-
-                    checkbox.addEventListener('change', () => {
-                        const display = checkbox.checked ? '' : 'none';
-                        for (const m of markers) {
-                            m.getElement().style.display = display;
-                        }
-                    });
-
-                    row.appendChild(checkbox);
-                    row.appendChild(symbol);
-                    row.appendChild(name);
-                    item.appendChild(row);
-                    lcPanel.appendChild(item);
-                }
-            } else {
-                // No layer control library — create a standalone marker control
+            // Find or create a container for marker toggles
+            // Try to append to an existing layer control panel
+            let lcContainer = document.querySelector('.maplibregl-layer-control');
+            if (!lcContainer) {
+                // No layer control exists — create a standalone marker control
                 const position = (layerControlConfig && layerControlConfig.position) || 'top-right';
                 const posClass = 'maplibregl-ctrl-' + position;
                 const container = document.querySelector('.' + posClass);
                 if (!container) return;
+                lcContainer = document.createElement('div');
+                lcContainer.className = 'maplibregl-ctrl maplibregl-layer-control';
+                lcContainer.style.cssText = 'background: #fff; padding: 8px 10px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px;';
+                container.appendChild(lcContainer);
+            }
 
-                const ctrl = document.createElement('div');
-                ctrl.className = 'maplibregl-ctrl';
-                ctrl.style.cssText = 'background: #fff; padding: 8px 10px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px;';
+            // Add a "Markers" section header
+            const header = document.createElement('div');
+            header.style.cssText = 'font-weight: bold; margin-top: 6px; margin-bottom: 4px; padding-top: 6px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;';
+            header.textContent = 'Markers';
+            lcContainer.appendChild(header);
 
-                const header = document.createElement('div');
-                header.style.cssText = 'font-weight: bold; margin-bottom: 6px; font-size: 13px;';
-                header.textContent = 'Markers';
-                ctrl.appendChild(header);
+            for (const [groupId, markers] of markerGroups) {
+                const row = document.createElement('label');
+                row.style.cssText = 'display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0; font-size: 12px;';
 
-                for (const [groupId, markers] of markerGroups) {
-                    const row = document.createElement('label');
-                    row.style.cssText = 'display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0;';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.style.cssText = 'margin: 0; cursor: pointer;';
 
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = true;
+                const label = document.createElement('span');
+                label.textContent = groupId;
 
-                    const label = document.createElement('span');
-                    label.textContent = groupId;
+                checkbox.addEventListener('change', () => {
+                    const display = checkbox.checked ? '' : 'none';
+                    for (const m of markers) {
+                        m.getElement().style.display = display;
+                    }
+                });
 
-                    checkbox.addEventListener('change', () => {
-                        const display = checkbox.checked ? '' : 'none';
-                        for (const m of markers) {
-                            m.getElement().style.display = display;
-                        }
-                    });
-
-                    row.appendChild(checkbox);
-                    row.appendChild(label);
-                    ctrl.appendChild(row);
-                }
-                container.appendChild(ctrl);
+                row.appendChild(checkbox);
+                row.appendChild(label);
+                lcContainer.appendChild(row);
             }
         }
 
