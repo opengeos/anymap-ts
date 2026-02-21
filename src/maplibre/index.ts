@@ -5,6 +5,7 @@
 
 import type { AnyModel } from '@anywidget/types';
 import type { MapLibreRenderer } from './MapLibreRenderer';
+import '../styles/maplibre.css';
 
 // CSS will be loaded dynamically via CDN
 const MAPLIBRE_CSS_URL = 'https://esm.sh/maplibre-gl@5/dist/maplibre-gl.css';
