@@ -68,12 +68,27 @@ export interface SourceConfig {
   type: SourceType;
   data?: FeatureCollection | Feature | string;
   url?: string;
+  urls?: string[];
   tiles?: string[];
   tileSize?: number;
   attribution?: string;
+  coordinates?: number[][];
   bounds?: [number, number, number, number];
   minzoom?: number;
   maxzoom?: number;
+}
+
+/**
+ * MapLibre sky specification.
+ */
+export interface SkySpecification {
+  'sky-color'?: string;
+  'sky-horizon-blend'?: number;
+  'horizon-color'?: string;
+  'horizon-fog-blend'?: number;
+  'fog-color'?: string;
+  'fog-ground-blend'?: number;
+  'atmosphere-blend'?: number;
 }
 
 /**

@@ -49,6 +49,7 @@ import type {
   ControlPosition,
   FlyToOptions,
   FitBoundsOptions,
+  SkySpecification,
   DEFAULT_PAINT,
   inferLayerType,
 } from '../types/maplibre';
@@ -141,6 +142,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // Feature hover state tracking
   protected hoveredFeatureId: string | number | null = null;
   protected hoveredLayerId: string | null = null;
+
+  // Video sources tracking (layer id -> source id)
+  protected videoSources: globalThis.Map<string, string> = new globalThis.Map();
+
+  // Split map state
+  private splitMapRight: MapLibreMap | null = null;
+  private splitMapContainer: HTMLDivElement | null = null;
+  private splitSlider: HTMLDivElement | null = null;
+  private splitActive: boolean = false;
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -431,6 +441,26 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Feature Hover
     this.registerMethod('addHoverEffect', this.handleAddHoverEffect.bind(this));
+
+    // Sky & Fog
+    this.registerMethod('setSky', this.handleSetSky.bind(this));
+    this.registerMethod('removeSky', this.handleRemoveSky.bind(this));
+
+    // Feature Query/Filter
+    this.registerMethod('setFilter', this.handleSetFilter.bind(this));
+    this.registerMethod('queryRenderedFeatures', this.handleQueryRenderedFeatures.bind(this));
+    this.registerMethod('querySourceFeatures', this.handleQuerySourceFeatures.bind(this));
+
+    // Video Layer
+    this.registerMethod('addVideoLayer', this.handleAddVideoLayer.bind(this));
+    this.registerMethod('removeVideoLayer', this.handleRemoveVideoLayer.bind(this));
+    this.registerMethod('playVideo', this.handlePlayVideo.bind(this));
+    this.registerMethod('pauseVideo', this.handlePauseVideo.bind(this));
+    this.registerMethod('seekVideo', this.handleSeekVideo.bind(this));
+
+    // Split Map
+    this.registerMethod('addSplitMap', this.handleAddSplitMap.bind(this));
+    this.registerMethod('removeSplitMap', this.handleRemoveSplitMap.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -617,7 +647,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const attribution = (kwargs.attribution as string) || '';
 
     const sourceId = `basemap-${name}`;
-    const layerId = `basemap-${name}`;
+    const layerId = `${name}`;
 
     // Add source if not exists
     if (!this.map.getSource(sourceId)) {
@@ -3539,7 +3569,444 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // Cleanup
   // -------------------------------------------------------------------------
 
+  // -------------------------------------------------------------------------
+  // Sky & Fog handlers
+  // -------------------------------------------------------------------------
+
+  private handleSetSky(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const spec: SkySpecification = {};
+    if (kwargs.skyColor !== undefined) spec['sky-color'] = kwargs.skyColor as string;
+    if (kwargs.skyHorizonBlend !== undefined) spec['sky-horizon-blend'] = kwargs.skyHorizonBlend as number;
+    if (kwargs.horizonColor !== undefined) spec['horizon-color'] = kwargs.horizonColor as string;
+    if (kwargs.horizonFogBlend !== undefined) spec['horizon-fog-blend'] = kwargs.horizonFogBlend as number;
+    if (kwargs.fogColor !== undefined) spec['fog-color'] = kwargs.fogColor as string;
+    if (kwargs.fogGroundBlend !== undefined) spec['fog-ground-blend'] = kwargs.fogGroundBlend as number;
+    if (kwargs.atmosphereBlend !== undefined) spec['atmosphere-blend'] = kwargs.atmosphereBlend as number;
+    (this.map as unknown as { setSky: (spec: SkySpecification) => void }).setSky(spec);
+  }
+
+  private handleRemoveSky(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    (this.map as unknown as { setSky: (spec: undefined) => void }).setSky(undefined);
+  }
+
+  // -------------------------------------------------------------------------
+  // Feature Query/Filter handlers
+  // -------------------------------------------------------------------------
+
+  private handleSetFilter(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const filter = kwargs.filter as unknown[] | null;
+
+    if (!layerId) {
+      console.error('setFilter requires layerId');
+      return;
+    }
+
+    if (!this.map.getLayer(layerId)) {
+      console.warn(`Layer ${layerId} not found`);
+      return;
+    }
+
+    this.map.setFilter(layerId, filter as maplibregl.FilterSpecification | null);
+    this.stateManager.setLayerFilter(layerId, filter);
+  }
+
+  private handleQueryRenderedFeatures(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const geometry = kwargs.geometry as { x: number; y: number } | [[number, number], [number, number]] | undefined;
+    const layers = kwargs.layers as string[] | undefined;
+    const filter = kwargs.filter as unknown[] | undefined;
+
+    const options: { layers?: string[]; filter?: maplibregl.FilterSpecification } = {};
+    if (layers) options.layers = layers;
+    if (filter) options.filter = filter as maplibregl.FilterSpecification;
+
+    const features = geometry
+      ? this.map.queryRenderedFeatures(geometry as maplibregl.PointLike | [maplibregl.PointLike, maplibregl.PointLike], options)
+      : this.map.queryRenderedFeatures(options);
+
+    const result = {
+      type: 'FeatureCollection' as const,
+      features: features.map(f => ({
+        type: 'Feature' as const,
+        geometry: f.geometry,
+        properties: f.properties,
+        id: f.id,
+        layer: f.layer?.id,
+        source: f.source,
+      })),
+    };
+
+    this.model.set('_queried_features', result);
+    this.model.save_changes();
+  }
+
+  private handleQuerySourceFeatures(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const sourceId = kwargs.sourceId as string;
+    const sourceLayer = kwargs.sourceLayer as string | undefined;
+    const filter = kwargs.filter as unknown[] | undefined;
+
+    if (!sourceId) {
+      console.error('querySourceFeatures requires sourceId');
+      return;
+    }
+
+    const options: { sourceLayer?: string; filter?: maplibregl.FilterSpecification } = {};
+    if (sourceLayer) options.sourceLayer = sourceLayer;
+    if (filter) options.filter = filter as maplibregl.FilterSpecification;
+
+    const features = this.map.querySourceFeatures(sourceId, options);
+
+    const result = {
+      type: 'FeatureCollection' as const,
+      features: features.map(f => ({
+        type: 'Feature' as const,
+        geometry: f.geometry,
+        properties: f.properties,
+        id: f.id,
+      })),
+    };
+
+    this.model.set('_queried_features', result);
+    this.model.save_changes();
+  }
+
+  // -------------------------------------------------------------------------
+  // Video Layer handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddVideoLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const id = (kwargs.id as string) || `video-${Date.now()}`;
+    const urls = kwargs.urls as string[];
+    const coordinates = kwargs.coordinates as number[][];
+    const opacity = (kwargs.opacity as number) ?? 1.0;
+
+    if (!urls || !urls.length || !coordinates || coordinates.length !== 4) {
+      console.error('addVideoLayer requires urls array and 4 corner coordinates');
+      return;
+    }
+
+    const sourceId = `${id}-source`;
+
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, {
+        type: 'video',
+        urls: urls,
+        coordinates: coordinates as [[number, number], [number, number], [number, number], [number, number]],
+      });
+      this.stateManager.addSource(sourceId, {
+        type: 'video',
+        urls: urls,
+        coordinates: coordinates,
+      });
+    }
+
+    if (!this.map.getLayer(id)) {
+      const layerConfig: LayerConfig = {
+        id: id,
+        type: 'raster',
+        source: sourceId,
+        paint: {
+          'raster-opacity': opacity,
+        },
+      };
+      this.map.addLayer(layerConfig as maplibregl.LayerSpecification);
+      this.stateManager.addLayer(id, layerConfig);
+    }
+
+    this.videoSources.set(id, sourceId);
+  }
+
+  private handleRemoveVideoLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const id = kwargs.id as string;
+    if (!id) return;
+
+    if (this.map.getLayer(id)) {
+      this.map.removeLayer(id);
+      this.stateManager.removeLayer(id);
+    }
+
+    const sourceId = this.videoSources.get(id) || `${id}-source`;
+    if (this.map.getSource(sourceId)) {
+      this.map.removeSource(sourceId);
+      this.stateManager.removeSource(sourceId);
+    }
+
+    this.videoSources.delete(id);
+  }
+
+  private handlePlayVideo(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const id = kwargs.id as string;
+    const sourceId = this.videoSources.get(id) || `${id}-source`;
+    const source = this.map.getSource(sourceId);
+    if (source && 'play' in source) {
+      (source as unknown as { play: () => void }).play();
+    }
+  }
+
+  private handlePauseVideo(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const id = kwargs.id as string;
+    const sourceId = this.videoSources.get(id) || `${id}-source`;
+    const source = this.map.getSource(sourceId);
+    if (source && 'pause' in source) {
+      (source as unknown as { pause: () => void }).pause();
+    }
+  }
+
+  private handleSeekVideo(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const id = kwargs.id as string;
+    const time = kwargs.time as number;
+    const sourceId = this.videoSources.get(id) || `${id}-source`;
+    const source = this.map.getSource(sourceId);
+    if (source && 'getVideo' in source) {
+      const video = (source as unknown as { getVideo: () => HTMLVideoElement }).getVideo();
+      if (video) {
+        video.currentTime = time;
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Split Map handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddSplitMap(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map || !this.mapContainer) return;
+
+    const leftLayer = kwargs.leftLayer as string;
+    const rightLayer = kwargs.rightLayer as string;
+    const position = (kwargs.position as number) ?? 50;
+
+    if (!leftLayer || !rightLayer) {
+      console.error('addSplitMap requires leftLayer and rightLayer');
+      return;
+    }
+
+    // Remove existing split if any
+    if (this.splitActive) {
+      this.handleRemoveSplitMap([], {});
+    }
+
+    this.splitActive = true;
+
+    // Hide the right layer on the primary map
+    if (this.map.getLayer(rightLayer)) {
+      this.map.setLayoutProperty(rightLayer, 'visibility', 'none');
+    }
+
+    // Create overlay container for the right map
+    const rightContainer = document.createElement('div');
+    rightContainer.style.position = 'absolute';
+    rightContainer.style.top = '0';
+    rightContainer.style.left = '0';
+    rightContainer.style.width = '100%';
+    rightContainer.style.height = '100%';
+    rightContainer.style.clipPath = `inset(0 0 0 ${position}%)`;
+    rightContainer.style.pointerEvents = 'none';
+    this.mapContainer.appendChild(rightContainer);
+    this.splitMapContainer = rightContainer;
+
+    // Create the right map
+    const style = this.model.get('style');
+    const rightMap = new MapLibreMap({
+      container: rightContainer,
+      style: typeof style === 'string' ? style : (style as maplibregl.StyleSpecification),
+      center: this.map.getCenter(),
+      zoom: this.map.getZoom(),
+      bearing: this.map.getBearing(),
+      pitch: this.map.getPitch(),
+      interactive: false,
+      attributionControl: false,
+    });
+
+    this.splitMapRight = rightMap;
+
+    rightMap.on('load', () => {
+      // Hide the left layer on the right map, show the right layer
+      if (rightMap.getLayer(leftLayer)) {
+        rightMap.setLayoutProperty(leftLayer, 'visibility', 'none');
+      }
+
+      // Replay sources and layers from state on right map
+      const sources = this.model.get('_sources') || {};
+      for (const [sourceId, sourceConfig] of Object.entries(sources)) {
+        if (!rightMap.getSource(sourceId)) {
+          try {
+            rightMap.addSource(sourceId, sourceConfig as unknown as maplibregl.SourceSpecification);
+          } catch (e) {
+            // Source may already be from style
+          }
+        }
+      }
+
+      const layers = this.model.get('_layers') || {};
+      for (const [layerId, layerConfig] of Object.entries(layers)) {
+        const config = layerConfig as unknown as LayerConfig;
+        if (!rightMap.getLayer(layerId)) {
+          try {
+            rightMap.addLayer(config as maplibregl.LayerSpecification);
+          } catch (e) {
+            // Layer may already be from style
+          }
+        }
+        // Show only the right layer, hide everything else
+        if (layerId === rightLayer) {
+          rightMap.setLayoutProperty(layerId, 'visibility', 'visible');
+        } else {
+          try {
+            rightMap.setLayoutProperty(layerId, 'visibility', 'none');
+          } catch (e) {
+            // May not exist
+          }
+        }
+      }
+    });
+
+    // Sync camera from primary to secondary
+    const syncMaps = () => {
+      if (!this.map || !this.splitMapRight) return;
+      this.splitMapRight.jumpTo({
+        center: this.map.getCenter(),
+        zoom: this.map.getZoom(),
+        bearing: this.map.getBearing(),
+        pitch: this.map.getPitch(),
+      });
+    };
+
+    this.map.on('move', syncMaps);
+
+    // Create slider
+    const slider = document.createElement('div');
+    slider.style.position = 'absolute';
+    slider.style.top = '0';
+    slider.style.left = `${position}%`;
+    slider.style.width = '4px';
+    slider.style.height = '100%';
+    slider.style.backgroundColor = '#333';
+    slider.style.cursor = 'ew-resize';
+    slider.style.zIndex = '10';
+    slider.style.boxShadow = '-1px 0 0 rgba(255,255,255,0.6), 1px 0 0 rgba(255,255,255,0.6), 0 0 6px rgba(0,0,0,0.5)';
+
+    // Slider handle
+    const handle = document.createElement('div');
+    handle.style.position = 'absolute';
+    handle.style.top = '50%';
+    handle.style.left = '50%';
+    handle.style.transform = 'translate(-50%, -50%)';
+    handle.style.width = '36px';
+    handle.style.height = '36px';
+    handle.style.borderRadius = '50%';
+    handle.style.backgroundColor = '#fff';
+    handle.style.border = '2px solid #333';
+    handle.style.boxShadow = '0 1px 6px rgba(0,0,0,0.5)';
+    handle.style.display = 'flex';
+    handle.style.alignItems = 'center';
+    handle.style.justifyContent = 'center';
+    handle.style.fontSize = '16px';
+    handle.style.color = '#333';
+    handle.style.fontWeight = 'bold';
+    handle.innerHTML = '&#x2194;';
+    slider.appendChild(handle);
+
+    this.mapContainer.appendChild(slider);
+    this.splitSlider = slider;
+
+    // Dragging logic
+    let isDragging = false;
+
+    const onPointerDown = (e: PointerEvent) => {
+      isDragging = true;
+      slider.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isDragging || !this.mapContainer || !this.splitMapContainer) return;
+      const rect = this.mapContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      slider.style.left = `${pct}%`;
+      this.splitMapContainer.style.clipPath = `inset(0 0 0 ${pct}%)`;
+    };
+
+    const onPointerUp = () => {
+      isDragging = false;
+    };
+
+    slider.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+
+    // Store cleanup refs on the slider element
+    (slider as unknown as Record<string, unknown>)._cleanup = () => {
+      slider.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      this.map?.off('move', syncMaps);
+    };
+
+    // Persist in controls
+    this.stateManager.addControl('split-map', 'split-map', 'overlay', {
+      leftLayer,
+      rightLayer,
+      position,
+    });
+  }
+
+  private handleRemoveSplitMap(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.splitActive) return;
+
+    // Clean up slider event listeners
+    if (this.splitSlider) {
+      const cleanup = (this.splitSlider as unknown as Record<string, unknown>)?._cleanup as (() => void) | undefined;
+      if (cleanup) cleanup();
+      this.splitSlider.remove();
+      this.splitSlider = null;
+    }
+
+    // Remove right map
+    if (this.splitMapRight) {
+      this.splitMapRight.remove();
+      this.splitMapRight = null;
+    }
+
+    // Remove right container
+    if (this.splitMapContainer) {
+      this.splitMapContainer.remove();
+      this.splitMapContainer = null;
+    }
+
+    // Restore all layer visibility on primary map
+    if (this.map) {
+      const layers = this.model.get('_layers') || {};
+      for (const [layerId, layerConfig] of Object.entries(layers)) {
+        const config = layerConfig as { visible?: boolean };
+        if (config.visible !== false && this.map.getLayer(layerId)) {
+          this.map.setLayoutProperty(layerId, 'visibility', 'visible');
+        }
+      }
+    }
+
+    this.splitActive = false;
+    this.stateManager.removeControl('split-map');
+  }
+
   destroy(): void {
+    // Clean up split map
+    if (this.splitActive) {
+      this.handleRemoveSplitMap([], {});
+    }
+
     // Remove model listeners
     this.removeModelListeners();
 
@@ -3609,6 +4076,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       }
     });
     this.zarrLayers.clear();
+
+    // Clear video sources
+    this.videoSources.clear();
 
     // Remove markers
     this.markersMap.forEach((marker) => marker.remove());

@@ -49,6 +49,7 @@ export interface LayerState {
   source: string;
   paint?: Record<string, unknown>;
   layout?: Record<string, unknown>;
+  filter?: unknown[];
   visible?: boolean;
   opacity?: number;
 }
@@ -60,9 +61,11 @@ export interface SourceState {
   type: string;
   data?: unknown;
   url?: string;
+  urls?: string[];
   tiles?: string[];
   tileSize?: number;
   attribution?: string;
+  coordinates?: number[][];
 }
 
 /**
@@ -92,6 +95,7 @@ export interface MapWidgetModel extends AnyModel {
   get(key: '_sources'): Record<string, SourceState>;
   get(key: '_controls'): Record<string, ControlState>;
   get(key: '_draw_data'): FeatureCollection | null;
+  get(key: '_queried_features'): Record<string, unknown>;
   get(key: 'clicked'): ClickedPoint | null;
   get(key: 'current_bounds'): [number, number, number, number] | null;
   get(key: string): unknown;
@@ -102,6 +106,7 @@ export interface MapWidgetModel extends AnyModel {
   set(key: 'clicked', value: ClickedPoint): void;
   set(key: '_js_events', value: JsEvent[]): void;
   set(key: '_draw_data', value: FeatureCollection): void;
+  set(key: '_queried_features', value: Record<string, unknown>): void;
   set(key: 'current_bounds', value: [number, number, number, number]): void;
   set(key: 'current_center', value: [number, number]): void;
   set(key: 'current_zoom', value: number): void;

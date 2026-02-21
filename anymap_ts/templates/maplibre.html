@@ -504,6 +504,304 @@
                     break;
                 }
 
+                case 'setSky': {
+                    const skySpec = {};
+                    if (kwargs.skyColor !== undefined) skySpec['sky-color'] = kwargs.skyColor;
+                    if (kwargs.skyHorizonBlend !== undefined) skySpec['sky-horizon-blend'] = kwargs.skyHorizonBlend;
+                    if (kwargs.horizonColor !== undefined) skySpec['horizon-color'] = kwargs.horizonColor;
+                    if (kwargs.horizonFogBlend !== undefined) skySpec['horizon-fog-blend'] = kwargs.horizonFogBlend;
+                    if (kwargs.fogColor !== undefined) skySpec['fog-color'] = kwargs.fogColor;
+                    if (kwargs.fogGroundBlend !== undefined) skySpec['fog-ground-blend'] = kwargs.fogGroundBlend;
+                    if (kwargs.atmosphereBlend !== undefined) skySpec['atmosphere-blend'] = kwargs.atmosphereBlend;
+                    map.setSky(skySpec);
+                    break;
+                }
+
+                case 'removeSky': {
+                    map.setSky(undefined);
+                    break;
+                }
+
+                case 'addTerrain': {
+                    const terrainSource = kwargs.source;
+                    const terrainExaggeration = kwargs.exaggeration || 1.0;
+                    const terrainSourceId = 'terrain-dem';
+                    if (!map.getSource(terrainSourceId)) {
+                        map.addSource(terrainSourceId, {
+                            type: 'raster-dem',
+                            tiles: [terrainSource.url],
+                            tileSize: 256,
+                            encoding: terrainSource.encoding === 'mapbox' ? 'mapbox' : 'terrarium'
+                        });
+                    }
+                    map.setTerrain({
+                        source: terrainSourceId,
+                        exaggeration: terrainExaggeration
+                    });
+                    break;
+                }
+
+                case 'addImageLayer': {
+                    const imgId = kwargs.id || 'image-' + Date.now();
+                    const imgSourceId = imgId + '-source';
+                    const imgUrl = kwargs.url;
+                    const imgCoords = kwargs.coordinates;
+                    const imgOpacity = kwargs.opacity !== undefined ? kwargs.opacity : 1.0;
+                    if (imgUrl && imgCoords && imgCoords.length === 4) {
+                        if (!map.getSource(imgSourceId)) {
+                            map.addSource(imgSourceId, {
+                                type: 'image',
+                                url: imgUrl,
+                                coordinates: imgCoords
+                            });
+                        }
+                        if (!map.getLayer(imgId)) {
+                            map.addLayer({
+                                id: imgId,
+                                type: 'raster',
+                                source: imgSourceId,
+                                paint: { 'raster-opacity': imgOpacity }
+                            });
+                            addedLayers.push({ id: imgId, name: imgId, type: 'raster' });
+                        }
+                    }
+                    break;
+                }
+
+                case 'setFilter': {
+                    const filterLayerId = kwargs.layerId;
+                    const filterExpr = kwargs.filter || null;
+                    if (filterLayerId && map.getLayer(filterLayerId)) {
+                        map.setFilter(filterLayerId, filterExpr);
+                    }
+                    break;
+                }
+
+                case 'addVideoLayer': {
+                    const vidId = kwargs.id || 'video-' + Date.now();
+                    const vidSourceId = vidId + '-source';
+                    const vidUrls = kwargs.urls;
+                    const vidCoords = kwargs.coordinates;
+                    const vidOpacity = kwargs.opacity !== undefined ? kwargs.opacity : 1.0;
+                    if (vidUrls && vidCoords && vidCoords.length === 4) {
+                        if (!map.getSource(vidSourceId)) {
+                            map.addSource(vidSourceId, {
+                                type: 'video',
+                                urls: vidUrls,
+                                coordinates: vidCoords
+                            });
+                        }
+                        if (!map.getLayer(vidId)) {
+                            map.addLayer({
+                                id: vidId,
+                                type: 'raster',
+                                source: vidSourceId,
+                                paint: { 'raster-opacity': vidOpacity }
+                            });
+                            addedLayers.push({ id: vidId, name: vidId, type: 'raster' });
+                        }
+                    }
+                    break;
+                }
+
+                case 'playVideo': {
+                    const playSourceId = (kwargs.id || '') + '-source';
+                    const playSource = map.getSource(playSourceId);
+                    if (playSource && playSource.play) playSource.play();
+                    break;
+                }
+
+                case 'pauseVideo': {
+                    const pauseSourceId = (kwargs.id || '') + '-source';
+                    const pauseSource = map.getSource(pauseSourceId);
+                    if (pauseSource && pauseSource.pause) pauseSource.pause();
+                    break;
+                }
+
+                case 'addSplitMap': {
+                    const leftLayer = kwargs.leftLayer;
+                    const rightLayer = kwargs.rightLayer;
+                    const splitPos = kwargs.position || 50;
+                    if (!leftLayer || !rightLayer) break;
+
+                    // Hide right layer on primary map
+                    if (map.getLayer(rightLayer)) {
+                        map.setLayoutProperty(rightLayer, 'visibility', 'none');
+                    }
+
+                    // Create overlay container
+                    const mapEl = document.getElementById('map');
+                    const rightContainer = document.createElement('div');
+                    rightContainer.id = 'split-map-right';
+                    rightContainer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;clip-path:inset(0 0 0 ' + splitPos + '%);pointer-events:none;';
+                    mapEl.appendChild(rightContainer);
+
+                    // Create right map
+                    const rightMap = new maplibregl.Map({
+                        container: rightContainer,
+                        style: state.style,
+                        center: map.getCenter(),
+                        zoom: map.getZoom(),
+                        bearing: map.getBearing(),
+                        pitch: map.getPitch(),
+                        interactive: false,
+                        attributionControl: false
+                    });
+
+                    rightMap.on('load', function() {
+                        // Replay layer-adding calls directly on rightMap
+                        for (const call of (state.js_calls || [])) {
+                            try {
+                                const k = call.kwargs || {};
+                                if (call.method === 'addTileLayer') {
+                                    const tileUrl = call.args[0];
+                                    const tileName = k.name;
+                                    const tileSourceId = tileName + '-source';
+                                    if (!rightMap.getSource(tileSourceId)) {
+                                        rightMap.addSource(tileSourceId, {
+                                            type: 'raster',
+                                            tiles: [tileUrl],
+                                            tileSize: 256,
+                                            attribution: k.attribution || ''
+                                        });
+                                    }
+                                    if (!rightMap.getLayer(tileName)) {
+                                        rightMap.addLayer({
+                                            id: tileName,
+                                            type: 'raster',
+                                            source: tileSourceId
+                                        });
+                                    }
+                                } else if (call.method === 'addBasemap') {
+                                    const bmUrl = call.args[0];
+                                    const bmName = k.name || 'basemap';
+                                    const bmSourceId = 'basemap-' + bmName;
+                                    if (!rightMap.getSource(bmSourceId)) {
+                                        rightMap.addSource(bmSourceId, {
+                                            type: 'raster',
+                                            tiles: [bmUrl],
+                                            tileSize: 256,
+                                            attribution: k.attribution || ''
+                                        });
+                                    }
+                                    if (!rightMap.getLayer(bmSourceId)) {
+                                        rightMap.addLayer({
+                                            id: bmSourceId,
+                                            type: 'raster',
+                                            source: bmSourceId
+                                        });
+                                    }
+                                } else if (call.method === 'addGeoJSON') {
+                                    const gjName = k.name;
+                                    const gjSourceId = gjName + '-source';
+                                    if (!rightMap.getSource(gjSourceId)) {
+                                        rightMap.addSource(gjSourceId, {
+                                            type: 'geojson',
+                                            data: k.data
+                                        });
+                                    }
+                                    if (!rightMap.getLayer(gjName)) {
+                                        const gjType = k.layerType || 'circle';
+                                        rightMap.addLayer({
+                                            id: gjName,
+                                            type: gjType,
+                                            source: gjSourceId,
+                                            paint: k.paint || getDefaultPaint(gjType)
+                                        });
+                                    }
+                                } else if (call.method === 'addImageLayer') {
+                                    const iiId = k.id || 'image-' + Date.now();
+                                    const iiSourceId = iiId + '-source';
+                                    if (k.url && k.coordinates && k.coordinates.length === 4) {
+                                        if (!rightMap.getSource(iiSourceId)) {
+                                            rightMap.addSource(iiSourceId, {
+                                                type: 'image',
+                                                url: k.url,
+                                                coordinates: k.coordinates
+                                            });
+                                        }
+                                        if (!rightMap.getLayer(iiId)) {
+                                            rightMap.addLayer({
+                                                id: iiId,
+                                                type: 'raster',
+                                                source: iiSourceId,
+                                                paint: { 'raster-opacity': k.opacity !== undefined ? k.opacity : 1.0 }
+                                            });
+                                        }
+                                    }
+                                } else if (call.method === 'addVideoLayer') {
+                                    const vvId = k.id || 'video-' + Date.now();
+                                    const vvSourceId = vvId + '-source';
+                                    if (k.urls && k.coordinates && k.coordinates.length === 4) {
+                                        if (!rightMap.getSource(vvSourceId)) {
+                                            rightMap.addSource(vvSourceId, {
+                                                type: 'video',
+                                                urls: k.urls,
+                                                coordinates: k.coordinates
+                                            });
+                                        }
+                                        if (!rightMap.getLayer(vvId)) {
+                                            rightMap.addLayer({
+                                                id: vvId,
+                                                type: 'raster',
+                                                source: vvSourceId,
+                                                paint: { 'raster-opacity': k.opacity !== undefined ? k.opacity : 1.0 }
+                                            });
+                                        }
+                                    }
+                                }
+                            } catch(e) { /* skip failures */ }
+                        }
+                        // Show only the right layer, hide everything else
+                        try {
+                            const allRightLayers = rightMap.getStyle().layers || [];
+                            for (const l of allRightLayers) {
+                                if (l.id === rightLayer) {
+                                    rightMap.setLayoutProperty(l.id, 'visibility', 'visible');
+                                } else {
+                                    try { rightMap.setLayoutProperty(l.id, 'visibility', 'none'); } catch(e) {}
+                                }
+                            }
+                        } catch(e) {}
+                    });
+
+                    // Sync camera
+                    map.on('move', function() {
+                        rightMap.jumpTo({
+                            center: map.getCenter(),
+                            zoom: map.getZoom(),
+                            bearing: map.getBearing(),
+                            pitch: map.getPitch()
+                        });
+                    });
+
+                    // Create slider
+                    const splitSlider = document.createElement('div');
+                    splitSlider.style.cssText = 'position:absolute;top:0;left:' + splitPos + '%;width:4px;height:100%;background:#333;cursor:ew-resize;z-index:10;box-shadow:-1px 0 0 rgba(255,255,255,0.6),1px 0 0 rgba(255,255,255,0.6),0 0 6px rgba(0,0,0,0.5);';
+                    const splitHandle = document.createElement('div');
+                    splitHandle.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid #333;box-shadow:0 1px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:16px;color:#333;font-weight:bold;';
+                    splitHandle.innerHTML = '&#x2194;';
+                    splitSlider.appendChild(splitHandle);
+                    mapEl.appendChild(splitSlider);
+
+                    let splitDragging = false;
+                    splitSlider.addEventListener('pointerdown', function(e) {
+                        splitDragging = true;
+                        splitSlider.setPointerCapture(e.pointerId);
+                        e.preventDefault();
+                    });
+                    window.addEventListener('pointermove', function(e) {
+                        if (!splitDragging) return;
+                        const rect = mapEl.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+                        splitSlider.style.left = pct + '%';
+                        rightContainer.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
+                    });
+                    window.addEventListener('pointerup', function() { splitDragging = false; });
+                    break;
+                }
+
                 default:
                     console.log('Unknown method:', method);
             }
