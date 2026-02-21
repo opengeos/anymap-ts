@@ -168,6 +168,15 @@ nav:
           - maplibre/zarr_layer.ipynb
     - Mapbox:
           - mapbox/mapbox.ipynb
+          - mapbox/choropleth.ipynb
+          - mapbox/cog_layer.ipynb
+          - mapbox/deck_layers.ipynb
+          - mapbox/layer_management.ipynb
+          - mapbox/markers.ipynb
+          - mapbox/popups_tooltips.ipynb
+          - mapbox/terrain_3d.ipynb
+          - mapbox/ui_controls.ipynb
+          - mapbox/vector_data.ipynb
     - OpenLayers:
           - openlayers/openlayers.ipynb
     - Potree:
