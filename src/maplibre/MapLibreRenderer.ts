@@ -24,6 +24,10 @@ import {
   TextLayer,
   GeoJsonLayer,
   LineLayer,
+  BitmapLayer,
+  ColumnLayer,
+  GridCellLayer,
+  SolidPolygonLayer,
 } from '@deck.gl/layers';
 import {
   HexagonLayer,
@@ -199,14 +203,21 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         // Restore persisted state (layers, sources) before processing new calls
         // This ensures layers are restored when map is displayed in subsequent cells
         this.restoreState();
+        // Apply initial projection from model trait (must be done after style loads)
+        const initProjection = this.model.get('projection') as string;
+        if (initProjection && initProjection !== 'mercator') {
+          try {
+            this.map!.setProjection({ type: initProjection } as maplibregl.ProjectionSpecification);
+          } catch (err) {
+            console.warn('Failed to set initial projection:', err);
+          }
+        }
         // Process any calls that were queued while waiting for map to load
         this.processPendingCalls();
-        // Force resize after load to ensure correct dimensions
-        setTimeout(() => {
-          if (this.map) {
-            this.map.resize();
-          }
-        }, 100);
+        // Resize after load to ensure correct dimensions
+        if (this.map) {
+          this.map.resize();
+        }
         resolve();
       });
     });
@@ -415,6 +426,40 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addDeckGLLayer', this.handleAddDeckGLLayer.bind(this));
     this.registerMethod('removeDeckLayer', this.handleRemoveDeckLayer.bind(this));
     this.registerMethod('setDeckLayerVisibility', this.handleSetDeckLayerVisibility.bind(this));
+
+    // Additional deck.gl layers
+    this.registerMethod('addBitmapLayer', this.handleAddBitmapLayer.bind(this));
+    this.registerMethod('addColumnLayer', this.handleAddColumnLayer.bind(this));
+    this.registerMethod('addGridCellLayer', this.handleAddGridCellLayer.bind(this));
+    this.registerMethod('addSolidPolygonLayer', this.handleAddSolidPolygonLayer.bind(this));
+    // Note: Heavy geo-layers (MVT, Tile3D, Terrain, H3, S2, etc.) and mesh-layers
+    // (SimpleMesh, Scenegraph) are only available in DeckGLRenderer to keep the
+    // maplibre.js bundle lightweight.
+
+    // Native MapLibre features
+    this.registerMethod('setProjection', this.handleSetProjection.bind(this));
+    this.registerMethod('updateGeoJSONSource', this.handleUpdateGeoJSONSource.bind(this));
+    this.registerMethod('addMapImage', this.handleAddMapImage.bind(this));
+    this.registerMethod('addTooltip', this.handleAddTooltip.bind(this));
+    this.registerMethod('removeTooltip', this.handleRemoveTooltip.bind(this));
+    this.registerMethod('addCoordinatesControl', this.handleAddCoordinatesControl.bind(this));
+    this.registerMethod('removeCoordinatesControl', this.handleRemoveCoordinatesControl.bind(this));
+
+    // Time slider
+    this.registerMethod('addTimeSlider', this.handleAddTimeSlider.bind(this));
+    this.registerMethod('removeTimeSlider', this.handleRemoveTimeSlider.bind(this));
+
+    // UI enhancements
+    this.registerMethod('addSwipeMap', this.handleAddSwipeMap.bind(this));
+    this.registerMethod('removeSwipeMap', this.handleRemoveSwipeMap.bind(this));
+    this.registerMethod('addOpacitySlider', this.handleAddOpacitySlider.bind(this));
+    this.registerMethod('removeOpacitySlider', this.handleRemoveOpacitySlider.bind(this));
+    this.registerMethod('addStyleSwitcher', this.handleAddStyleSwitcher.bind(this));
+    this.registerMethod('removeStyleSwitcher', this.handleRemoveStyleSwitcher.bind(this));
+
+    // Data export
+    this.registerMethod('getVisibleFeatures', this.handleGetVisibleFeatures.bind(this));
+    this.registerMethod('getLayerData', this.handleGetLayerData.bind(this));
 
     // LiDAR layers (maplibre-gl-lidar)
     this.registerMethod('addLidarControl', this.handleAddLidarControl.bind(this));
@@ -2215,6 +2260,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       'PointCloudLayer': this.handleAddPointCloudLayer.bind(this),
       'TripsLayer': this.handleAddTripsLayer.bind(this),
       'LineLayer': this.handleAddLineLayer.bind(this),
+      'BitmapLayer': this.handleAddBitmapLayer.bind(this),
+      'ColumnLayer': this.handleAddColumnLayer.bind(this),
+      'GridCellLayer': this.handleAddGridCellLayer.bind(this),
+      'SolidPolygonLayer': this.handleAddSolidPolygonLayer.bind(this),
+      // Heavy geo-layers and mesh-layers are only in DeckGLRenderer
     };
 
     const handler = handlerMap[layerType];
@@ -2254,6 +2304,739 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const updatedLayer = layer.clone({ visible });
       this.deckLayers.set(id, updatedLayer);
       this.updateDeckOverlay();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Accessor helper for deck.gl layer properties
+  // -------------------------------------------------------------------------
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected makeDeckAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any {
+    if (typeof value === 'string') {
+      return (d: any) => d[value];
+    }
+    if (typeof value === 'function') {
+      return value;
+    }
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+    return fallbackFn || ((d: any) => d[defaultProp]);
+  }
+
+  // -------------------------------------------------------------------------
+  // Additional deck.gl layer handlers
+  // -------------------------------------------------------------------------
+
+  protected handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `bitmap-${Date.now()}`;
+    const image = kwargs.image as string;
+    const bounds = kwargs.bounds as [number, number, number, number];
+
+    const layer = new BitmapLayer({
+      id,
+      image,
+      bounds,
+      opacity: kwargs.opacity as number ?? 1,
+      visible: kwargs.visible !== false,
+      pickable: kwargs.pickable as boolean ?? false,
+      desaturate: kwargs.desaturate as number ?? 0,
+      transparentColor: (kwargs.transparentColor ?? [0, 0, 0, 0]) as any,
+      tintColor: (kwargs.tintColor ?? [255, 255, 255]) as any,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `column-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new ColumnLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      extruded: kwargs.extruded as boolean ?? true,
+      diskResolution: kwargs.diskResolution as number ?? 20,
+      radius: kwargs.radius as number ?? 1000,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      coverage: kwargs.coverage as number ?? 1,
+      filled: kwargs.filled !== false,
+      stroked: kwargs.stroked as boolean ?? false,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      getPosition: this.makeDeckAccessor(
+        kwargs.getPosition, 'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [255, 140, 0, 200]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 1000),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `gridcell-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new GridCellLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      extruded: kwargs.extruded as boolean ?? true,
+      cellSize: kwargs.cellSize as number ?? 200,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      coverage: kwargs.coverage as number ?? 1,
+      getPosition: this.makeDeckAccessor(
+        kwargs.getPosition, 'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getColor: this.makeDeckAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 140, 0, 200]),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 1000),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `solidpolygon-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new SolidPolygonLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      filled: kwargs.filled !== false,
+      extruded: kwargs.extruded as boolean ?? false,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      getPolygon: this.makeDeckAccessor(kwargs.getPolygon, 'polygon', (d: any) => d.polygon || d.contour || d.coordinates),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  // Heavy geo-layers (TileLayer, MVTLayer, Tile3DLayer, TerrainLayer, GreatCircleLayer,
+  // H3HexagonLayer, H3ClusterLayer, S2Layer, QuadkeyLayer, GeohashLayer, WMSLayer)
+  // and mesh-layers (SimpleMeshLayer, ScenegraphLayer) handlers are only in DeckGLRenderer
+  // to keep the maplibre.js bundle lightweight and avoid heavy CommonJS dependencies.
+
+  // Heavy geo-layers and mesh-layers handlers removed - see DeckGLRenderer
+
+  // -------------------------------------------------------------------------
+  // Native MapLibre feature handlers (Section 3)
+  // -------------------------------------------------------------------------
+
+  protected handleSetProjection(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const projection = (kwargs.projection as string) || (args[0] as string) || 'mercator';
+    try {
+      this.map.setProjection({ type: projection } as maplibregl.ProjectionSpecification);
+    } catch (err) {
+      console.error('setProjection error:', err);
+    }
+  }
+
+  protected handleUpdateGeoJSONSource(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const sourceId = kwargs.sourceId as string || args[0] as string;
+    const data = kwargs.data;
+    if (!sourceId) return;
+
+    let source = this.map.getSource(sourceId) as maplibregl.GeoJSONSource;
+    if (!source && !sourceId.endsWith('-source')) {
+      source = this.map.getSource(sourceId + '-source') as maplibregl.GeoJSONSource;
+    }
+    if (source && typeof source.setData === 'function') {
+      source.setData(data as any);
+    }
+  }
+
+  protected handleAddMapImage(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const name = kwargs.name as string || args[0] as string;
+    const url = kwargs.url as string || args[1] as string;
+    if (!name || !url) return;
+
+    this.map.loadImage(url).then((response) => {
+      if (response && response.data && !this.map!.hasImage(name)) {
+        this.map!.addImage(name, response.data);
+      }
+    }).catch((err) => {
+      console.warn(`Failed to load image '${name}':`, err);
+    });
+  }
+
+  private tooltipPopup: maplibregl.Popup | null = null;
+  private tooltipLayerHandlers: Map<string, (e: any) => void> = new Map();
+
+  protected handleAddTooltip(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const template = kwargs.template as string || '';
+    const properties = kwargs.properties as string[] | undefined;
+    if (!layerId) return;
+
+    // Remove existing tooltip for this layer
+    if (this.tooltipLayerHandlers.has(layerId)) {
+      const oldHandler = this.tooltipLayerHandlers.get(layerId)!;
+      this.map.off('mousemove', layerId, oldHandler);
+      this.tooltipLayerHandlers.delete(layerId);
+    }
+
+    const popup = new Popup({
+      closeButton: false,
+      closeOnClick: false,
+      className: 'anymap-tooltip',
+    });
+
+    const handler = (e: any) => {
+      if (!e.features || e.features.length === 0) {
+        popup.remove();
+        return;
+      }
+
+      const feature = e.features[0];
+      const props = feature.properties || {};
+      let html = template;
+
+      if (template) {
+        // Replace {property} placeholders and wrap in styled container
+        const content = template.replace(/\{(\w+)\}/g, (_: string, key: string) => {
+          return props[key] !== undefined ? String(props[key]) : '';
+        });
+        html = '<div style="font-size:12px;color:#333">' + content + '</div>';
+      } else if (properties && properties.length > 0) {
+        // Show only specified properties
+        html = '<div style="font-size:12px;color:#333">' +
+          properties.map(p => `<b>${p}:</b> ${props[p] !== undefined ? props[p] : 'N/A'}`).join('<br>') +
+          '</div>';
+      } else {
+        // Show all properties
+        html = '<div style="font-size:12px;color:#333">' +
+          Object.entries(props).map(([k, v]) => `<b>${k}:</b> ${v}`).join('<br>') +
+          '</div>';
+      }
+
+      popup.setLngLat(e.lngLat).setHTML(html).addTo(this.map!);
+    };
+
+    this.map.on('mousemove', layerId, handler);
+    this.map.on('mouseleave', layerId, () => { popup.remove(); });
+    this.tooltipLayerHandlers.set(layerId, handler);
+  }
+
+  protected handleRemoveTooltip(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    if (!layerId) return;
+
+    if (this.tooltipLayerHandlers.has(layerId)) {
+      const handler = this.tooltipLayerHandlers.get(layerId)!;
+      this.map.off('mousemove', layerId, handler);
+      this.tooltipLayerHandlers.delete(layerId);
+    }
+  }
+
+  private coordinatesControl: HTMLDivElement | null = null;
+  private coordinatesHandler: ((e: any) => void) | null = null;
+
+  protected handleAddCoordinatesControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const position = kwargs.position as string || 'bottom-left';
+
+    // Remove existing
+    if (this.coordinatesControl) {
+      this.coordinatesControl.remove();
+      if (this.coordinatesHandler) {
+        this.map.off('mousemove', this.coordinatesHandler);
+      }
+    }
+
+    const div = document.createElement('div');
+    div.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-coordinates';
+    div.style.cssText = 'padding:4px 8px;font-size:11px;font-family:monospace;background:rgba(255,255,255,0.9);pointer-events:none;';
+    div.textContent = 'Lng: 0.0000, Lat: 0.0000';
+
+    const precision = kwargs.precision as number ?? 4;
+
+    const handler = (e: any) => {
+      div.textContent = `Lng: ${e.lngLat.lng.toFixed(precision)}, Lat: ${e.lngLat.lat.toFixed(precision)}`;
+    };
+
+    this.map.on('mousemove', handler);
+    this.coordinatesHandler = handler;
+
+    // Add to map container
+    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+    if (controlContainer) {
+      controlContainer.appendChild(div);
+    } else {
+      this.map.getContainer().appendChild(div);
+    }
+    this.coordinatesControl = div;
+  }
+
+  protected handleRemoveCoordinatesControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    if (this.coordinatesControl) {
+      this.coordinatesControl.remove();
+      this.coordinatesControl = null;
+    }
+    if (this.coordinatesHandler) {
+      this.map.off('mousemove', this.coordinatesHandler);
+      this.coordinatesHandler = null;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Time Slider handler (Section 4)
+  // -------------------------------------------------------------------------
+
+  private timeSliderContainer: HTMLDivElement | null = null;
+
+  protected handleAddTimeSlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const property = kwargs.property as string;
+    const min = kwargs.min as number ?? 0;
+    const max = kwargs.max as number ?? 100;
+    const step = kwargs.step as number ?? 1;
+    const position = kwargs.position as string || 'bottom-left';
+    const label = kwargs.label as string || 'Time';
+    const autoPlay = kwargs.autoPlay as boolean ?? false;
+    const interval = kwargs.interval as number ?? 500;
+
+    // Remove existing slider
+    this.handleRemoveTimeSlider(args, kwargs);
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-time-slider';
+    container.style.cssText = 'padding:10px;background:rgba(255,255,255,0.95);min-width:250px;border-radius:4px;';
+
+    const labelEl = document.createElement('div');
+    labelEl.style.cssText = 'font-size:12px;font-weight:bold;margin-bottom:5px;';
+    labelEl.textContent = `${label}: ${min}`;
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = String(min);
+    slider.max = String(max);
+    slider.step = String(step);
+    slider.value = String(min);
+    slider.style.cssText = 'width:100%;cursor:pointer;';
+
+    const playBtn = document.createElement('button');
+    playBtn.textContent = '\u25B6';
+    playBtn.style.cssText = 'margin-top:5px;padding:2px 8px;cursor:pointer;border:1px solid #ccc;border-radius:3px;background:#fff;';
+
+    let animTimer: number | null = null;
+
+    const updateFilter = (value: number) => {
+      labelEl.textContent = `${label}: ${value}`;
+      if (this.map && layerId && property) {
+        this.map.setFilter(layerId, ['<=', property, value]);
+      }
+    };
+
+    slider.addEventListener('input', () => {
+      updateFilter(Number(slider.value));
+    });
+
+    const stopAnim = () => {
+      if (animTimer !== null) {
+        clearInterval(animTimer);
+        animTimer = null;
+        playBtn.textContent = '\u25B6';
+      }
+    };
+
+    playBtn.addEventListener('click', () => {
+      if (animTimer !== null) {
+        stopAnim();
+      } else {
+        playBtn.textContent = '\u23F8';
+        animTimer = window.setInterval(() => {
+          let val = Number(slider.value) + step;
+          if (val > max) val = min;
+          slider.value = String(val);
+          updateFilter(val);
+        }, interval);
+      }
+    });
+
+    container.appendChild(labelEl);
+    container.appendChild(slider);
+    container.appendChild(playBtn);
+
+    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+    if (controlContainer) {
+      controlContainer.appendChild(container);
+    } else {
+      this.map.getContainer().appendChild(container);
+    }
+    this.timeSliderContainer = container;
+
+    if (autoPlay) {
+      playBtn.click();
+    }
+  }
+
+  protected handleRemoveTimeSlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (this.timeSliderContainer) {
+      this.timeSliderContainer.remove();
+      this.timeSliderContainer = null;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // UI Enhancement handlers (Section 6)
+  // -------------------------------------------------------------------------
+
+  private swipeContainer: HTMLDivElement | null = null;
+  private swipeHandler: (() => void) | null = null;
+
+  protected handleAddSwipeMap(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const leftLayer = kwargs.leftLayer as string;
+    const rightLayer = kwargs.rightLayer as string;
+    if (!leftLayer || !rightLayer) return;
+
+    // Remove existing
+    this.handleRemoveSwipeMap(args, kwargs);
+
+    const container = this.map.getContainer();
+    const slider = document.createElement('div');
+    slider.className = 'anymap-swipe-slider';
+    slider.style.cssText = 'position:absolute;top:0;bottom:0;width:4px;background:#fff;cursor:ew-resize;z-index:10;left:50%;box-shadow:0 0 4px rgba(0,0,0,0.3);';
+
+    const handle = document.createElement('div');
+    handle.style.cssText = 'position:absolute;top:50%;left:-10px;width:24px;height:24px;background:#fff;border-radius:50%;border:2px solid #333;transform:translateY(-50%);cursor:ew-resize;';
+    slider.appendChild(handle);
+    container.appendChild(slider);
+
+    let isDragging = false;
+
+    const updateClip = () => {
+      const rect = container.getBoundingClientRect();
+      const sliderLeft = slider.offsetLeft;
+      const clipRight = rect.width - sliderLeft;
+
+      // Clip the right layer to show only on the right side of the slider
+      this.map!.getContainer();
+      // Use clip-path on canvas layers
+      const mapCanvas = this.map!.getCanvas();
+      if (mapCanvas) {
+        // Set the left layer to show fully, clip the right layer
+        if (this.map!.getLayer(leftLayer)) {
+          // Left layer is fully visible
+        }
+        if (this.map!.getLayer(rightLayer)) {
+          this.map!.setPaintProperty(rightLayer, 'raster-opacity', 1);
+        }
+      }
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      e.preventDefault();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const rect = container.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      slider.style.left = `${x}px`;
+
+      // Clip left layer
+      if (this.map!.getLayer(leftLayer)) {
+        (this.map! as any).setLayerClipBounds?.(leftLayer, [[0, 0], [x, rect.height]]);
+      }
+      if (this.map!.getLayer(rightLayer)) {
+        (this.map! as any).setLayerClipBounds?.(rightLayer, [[x, 0], [rect.width, rect.height]]);
+      }
+    };
+
+    const onMouseUp = () => { isDragging = false; };
+
+    slider.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    this.swipeContainer = slider;
+    this.swipeHandler = () => {
+      slider.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }
+
+  protected handleRemoveSwipeMap(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (this.swipeContainer) {
+      this.swipeContainer.remove();
+      this.swipeContainer = null;
+    }
+    if (this.swipeHandler) {
+      this.swipeHandler();
+      this.swipeHandler = null;
+    }
+  }
+
+  private opacitySliderContainer: Map<string, HTMLDivElement> = new Map();
+
+  protected handleAddOpacitySlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const position = kwargs.position as string || 'top-right';
+    const label = kwargs.label as string || layerId;
+    if (!layerId) return;
+
+    // Remove existing for this layer
+    this.removeOpacitySliderForLayer(layerId);
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-opacity-slider';
+    container.style.cssText = 'padding:8px;background:rgba(255,255,255,0.95);min-width:150px;border-radius:4px;';
+
+    const labelEl = document.createElement('div');
+    labelEl.style.cssText = 'font-size:11px;margin-bottom:4px;';
+    labelEl.textContent = `${label}: 100%`;
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = '100';
+    slider.value = '100';
+    slider.style.cssText = 'width:100%;cursor:pointer;';
+
+    slider.addEventListener('input', () => {
+      const opacity = Number(slider.value) / 100;
+      labelEl.textContent = `${label}: ${slider.value}%`;
+
+      // Try to set opacity on different layer types
+      if (this.map!.getLayer(layerId)) {
+        try {
+          const layerObj = this.map!.getLayer(layerId);
+          const layerType = (layerObj as any)?.type;
+          if (layerType === 'raster') {
+            this.map!.setPaintProperty(layerId, 'raster-opacity', opacity);
+          } else if (layerType === 'fill') {
+            this.map!.setPaintProperty(layerId, 'fill-opacity', opacity);
+          } else if (layerType === 'line') {
+            this.map!.setPaintProperty(layerId, 'line-opacity', opacity);
+          } else if (layerType === 'circle') {
+            this.map!.setPaintProperty(layerId, 'circle-opacity', opacity);
+          } else if (layerType === 'symbol') {
+            this.map!.setPaintProperty(layerId, 'icon-opacity', opacity);
+            this.map!.setPaintProperty(layerId, 'text-opacity', opacity);
+          } else if (layerType === 'fill-extrusion') {
+            this.map!.setPaintProperty(layerId, 'fill-extrusion-opacity', opacity);
+          }
+        } catch {
+          // Deck.gl layer - try deck.gl approach
+          const deckLayer = this.deckLayers.get(layerId) as { clone?: (props: Record<string, unknown>) => unknown } | undefined;
+          if (deckLayer && typeof deckLayer.clone === 'function') {
+            const updated = deckLayer.clone({ opacity });
+            this.deckLayers.set(layerId, updated);
+            this.updateDeckOverlay();
+          }
+        }
+      }
+    });
+
+    container.appendChild(labelEl);
+    container.appendChild(slider);
+
+    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+    if (controlContainer) {
+      controlContainer.appendChild(container);
+    }
+
+    this.opacitySliderContainer.set(layerId, container);
+  }
+
+  private removeOpacitySliderForLayer(layerId: string): void {
+    const existing = this.opacitySliderContainer.get(layerId);
+    if (existing) {
+      existing.remove();
+      this.opacitySliderContainer.delete(layerId);
+    }
+  }
+
+  protected handleRemoveOpacitySlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    const layerId = kwargs.layerId as string;
+    if (layerId) {
+      this.removeOpacitySliderForLayer(layerId);
+    }
+  }
+
+  private styleSwitcherContainer: HTMLDivElement | null = null;
+
+  protected handleAddStyleSwitcher(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const styles = kwargs.styles as Record<string, string>;
+    const position = kwargs.position as string || 'top-right';
+    if (!styles || Object.keys(styles).length === 0) return;
+
+    // Remove existing
+    this.handleRemoveStyleSwitcher(args, kwargs);
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-style-switcher';
+    container.style.cssText = 'padding:8px;background:rgba(255,255,255,0.95);border-radius:4px;';
+
+    const select = document.createElement('select');
+    select.style.cssText = 'font-size:12px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;cursor:pointer;';
+
+    for (const [name, url] of Object.entries(styles)) {
+      const option = document.createElement('option');
+      option.value = url;
+      option.textContent = name;
+      select.appendChild(option);
+    }
+
+    select.addEventListener('change', () => {
+      this.map!.setStyle(select.value);
+    });
+
+    container.appendChild(select);
+
+    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+    if (controlContainer) {
+      controlContainer.appendChild(container);
+    }
+
+    this.styleSwitcherContainer = container;
+  }
+
+  protected handleRemoveStyleSwitcher(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (this.styleSwitcherContainer) {
+      this.styleSwitcherContainer.remove();
+      this.styleSwitcherContainer = null;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Data Export handlers (Section 7)
+  // -------------------------------------------------------------------------
+
+  protected handleGetVisibleFeatures(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layers = kwargs.layers as string[] | undefined;
+
+    try {
+      const features = layers
+        ? this.map.queryRenderedFeatures(undefined, { layers })
+        : this.map.queryRenderedFeatures();
+
+      const geojson: FeatureCollection = {
+        type: 'FeatureCollection',
+        features: features.map(f => ({
+          type: 'Feature' as const,
+          geometry: f.geometry,
+          properties: f.properties,
+        })),
+      };
+
+      // Send back via model
+      if (this.model) {
+        this.model.set('_queried_features', {
+          type: 'visible_features',
+          data: geojson,
+        });
+        this.model.save_changes();
+      }
+    } catch (err) {
+      console.warn('Error getting visible features:', err);
+    }
+  }
+
+  protected handleGetLayerData(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const sourceId = kwargs.sourceId as string;
+    if (!sourceId) return;
+
+    let features: maplibregl.GeoJSONFeature[] = [];
+    let resolvedSourceId = sourceId;
+
+    // Try the given sourceId first
+    try {
+      features = this.map.querySourceFeatures(sourceId);
+    } catch {
+      // Source doesn't exist with this ID
+    }
+
+    // If no results, try with '-source' suffix
+    // (add_geojson creates sources as '{name}-source')
+    if (features.length === 0 && !sourceId.endsWith('-source')) {
+      const altSourceId = sourceId + '-source';
+      try {
+        const altFeatures = this.map.querySourceFeatures(altSourceId);
+        if (altFeatures.length > 0) {
+          features = altFeatures;
+          resolvedSourceId = altSourceId;
+        }
+      } catch {
+        // alt source doesn't exist either
+      }
+    }
+
+    const geojson: FeatureCollection = {
+      type: 'FeatureCollection',
+      features: features.map(f => ({
+        type: 'Feature' as const,
+        geometry: f.geometry,
+        properties: f.properties,
+      })),
+    };
+
+    if (this.model) {
+      this.model.set('_queried_features', {
+        type: 'layer_data',
+        sourceId: resolvedSourceId,
+        data: geojson,
+      });
+      this.model.save_changes();
     }
   }
 

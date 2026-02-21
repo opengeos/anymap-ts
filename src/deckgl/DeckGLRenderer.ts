@@ -704,7 +704,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
   // New Layer Handlers
   // -------------------------------------------------------------------------
 
-  private handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `bitmap-${Date.now()}`;
     const image = kwargs.image as string;
     const bounds = kwargs.bounds as [number, number, number, number];
@@ -725,7 +725,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `column-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -756,7 +756,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `gridcell-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -782,7 +782,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `solidpolygon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
