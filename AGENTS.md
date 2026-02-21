@@ -280,7 +280,7 @@ mkdocs build
 ```
 
 - Source: `docs/`
-- Notebooks: `docs/notebooks/` (linked from `examples/`)
+- Notebooks: organized by backend under `docs/` (e.g., `docs/maplibre/`, `docs/deckgl/`, etc.)
 - API docs: Auto-generated via mkdocstrings
 
 ## Security Considerations

@@ -96,27 +96,75 @@ nav:
                 - COG Layer: typescript/examples/cog_layer.md
                 - Zarr Layer: typescript/examples/zarr_layer.md
     - Cesium:
-          - notebooks/cesium.ipynb
+          - cesium/cesium.ipynb
     - DeckGL:
-          - notebooks/deckgl.ipynb
+          - deckgl/deckgl.ipynb
+          - deckgl/bitmap_layer.ipynb
+          - deckgl/column_layer.ipynb
+          - deckgl/contour_layer.ipynb
+          - deckgl/geojson_layer.ipynb
+          - deckgl/geohash_layer.ipynb
+          - deckgl/great_circle_layer.ipynb
+          - deckgl/gridcell_layer.ipynb
+          - deckgl/h3_cluster_layer.ipynb
+          - deckgl/h3_hexagon_layer.ipynb
+          - deckgl/heatmap_layer.ipynb
+          - deckgl/hexagon_layer.ipynb
+          - deckgl/icon_layer.ipynb
+          - deckgl/mvt_layer.ipynb
+          - deckgl/polygon_layer.ipynb
+          - deckgl/quadkey_layer.ipynb
+          - deckgl/s2_layer.ipynb
+          - deckgl/scatterplot_layer.ipynb
+          - deckgl/scenegraph_layer.ipynb
+          - deckgl/simplemesh_layer.ipynb
+          - deckgl/solidpolygon_layer.ipynb
+          - deckgl/terrain_layer.ipynb
+          - deckgl/text_layer.ipynb
+          - deckgl/tile3d_layer.ipynb
+          - deckgl/tile_layer.ipynb
+          - deckgl/trips_layer.ipynb
+          - deckgl/wms_layer.ipynb
     - KeplerGL:
-          - notebooks/keplergl.ipynb
+          - keplergl/keplergl.ipynb
     - Leaflet:
-          - notebooks/leaflet.ipynb
+          - leaflet/leaflet.ipynb
     - MapLibre:
-          - notebooks/maplibre.ipynb
-          - notebooks/control_grid.ipynb
-          - notebooks/cog_layer.ipynb
-          - notebooks/zarr_layer.ipynb
-          - notebooks/arc_layer.ipynb
-          - notebooks/pointcloud_layer.ipynb
-          - notebooks/ui_controls.ipynb
+          - maplibre/maplibre.ipynb
+          - maplibre/arc_layer.ipynb
+          - maplibre/buildings_3d.ipynb
+          - maplibre/choropleth.ipynb
+          - maplibre/clustering.ipynb
+          - maplibre/cog_layer.ipynb
+          - maplibre/colorbar.ipynb
+          - maplibre/control_grid.ipynb
+          - maplibre/feature_query_filter.ipynb
+          - maplibre/flatgeobuf.ipynb
+          - maplibre/image_overlay.ipynb
+          - maplibre/layer_management.ipynb
+          - maplibre/lidar_layer.ipynb
+          - maplibre/maplibre_heatmap.ipynb
+          - maplibre/markers.ipynb
+          - maplibre/measure.ipynb
+          - maplibre/pmtiles_layer.ipynb
+          - maplibre/pointcloud_layer.ipynb
+          - maplibre/popups.ipynb
+          - maplibre/print_control.ipynb
+          - maplibre/route_animation.ipynb
+          - maplibre/search_control.ipynb
+          - maplibre/sky_fog.ipynb
+          - maplibre/split_map.ipynb
+          - maplibre/terrain_3d.ipynb
+          - maplibre/to_html.ipynb
+          - maplibre/ui_controls.ipynb
+          - maplibre/video_layer.ipynb
+          - maplibre/zarr_layer.ipynb
     - Mapbox:
-          - notebooks/mapbox.ipynb
+          - mapbox/mapbox.ipynb
     - OpenLayers:
-          - notebooks/openlayers.ipynb
+          - openlayers/openlayers.ipynb
     - Potree:
-          - notebooks/potree.ipynb
+          - potree/potree.ipynb
     - API Reference:
           - anymap_ts module: anymap_ts.md
           - base module: base.md
