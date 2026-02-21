@@ -217,11 +217,27 @@
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/maplibre/data_export/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/maplibre/deck_advanced_layers/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/maplibre/deck_layers/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/maplibre/feature_query_filter/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
          <loc>https://ts.anymap.dev/maplibre/flatgeobuf/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/maplibre/globe_projection/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
@@ -285,11 +301,23 @@
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/maplibre/style_switcher/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/maplibre/terrain_3d/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/maplibre/time_slider/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/maplibre/to_html/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/maplibre/tooltip/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
