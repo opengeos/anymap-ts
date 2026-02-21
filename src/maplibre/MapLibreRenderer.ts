@@ -163,7 +163,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MaplibreGl.Map> {
       this.map!.on('load', async () => {
         this.isMapReady = true;
         await this.restoreState();
-        
+
         const initProjection = this.model.get('projection') as string;
         if (initProjection && initProjection !== 'mercator') {
           try {
@@ -172,7 +172,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MaplibreGl.Map> {
             console.warn('Failed to set initial projection:', err);
           }
         }
-        
+
         await this.processPendingCalls();
         if (this.map) {
           this.map.resize();
@@ -2874,17 +2874,17 @@ export class MapLibreRenderer extends BaseMapRenderer<MaplibreGl.Map> {
     }
 
     const sourceId = `${id}-source`;
-    
+
     // Fetch and parse FlatGeobuf data
     try {
       const response = await fetch(url);
       const arrayBuffer = await response.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
-      
+
       // Parse FlatGeobuf to GeoJSON
       const { geojson: flatgeobuf } = await import('https://esm.sh/flatgeobuf@3.35.0/lib/geojson.mjs');
       const geojson = flatgeobuf(uint8Array);
-      
+
       if (!this.map.getSource(sourceId)) {
         this.map.addSource(sourceId, { type: 'geojson', data: geojson as any });
         this.stateManager.addSource(sourceId, { type: 'geojson', data: geojson as any } as any);
@@ -2911,7 +2911,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MaplibreGl.Map> {
     if (!this.map) return;
     const [id] = args as [string];
     const sourceId = `${id}-source`;
-    
+
     if (this.map.getLayer(id)) {
       this.map.removeLayer(id);
       this.stateManager.removeLayer(id);

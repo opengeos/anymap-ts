@@ -35,13 +35,13 @@ function loadCSS(url: string): void {
  */
 function loadAllCSS(): void {
   if (cssLoaded) return;
-  
+
   loadCSS(MAPLIBRE_CSS_URL);
   loadCSS(GEOMAN_CSS_URL);
   loadCSS(GEOEDITOR_CSS_URL);
   loadCSS(LAYER_CONTROL_CSS_URL);
   loadCSS(LIDAR_CSS_URL);
-  
+
   cssLoaded = true;
 }
 
@@ -75,7 +75,7 @@ async function loadMapLibre(): Promise<typeof import('maplibre-gl')> {
 
   // Start loading
   window._anymapTsMaplibreLoading = import('https://esm.sh/maplibre-gl@5');
-  
+
   try {
     const maplibre = await window._anymapTsMaplibreLoading;
     window._anymapTsMaplibreLoaded = true;
@@ -104,10 +104,10 @@ async function render({ model, el }: { model: AnyModel; el: HTMLElement }): Prom
   try {
     // Load MapLibre GL JS from CDN
     const maplibreModule = await loadMapLibre();
-    
+
     // Dynamically import PMTiles
     const { Protocol } = await import('https://esm.sh/pmtiles@4.4.0');
-    
+
     // Register PMTiles protocol globally (must be called once before any map is created)
     if (!window._anymapTsPmtilesRegistered) {
       const pmtilesProtocol = new Protocol();
@@ -117,7 +117,7 @@ async function render({ model, el }: { model: AnyModel; el: HTMLElement }): Prom
 
     // Dynamically import the renderer class
     const { MapLibreRenderer: RendererClass } = await import('./MapLibreRenderer');
-    
+
     // Create renderer with loaded maplibre module
     const renderer = new RendererClass(model as any, el, maplibreModule);
     el._mapRenderer = renderer;
