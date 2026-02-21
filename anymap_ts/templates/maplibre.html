@@ -30,7 +30,7 @@
 
         // Track added layers for layer control
         const addedLayers = [];
-        const allMarkers = []; // all maplibregl.Marker instances for layer control
+        const markerGroups = new Map(); // groupId -> maplibregl.Marker[]
         let layerControlConfig = null;
         let drawControlConfig = null;
         let controlGridConfig = null;
@@ -107,9 +107,9 @@
                 }
             }
 
-            // 5. Add marker toggle to layer control
-            if (allMarkers.length > 0) {
-                addMarkerToggle();
+            // 5. Add marker group toggles to layer control
+            if (markerGroups.size > 0) {
+                addMarkerGroupToggles();
             }
 
             // 6. Add draw control if configured
@@ -251,6 +251,7 @@
                     const color = kwargs.color || '#3388ff';
                     const scale = kwargs.scale || 1.0;
                     const draggable = kwargs.draggable || false;
+                    const markerId = kwargs.id || 'marker';
                     const marker = new maplibregl.Marker({ color, scale, draggable })
                         .setLngLat([lng, lat]);
                     if (kwargs.popup) {
@@ -258,7 +259,9 @@
                         marker.setPopup(new maplibregl.Popup({ maxWidth: popupMaxWidth }).setHTML(kwargs.popup));
                     }
                     marker.addTo(map);
-                    allMarkers.push(marker);
+                    // Track marker for layer control
+                    if (!markerGroups.has(markerId)) markerGroups.set(markerId, []);
+                    markerGroups.get(markerId).push(marker);
                     // Add tooltip on hover if provided
                     if (kwargs.tooltip) {
                         const tooltipMaxWidth = kwargs.tooltipMaxWidth || '240px';
@@ -285,6 +288,11 @@
                     const draggable = kwargs.draggable || false;
                     const popupMaxWidth = kwargs.popupMaxWidth || '240px';
                     const tooltipMaxWidth = kwargs.tooltipMaxWidth || '240px';
+                    const groupId = kwargs.id || 'markers';
+
+                    if (!markerGroups.has(groupId)) markerGroups.set(groupId, []);
+                    const group = markerGroups.get(groupId);
+
                     for (const m of markers) {
                         const [lng, lat] = m.lngLat;
                         const marker = new maplibregl.Marker({ color, scale, draggable })
@@ -293,7 +301,7 @@
                             marker.setPopup(new maplibregl.Popup({ maxWidth: popupMaxWidth }).setHTML(m.popup));
                         }
                         marker.addTo(map);
-                        allMarkers.push(marker);
+                        group.push(marker);
                         // Add tooltip on hover if provided
                         if (m.tooltip) {
                             const tooltipPopup = new maplibregl.Popup({
@@ -990,42 +998,46 @@
             map.addControl(layerControl, position);
         }
 
-        function addMarkerToggle() {
+        function addMarkerGroupToggles() {
             // The maplibre-gl-layer-control library uses '.layer-control-panel'
             const lcPanel = document.querySelector('.layer-control-panel');
             if (lcPanel) {
-                // Append a single "Markers" item into the existing layer control panel
-                const item = document.createElement('div');
-                item.className = 'layer-control-item';
+                // Append marker items into the existing layer control panel
+                for (const [groupId, markers] of markerGroups) {
+                    const item = document.createElement('div');
+                    item.className = 'layer-control-item';
 
-                const row = document.createElement('div');
-                row.className = 'layer-control-row';
+                    const row = document.createElement('div');
+                    row.className = 'layer-control-row';
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = true;
-                checkbox.className = 'layer-control-checkbox';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = true;
+                    checkbox.className = 'layer-control-checkbox';
 
-                const symbol = document.createElement('span');
-                symbol.className = 'layer-control-symbol';
-                symbol.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/></svg>';
+                    // Marker symbol (pin icon)
+                    const symbol = document.createElement('span');
+                    symbol.className = 'layer-control-symbol';
+                    symbol.textContent = '\u{1F4CD}';
+                    symbol.style.fontSize = '14px';
 
-                const name = document.createElement('span');
-                name.className = 'layer-control-name';
-                name.textContent = 'Markers';
+                    const name = document.createElement('span');
+                    name.className = 'layer-control-name';
+                    name.textContent = groupId;
 
-                checkbox.addEventListener('change', () => {
-                    const display = checkbox.checked ? '' : 'none';
-                    for (const m of allMarkers) {
-                        m.getElement().style.display = display;
-                    }
-                });
+                    checkbox.addEventListener('change', () => {
+                        const display = checkbox.checked ? '' : 'none';
+                        for (const m of markers) {
+                            m.getElement().style.display = display;
+                        }
+                    });
 
-                row.appendChild(checkbox);
-                row.appendChild(symbol);
-                row.appendChild(name);
-                item.appendChild(row);
-                lcPanel.appendChild(item);
+                    row.appendChild(checkbox);
+                    row.appendChild(symbol);
+                    row.appendChild(name);
+                    item.appendChild(row);
+                    lcPanel.appendChild(item);
+                }
             } else {
                 // No layer control library — create a standalone marker control
                 const position = (layerControlConfig && layerControlConfig.position) || 'top-right';
@@ -1037,26 +1049,33 @@
                 ctrl.className = 'maplibregl-ctrl';
                 ctrl.style.cssText = 'background: #fff; padding: 8px 10px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px;';
 
-                const row = document.createElement('label');
-                row.style.cssText = 'display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0;';
+                const header = document.createElement('div');
+                header.style.cssText = 'font-weight: bold; margin-bottom: 6px; font-size: 13px;';
+                header.textContent = 'Markers';
+                ctrl.appendChild(header);
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = true;
+                for (const [groupId, markers] of markerGroups) {
+                    const row = document.createElement('label');
+                    row.style.cssText = 'display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0;';
 
-                const label = document.createElement('span');
-                label.textContent = 'Markers';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = true;
 
-                checkbox.addEventListener('change', () => {
-                    const display = checkbox.checked ? '' : 'none';
-                    for (const m of allMarkers) {
-                        m.getElement().style.display = display;
-                    }
-                });
+                    const label = document.createElement('span');
+                    label.textContent = groupId;
 
-                row.appendChild(checkbox);
-                row.appendChild(label);
-                ctrl.appendChild(row);
+                    checkbox.addEventListener('change', () => {
+                        const display = checkbox.checked ? '' : 'none';
+                        for (const m of markers) {
+                            m.getElement().style.display = display;
+                        }
+                    });
+
+                    row.appendChild(checkbox);
+                    row.appendChild(label);
+                    ctrl.appendChild(row);
+                }
                 container.appendChild(ctrl);
             }
         }
