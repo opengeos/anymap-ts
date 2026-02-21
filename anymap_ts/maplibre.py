@@ -1909,6 +1909,421 @@ class MapLibreMap(MapWidget):
             "control-grid": control_config,
         }
 
+    # -------------------------------------------------------------------------
+    # Colorbar
+    # -------------------------------------------------------------------------
+
+    def add_colorbar(
+        self,
+        colormap: str = "viridis",
+        vmin: float = 0,
+        vmax: float = 1,
+        label: str = "",
+        units: str = "",
+        orientation: str = "horizontal",
+        position: str = "bottom-right",
+        bar_thickness: Optional[int] = None,
+        bar_length: Optional[int] = None,
+        ticks: Optional[Dict] = None,
+        opacity: Optional[float] = None,
+        colorbar_id: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Add a continuous gradient colorbar to the map.
+
+        Displays a color gradient legend with customizable colormaps,
+        tick marks, labels, and positioning using maplibre-gl-components.
+
+        Args:
+            colormap: Colormap name (e.g., 'viridis', 'plasma', 'inferno',
+                'magma', 'cividis', 'coolwarm', 'jet', 'terrain', etc.).
+            vmin: Minimum value for the colorbar scale.
+            vmax: Maximum value for the colorbar scale.
+            label: Title/label displayed above or beside the colorbar.
+            units: Unit string displayed after values (e.g., '°C', 'm').
+            orientation: Orientation of the colorbar ('horizontal' or 'vertical').
+            position: Control position ('top-left', 'top-right',
+                'bottom-left', 'bottom-right').
+            bar_thickness: Width/height of the gradient bar in pixels.
+            bar_length: Length of the colorbar in pixels.
+            ticks: Tick configuration dict (e.g., {'count': 5, 'precision': 2}).
+            opacity: Opacity of the colorbar container (0-1).
+            colorbar_id: Unique identifier. If None, auto-generated.
+            **kwargs: Additional Colorbar options.
+
+        Example:
+            >>> m = Map()
+            >>> m.add_cog_layer("https://example.com/dem.tif")
+            >>> m.add_colorbar(
+            ...     colormap="terrain",
+            ...     vmin=0,
+            ...     vmax=4000,
+            ...     label="Elevation",
+            ...     units="m",
+            ... )
+        """
+        self._validate_position(position)
+
+        cbar_id = (
+            colorbar_id
+            or f"colorbar-{len([k for k in self._controls.keys() if k.startswith('colorbar')])}"
+        )
+
+        js_kwargs: Dict[str, Any] = {
+            "colormap": colormap,
+            "vmin": vmin,
+            "vmax": vmax,
+            "label": label,
+            "units": units,
+            "orientation": orientation,
+            "position": position,
+            "colorbarId": cbar_id,
+            **kwargs,
+        }
+        if bar_thickness is not None:
+            js_kwargs["barThickness"] = bar_thickness
+        if bar_length is not None:
+            js_kwargs["barLength"] = bar_length
+        if ticks is not None:
+            js_kwargs["ticks"] = ticks
+        if opacity is not None:
+            js_kwargs["opacity"] = opacity
+
+        self.call_js_method("addColorbar", **js_kwargs)
+
+        self._controls = {
+            **self._controls,
+            cbar_id: {
+                "type": "colorbar",
+                "colormap": colormap,
+                "vmin": vmin,
+                "vmax": vmax,
+                "label": label,
+                "units": units,
+                "orientation": orientation,
+                "position": position,
+            },
+        }
+
+    def remove_colorbar(self, colorbar_id: Optional[str] = None) -> None:
+        """Remove a colorbar from the map.
+
+        Args:
+            colorbar_id: Colorbar identifier to remove. If None, removes
+                all colorbars.
+        """
+        if colorbar_id is None:
+            cbar_keys = [k for k in self._controls.keys() if k.startswith("colorbar")]
+            for key in cbar_keys:
+                self.call_js_method("removeColorbar", colorbarId=key)
+            self._controls = {
+                k: v for k, v in self._controls.items() if not k.startswith("colorbar")
+            }
+        else:
+            self.call_js_method("removeColorbar", colorbarId=colorbar_id)
+            if colorbar_id in self._controls:
+                controls = dict(self._controls)
+                del controls[colorbar_id]
+                self._controls = controls
+
+    def update_colorbar(self, colorbar_id: Optional[str] = None, **kwargs) -> None:
+        """Update an existing colorbar's properties.
+
+        Args:
+            colorbar_id: Colorbar identifier to update. If None, updates
+                the first colorbar found.
+            **kwargs: Properties to update (colormap, vmin, vmax, label,
+                units, orientation, bar_thickness, bar_length, ticks, opacity).
+        """
+        if colorbar_id is None:
+            cbar_keys = [k for k in self._controls.keys() if k.startswith("colorbar")]
+            if not cbar_keys:
+                raise ValueError("No colorbar found to update")
+            colorbar_id = cbar_keys[0]
+
+        if colorbar_id not in self._controls:
+            raise ValueError(f"Colorbar '{colorbar_id}' not found")
+
+        js_kwargs: Dict[str, Any] = {"colorbarId": colorbar_id}
+        key_map = {
+            "bar_thickness": "barThickness",
+            "bar_length": "barLength",
+        }
+        for key, value in kwargs.items():
+            js_key = key_map.get(key, key)
+            js_kwargs[js_key] = value
+
+        self.call_js_method("updateColorbar", **js_kwargs)
+
+        for key, value in kwargs.items():
+            if key in self._controls.get(colorbar_id, {}):
+                self._controls[colorbar_id][key] = value
+
+    # -------------------------------------------------------------------------
+    # Search / Geocoder Control
+    # -------------------------------------------------------------------------
+
+    def add_search_control(
+        self,
+        position: str = "top-left",
+        placeholder: str = "Search places...",
+        collapsed: bool = True,
+        fly_to_zoom: int = 14,
+        show_marker: bool = True,
+        marker_color: str = "#4264fb",
+        **kwargs,
+    ) -> None:
+        """Add a search/geocoder control using Nominatim.
+
+        Provides place search functionality with autocomplete results.
+        Results are geocoded via OpenStreetMap Nominatim service.
+
+        Args:
+            position: Control position ('top-left', 'top-right',
+                'bottom-left', 'bottom-right').
+            placeholder: Placeholder text for the search input.
+            collapsed: Whether the control starts collapsed (icon only).
+            fly_to_zoom: Zoom level to fly to when selecting a result.
+            show_marker: Whether to add a marker at the selected location.
+            marker_color: Color of the result marker.
+            **kwargs: Additional SearchControl options.
+
+        Example:
+            >>> m = Map()
+            >>> m.add_search_control(position="top-left", fly_to_zoom=12)
+        """
+        self._validate_position(position)
+        self.call_js_method(
+            "addSearchControl",
+            position=position,
+            placeholder=placeholder,
+            collapsed=collapsed,
+            flyToZoom=fly_to_zoom,
+            showMarker=show_marker,
+            markerColor=marker_color,
+            **kwargs,
+        )
+        self._controls = {
+            **self._controls,
+            "search-control": {
+                "type": "search-control",
+                "position": position,
+                "collapsed": collapsed,
+            },
+        }
+
+    def remove_search_control(self) -> None:
+        """Remove the search/geocoder control from the map."""
+        self.call_js_method("removeSearchControl")
+        if "search-control" in self._controls:
+            controls = dict(self._controls)
+            del controls["search-control"]
+            self._controls = controls
+
+    # -------------------------------------------------------------------------
+    # Measurement Tools
+    # -------------------------------------------------------------------------
+
+    def add_measure_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        default_mode: str = "distance",
+        distance_unit: str = "kilometers",
+        area_unit: str = "square-kilometers",
+        line_color: str = "#3b82f6",
+        fill_color: str = "rgba(59, 130, 246, 0.2)",
+        **kwargs,
+    ) -> None:
+        """Add a measurement control for distances and areas.
+
+        Provides tools for measuring distances (polylines) and areas
+        (polygons) interactively on the map.
+
+        Args:
+            position: Control position ('top-left', 'top-right',
+                'bottom-left', 'bottom-right').
+            collapsed: Whether the control starts collapsed.
+            default_mode: Default measurement mode ('distance' or 'area').
+            distance_unit: Distance unit ('kilometers', 'miles', 'meters',
+                'feet', 'nautical-miles').
+            area_unit: Area unit ('square-kilometers', 'square-miles',
+                'square-meters', 'hectares', 'acres').
+            line_color: Line color for distance measurements.
+            fill_color: Fill color for area measurements.
+            **kwargs: Additional MeasureControl options.
+
+        Example:
+            >>> m = Map()
+            >>> m.add_measure_control(
+            ...     default_mode="distance",
+            ...     distance_unit="miles",
+            ... )
+        """
+        self._validate_position(position)
+        self.call_js_method(
+            "addMeasureControl",
+            position=position,
+            collapsed=collapsed,
+            defaultMode=default_mode,
+            distanceUnit=distance_unit,
+            areaUnit=area_unit,
+            lineColor=line_color,
+            fillColor=fill_color,
+            **kwargs,
+        )
+        self._controls = {
+            **self._controls,
+            "measure-control": {
+                "type": "measure-control",
+                "position": position,
+                "collapsed": collapsed,
+            },
+        }
+
+    def remove_measure_control(self) -> None:
+        """Remove the measurement control from the map."""
+        self.call_js_method("removeMeasureControl")
+        if "measure-control" in self._controls:
+            controls = dict(self._controls)
+            del controls["measure-control"]
+            self._controls = controls
+
+    # -------------------------------------------------------------------------
+    # Print / Export Control
+    # -------------------------------------------------------------------------
+
+    def add_print_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        format: str = "png",
+        filename: str = "map-export",
+        include_north_arrow: bool = False,
+        include_scale_bar: bool = False,
+        **kwargs,
+    ) -> None:
+        """Add a print/export control for saving the map as an image.
+
+        Provides an interactive panel for exporting the current map view
+        as PNG, JPEG, or PDF files.
+
+        Args:
+            position: Control position ('top-left', 'top-right',
+                'bottom-left', 'bottom-right').
+            collapsed: Whether the control starts collapsed.
+            format: Default image format ('png', 'jpeg', 'pdf').
+            filename: Default filename (without extension).
+            include_north_arrow: Whether to include a north arrow by default.
+            include_scale_bar: Whether to include a scale bar by default.
+            **kwargs: Additional PrintControl options.
+
+        Example:
+            >>> m = Map()
+            >>> m.add_print_control(
+            ...     format="png",
+            ...     filename="my-map",
+            ...     include_scale_bar=True,
+            ... )
+        """
+        self._validate_position(position)
+        self.call_js_method(
+            "addPrintControl",
+            position=position,
+            collapsed=collapsed,
+            format=format,
+            filename=filename,
+            includeNorthArrow=include_north_arrow,
+            includeScaleBar=include_scale_bar,
+            **kwargs,
+        )
+        self._controls = {
+            **self._controls,
+            "print-control": {
+                "type": "print-control",
+                "position": position,
+                "collapsed": collapsed,
+            },
+        }
+
+    def remove_print_control(self) -> None:
+        """Remove the print/export control from the map."""
+        self.call_js_method("removePrintControl")
+        if "print-control" in self._controls:
+            controls = dict(self._controls)
+            del controls["print-control"]
+            self._controls = controls
+
+    # -------------------------------------------------------------------------
+    # FlatGeobuf Layer
+    # -------------------------------------------------------------------------
+
+    def add_flatgeobuf(
+        self,
+        url: str,
+        name: Optional[str] = None,
+        layer_type: Optional[str] = None,
+        paint: Optional[Dict] = None,
+        fit_bounds: bool = True,
+        **kwargs,
+    ) -> None:
+        """Add a FlatGeobuf layer from a URL.
+
+        Streams and renders cloud-native FlatGeobuf vector data directly
+        in the browser without downloading the entire file.
+
+        Args:
+            url: URL to the FlatGeobuf file.
+            name: Layer name. If None, auto-generated.
+            layer_type: MapLibre layer type ('circle', 'line', 'fill').
+                If None, inferred from geometry type.
+            paint: MapLibre paint properties. If None, defaults are used.
+            fit_bounds: Whether to fit map to data bounds.
+            **kwargs: Additional layer options.
+
+        Example:
+            >>> m = Map()
+            >>> m.add_flatgeobuf(
+            ...     "https://flatgeobuf.org/test/data/UScounties.fgb",
+            ...     name="counties",
+            ...     paint={"fill-color": "#088", "fill-opacity": 0.5},
+            ... )
+        """
+        layer_id = name or f"flatgeobuf-{len(self._layers)}"
+
+        self.call_js_method(
+            "addFlatGeobuf",
+            url=url,
+            name=layer_id,
+            layerType=layer_type,
+            paint=paint,
+            fitBounds=fit_bounds,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "flatgeobuf",
+                "url": url,
+            },
+        }
+        self._add_to_layer_dict(layer_id, "Vector")
+
+    def remove_flatgeobuf(self, name: str) -> None:
+        """Remove a FlatGeobuf layer from the map.
+
+        Args:
+            name: The layer identifier to remove.
+        """
+        if name in self._layers:
+            layers = dict(self._layers)
+            del layers[name]
+            self._layers = layers
+        self._remove_from_layer_dict(name)
+        self.call_js_method("removeFlatGeobuf", name=name)
+
     def _process_deck_data(self, data: Any) -> Any:
         """Process data for deck.gl layers.
 

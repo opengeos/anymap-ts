@@ -352,6 +352,100 @@
                     break;
                 }
 
+                case 'addColorbar': {
+                    const cbId = kwargs.colorbarId || 'colorbar-0';
+                    const cbColormap = kwargs.colormap || 'viridis';
+                    const cbVmin = kwargs.vmin !== undefined ? kwargs.vmin : 0;
+                    const cbVmax = kwargs.vmax !== undefined ? kwargs.vmax : 1;
+                    const cbLabel = kwargs.label || '';
+                    const cbUnits = kwargs.units || '';
+                    const cbOrientation = kwargs.orientation || 'horizontal';
+                    const cbPosition = kwargs.position || 'bottom-right';
+                    const cbBarThickness = kwargs.barThickness || 20;
+                    const cbBarLength = kwargs.barLength || 250;
+                    const cbOpacity = kwargs.opacity !== undefined ? kwargs.opacity : 1.0;
+
+                    // Colormap gradients (CSS approximations)
+                    const colormapGradients = {
+                        'viridis': 'linear-gradient(to right, #440154, #482878, #3e4989, #31688e, #26828e, #1f9e89, #35b779, #6ece58, #b5de2b, #fde725)',
+                        'plasma': 'linear-gradient(to right, #0d0887, #46039f, #7201a8, #9c179e, #bd3786, #d8576b, #ed7953, #fb9f3a, #fdca26, #f0f921)',
+                        'inferno': 'linear-gradient(to right, #000004, #1b0c41, #4a0c6b, #781c6d, #a52c60, #cf4446, #ed6925, #fb9b06, #f7d13d, #fcffa4)',
+                        'magma': 'linear-gradient(to right, #000004, #180f3d, #440f76, #721f81, #9e2f7f, #cd4071, #f1605d, #fd9668, #feca8d, #fcfdbf)',
+                        'cividis': 'linear-gradient(to right, #00224e, #123570, #1f4b86, #2c6291, #3c7a91, #4f928c, #65ab7c, #84c267, #abd94f, #fdea45)',
+                        'coolwarm': 'linear-gradient(to right, #3b4cc0, #6788ee, #9abbff, #c9d7ef, #eddad5, #f7a789, #e36c51, #b40426)',
+                        'terrain': 'linear-gradient(to right, #333399, #00b2b2, #00ff00, #cccc00, #cc6600, #993300, #ffffff)',
+                        'jet': 'linear-gradient(to right, #00007f, #0000ff, #007fff, #00ffff, #7fff7f, #ffff00, #ff7f00, #ff0000, #7f0000)',
+                        'turbo': 'linear-gradient(to right, #30123b, #4662d7, #36aaf9, #1ae4b6, #72fe5e, #c8ef34, #faba39, #f66b19, #ca2a04, #7a0403)',
+                        'hot': 'linear-gradient(to right, #000000, #e60000, #ffa500, #ffff00, #ffffff)',
+                        'cool': 'linear-gradient(to right, #00ffff, #ff00ff)',
+                        'gray': 'linear-gradient(to right, #000000, #ffffff)',
+                        'rainbow': 'linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff)',
+                    };
+                    const isVertical = cbOrientation === 'vertical';
+                    const gradientDir = isVertical ? 'to top' : 'to right';
+                    let gradient = (colormapGradients[cbColormap] || colormapGradients['viridis']).replace('to right', gradientDir);
+
+                    // Build colorbar element
+                    const cbDiv = document.createElement('div');
+                    cbDiv.id = cbId;
+                    cbDiv.className = 'maplibregl-ctrl';
+                    cbDiv.style.cssText = `
+                        background: rgba(255, 255, 255, ${cbOpacity});
+                        padding: 8px 12px;
+                        border-radius: 4px;
+                        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        font-size: 11px;
+                    `;
+
+                    if (cbLabel) {
+                        const labelEl = document.createElement('div');
+                        labelEl.style.cssText = 'font-weight: bold; margin-bottom: 4px; font-size: 12px; text-align: center;';
+                        labelEl.textContent = cbLabel;
+                        cbDiv.appendChild(labelEl);
+                    }
+
+                    const barEl = document.createElement('div');
+                    barEl.style.cssText = isVertical
+                        ? `width: ${cbBarThickness}px; height: ${cbBarLength}px; background: ${gradient}; border: 1px solid #ccc; margin: 0 auto;`
+                        : `width: ${cbBarLength}px; height: ${cbBarThickness}px; background: ${gradient}; border: 1px solid #ccc;`;
+                    cbDiv.appendChild(barEl);
+
+                    // Tick labels
+                    const tickCount = 5;
+                    const ticksDiv = document.createElement('div');
+                    ticksDiv.style.cssText = isVertical
+                        ? `display: flex; flex-direction: column-reverse; justify-content: space-between; height: ${cbBarLength}px; position: absolute; right: -30px; top: 0; font-size: 10px;`
+                        : `display: flex; justify-content: space-between; margin-top: 2px; font-size: 10px;`;
+                    for (let i = 0; i < tickCount; i++) {
+                        const val = cbVmin + (cbVmax - cbVmin) * i / (tickCount - 1);
+                        const tickEl = document.createElement('span');
+                        tickEl.textContent = val.toFixed(val % 1 === 0 ? 0 : 1);
+                        ticksDiv.appendChild(tickEl);
+                    }
+                    if (!isVertical) {
+                        cbDiv.appendChild(ticksDiv);
+                    }
+
+                    if (cbUnits) {
+                        const unitsEl = document.createElement('div');
+                        unitsEl.style.cssText = 'text-align: center; margin-top: 2px; font-size: 10px; color: #666;';
+                        unitsEl.textContent = cbUnits;
+                        cbDiv.appendChild(unitsEl);
+                    }
+
+                    // Add to map control container
+                    const cbPosClass = 'maplibregl-ctrl-' + cbPosition;
+                    let cbContainer = document.querySelector('.' + cbPosClass);
+                    if (!cbContainer) {
+                        cbContainer = document.createElement('div');
+                        cbContainer.className = 'maplibregl-ctrl-' + cbPosition.split('-')[0] + ' ' + cbPosClass;
+                        document.querySelector('.maplibregl-control-container').appendChild(cbContainer);
+                    }
+                    cbContainer.insertBefore(cbDiv, cbContainer.firstChild);
+                    break;
+                }
+
                 case 'flyTo': {
                     map.flyTo({
                         center: [args[0], args[1]],
