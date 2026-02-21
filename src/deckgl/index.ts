@@ -32,10 +32,10 @@ function loadCSS(url: string): void {
  */
 function loadAllCSS(): void {
   if (cssLoaded) return;
-  
+
   loadCSS(MAPLIBRE_CSS_URL);
   loadCSS(LAYER_CONTROL_CSS_URL);
-  
+
   cssLoaded = true;
 }
 
@@ -65,7 +65,7 @@ async function loadMapLibre(): Promise<typeof import('maplibre-gl')> {
   }
 
   window._anymapTsDeckLoading = import('https://esm.sh/maplibre-gl@5');
-  
+
   try {
     const maplibre = await window._anymapTsDeckLoading;
     window._anymapTsDeckLoaded = true;

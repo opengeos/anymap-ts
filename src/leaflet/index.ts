@@ -30,9 +30,9 @@ function loadCSS(url: string): void {
  */
 function loadAllCSS(): void {
   if (cssLoaded) return;
-  
+
   loadCSS(LEAFLET_CSS_URL);
-  
+
   cssLoaded = true;
 }
 
@@ -62,7 +62,7 @@ async function loadLeaflet(): Promise<typeof import('leaflet')> {
   }
 
   window._anymapTsLeafletLoading = import('https://esm.sh/leaflet@1');
-  
+
   try {
     const leaflet = await window._anymapTsLeafletLoading;
     window._anymapTsLeafletLoaded = true;

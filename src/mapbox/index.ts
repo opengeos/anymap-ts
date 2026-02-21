@@ -32,11 +32,11 @@ function loadCSS(url: string): void {
  */
 function loadAllCSS(): void {
   if (cssLoaded) return;
-  
+
   loadCSS(MAPBOX_CSS_URL);
   loadCSS(LIDAR_CSS_URL);
   loadCSS(COMPONENTS_CSS_URL);
-  
+
   cssLoaded = true;
 }
 
@@ -73,7 +73,7 @@ async function loadMapbox(): Promise<typeof import('mapbox-gl')> {
     const mapboxgl = (mod as any).default || mod;
     return mapboxgl;
   })();
-  
+
   try {
     const mapbox = await window._anymapTsMapboxLoading;
     window._anymapTsMapboxLoaded = true;

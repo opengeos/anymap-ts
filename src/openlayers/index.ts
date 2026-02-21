@@ -30,9 +30,9 @@ function loadCSS(url: string): void {
  */
 function loadAllCSS(): void {
   if (cssLoaded) return;
-  
+
   loadCSS(OL_CSS_URL);
-  
+
   cssLoaded = true;
 }
 
@@ -62,7 +62,7 @@ async function loadOl(): Promise<typeof import('ol')> {
   }
 
   window._anymapTsOlLoading = import('https://esm.sh/ol@10');
-  
+
   try {
     const ol = await window._anymapTsOlLoading;
     window._anymapTsOlLoaded = true;

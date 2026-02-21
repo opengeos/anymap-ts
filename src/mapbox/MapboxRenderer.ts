@@ -174,7 +174,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxGl.Map> {
       this.map!.on("load", async () => {
         this.isMapReady = true;
         await this.restoreState();
-        
+
         const initProjection = this.model.get("projection") as string;
         if (initProjection && initProjection !== "mercator") {
           try {
@@ -183,7 +183,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxGl.Map> {
             console.warn("Failed to set initial projection:", err);
           }
         }
-        
+
         await this.processPendingCalls();
         if (this.map) {
           this.map.resize();
