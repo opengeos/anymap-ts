@@ -196,12 +196,10 @@ export abstract class BaseMapRenderer<TMap> {
     const layers = this.model.get('_layers') || {};
     const entries = Object.entries(layers);
     const basemapEntries = entries.filter(([id, cfg]) => {
-      const config = cfg as Record<string, unknown>;
-      return id.startsWith('basemap-') || config.type === 'raster';
+      return id.startsWith('basemap-') || cfg.type === 'raster';
     });
     const otherEntries = entries.filter(([id, cfg]) => {
-      const config = cfg as Record<string, unknown>;
-      return !(id.startsWith('basemap-') || config.type === 'raster');
+      return !(id.startsWith('basemap-') || cfg.type === 'raster');
     });
     const orderedEntries = [...basemapEntries, ...otherEntries];
     for (const [layerId, layerConfig] of orderedEntries) {

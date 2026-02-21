@@ -68,6 +68,19 @@ export class StateManager {
   }
 
   /**
+   * Update layer filter.
+   */
+  setLayerFilter(layerId: string, filter: unknown[] | null): void {
+    const layers = { ...this.model.get('_layers') };
+    if (layers[layerId]) {
+      const { filter: _oldFilter, ...rest } = layers[layerId];
+      layers[layerId] = filter ? { ...rest, filter } : { ...rest };
+      this.model.set('_layers', layers);
+      this.model.save_changes();
+    }
+  }
+
+  /**
    * Get layer state.
    */
   getLayer(layerId: string): LayerState | undefined {
@@ -90,9 +103,11 @@ export class StateManager {
       type: config.type,
       data: config.data,
       url: config.url,
+      urls: config.urls,
       tiles: config.tiles,
       tileSize: config.tileSize,
       attribution: config.attribution,
+      coordinates: config.coordinates,
     };
     this.model.set('_sources', { ...sources, [sourceId]: sourceState });
     this.model.save_changes();

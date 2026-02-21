@@ -46,6 +46,9 @@ class MapWidget(anywidget.AnyWidget):
     # Drawing data
     _draw_data = traitlets.Dict({}).tag(sync=True)
 
+    # Queried features (set by JS query methods)
+    _queried_features = traitlets.Dict({}).tag(sync=True)
+
     def __init__(self, **kwargs):
         """Initialize the MapWidget.
 

@@ -3208,6 +3208,325 @@ class MapLibreMap(MapWidget):
         )
 
     # -------------------------------------------------------------------------
+    # Sky & Fog
+    # -------------------------------------------------------------------------
+
+    def set_sky(
+        self,
+        sky_color: str = "#88C6FC",
+        horizon_color: str = "#F0E4D4",
+        fog_color: str = "#FFFFFF",
+        sky_horizon_blend: float = 0.5,
+        horizon_fog_blend: float = 0.5,
+        fog_ground_blend: float = 0.5,
+        atmosphere_blend: float = 0.8,
+        **kwargs,
+    ) -> None:
+        """Set sky and fog atmospheric effects for 3D terrain visualization.
+
+        MapLibre v5 unifies sky and fog into a single `map.setSky()` API.
+        Best used with 3D terrain enabled.
+
+        Args:
+            sky_color: Color of the sky. Default is "#88C6FC".
+            horizon_color: Color at the horizon. Default is "#F0E4D4".
+            fog_color: Color of the fog. Default is "#FFFFFF".
+            sky_horizon_blend: Blend between sky and horizon (0-1).
+                Default is 0.5.
+            horizon_fog_blend: Blend between horizon and fog (0-1).
+                Default is 0.5.
+            fog_ground_blend: Blend between fog and ground (0-1).
+                Default is 0.5.
+            atmosphere_blend: Intensity of the atmosphere effect (0-1).
+                Default is 0.8.
+            **kwargs: Additional sky options.
+
+        Example:
+            >>> from anymap_ts import Map
+            >>> m = Map(center=[-122.4, 37.8], zoom=12, pitch=60)
+            >>> m.add_3d_terrain(exaggeration=1.5)
+            >>> m.set_sky()
+        """
+        self.call_js_method(
+            "setSky",
+            skyColor=sky_color,
+            horizonColor=horizon_color,
+            fogColor=fog_color,
+            skyHorizonBlend=sky_horizon_blend,
+            horizonFogBlend=horizon_fog_blend,
+            fogGroundBlend=fog_ground_blend,
+            atmosphereBlend=atmosphere_blend,
+            **kwargs,
+        )
+
+    def remove_sky(self) -> None:
+        """Remove sky and fog atmospheric effects from the map.
+
+        Example:
+            >>> m.remove_sky()
+        """
+        self.call_js_method("removeSky")
+
+    # -------------------------------------------------------------------------
+    # Feature Query/Filter
+    # -------------------------------------------------------------------------
+
+    def set_filter(
+        self,
+        layer_id: str,
+        filter_expression: Optional[List] = None,
+    ) -> None:
+        """Set or clear a filter on a map layer.
+
+        Uses MapLibre GL JS filter expressions to show/hide features.
+
+        Args:
+            layer_id: The layer to apply the filter to.
+            filter_expression: A MapLibre filter expression (list).
+                Pass None to clear the filter.
+
+        Example:
+            >>> m.set_filter("states-layer", [">=", ["get", "density"], 100])
+            >>> m.set_filter("states-layer", None)  # Clear filter
+        """
+        self.call_js_method(
+            "setFilter",
+            layerId=layer_id,
+            filter=filter_expression,
+        )
+
+    def query_rendered_features(
+        self,
+        geometry: Optional[Any] = None,
+        layers: Optional[List[str]] = None,
+        filter_expression: Optional[List] = None,
+    ) -> Dict:
+        """Query features currently rendered on the map.
+
+        Results are stored in the `queried_features` property.
+
+        Args:
+            geometry: Optional point {x, y} or bounding box [[x1, y1], [x2, y2]]
+                to limit the query area. If None, queries the entire viewport.
+            layers: Optional list of layer IDs to query. If None, queries all
+                layers.
+            filter_expression: Optional MapLibre filter expression to further
+                filter results.
+
+        Returns:
+            The current queried features dict (may not yet reflect this query
+            if called immediately; use the `queried_features` property).
+
+        Example:
+            >>> m.query_rendered_features(layers=["states-layer"])
+            >>> features = m.queried_features
+        """
+        kwargs: Dict[str, Any] = {}
+        if geometry is not None:
+            kwargs["geometry"] = geometry
+        if layers is not None:
+            kwargs["layers"] = layers
+        if filter_expression is not None:
+            kwargs["filter"] = filter_expression
+
+        self.call_js_method("queryRenderedFeatures", **kwargs)
+        return self._queried_features
+
+    def query_source_features(
+        self,
+        source_id: str,
+        source_layer: Optional[str] = None,
+        filter_expression: Optional[List] = None,
+    ) -> Dict:
+        """Query features from a source, including features not currently visible.
+
+        Results are stored in the `queried_features` property.
+
+        Args:
+            source_id: The source to query.
+            source_layer: Optional source layer for vector tile sources.
+            filter_expression: Optional MapLibre filter expression.
+
+        Returns:
+            The current queried features dict.
+
+        Example:
+            >>> m.query_source_features("states-source")
+            >>> features = m.queried_features
+        """
+        kwargs: Dict[str, Any] = {"sourceId": source_id}
+        if source_layer is not None:
+            kwargs["sourceLayer"] = source_layer
+        if filter_expression is not None:
+            kwargs["filter"] = filter_expression
+
+        self.call_js_method("querySourceFeatures", **kwargs)
+        return self._queried_features
+
+    @property
+    def queried_features(self) -> Dict:
+        """Get the most recent query results.
+
+        Returns:
+            A GeoJSON FeatureCollection dict with queried features.
+        """
+        return self._queried_features
+
+    # -------------------------------------------------------------------------
+    # Video Layer
+    # -------------------------------------------------------------------------
+
+    def add_video_layer(
+        self,
+        urls: List[str],
+        coordinates: List[List[float]],
+        name: Optional[str] = None,
+        opacity: float = 1.0,
+        **kwargs,
+    ) -> None:
+        """Add a georeferenced video overlay on the map.
+
+        Args:
+            urls: List of video URLs (provide multiple formats for browser
+                compatibility, e.g., [".mp4", ".webm"]).
+            coordinates: Four corner coordinates as [[lng, lat], ...] in order:
+                top-left, top-right, bottom-right, bottom-left.
+            name: Layer identifier. If None, auto-generated.
+            opacity: Layer opacity (0-1). Default is 1.0.
+            **kwargs: Additional layer options.
+
+        Example:
+            >>> m.add_video_layer(
+            ...     urls=["https://example.com/video.mp4"],
+            ...     coordinates=[
+            ...         [-122.51596391658498, 37.56238816766053],
+            ...         [-122.51467645489949, 37.56410183312965],
+            ...         [-122.51309394645498, 37.563391708549425],
+            ...         [-122.51423120498498, 37.56161849366671],
+            ...     ],
+            ... )
+        """
+        self._validate_opacity(opacity)
+        layer_id = name or f"video-{len(self._layers)}"
+
+        if len(coordinates) != 4:
+            raise ValueError(
+                "coordinates must have exactly 4 corner points "
+                "[top-left, top-right, bottom-right, bottom-left]"
+            )
+
+        self.call_js_method(
+            "addVideoLayer",
+            id=layer_id,
+            urls=urls,
+            coordinates=coordinates,
+            opacity=opacity,
+            **kwargs,
+        )
+
+        self._layers = {
+            **self._layers,
+            layer_id: {
+                "id": layer_id,
+                "type": "video",
+                "source": f"{layer_id}-source",
+            },
+        }
+        self._add_to_layer_dict(layer_id, "Raster")
+
+    def remove_video_layer(self, name: str) -> None:
+        """Remove a video layer from the map.
+
+        Args:
+            name: The layer identifier to remove.
+        """
+        if name in self._layers:
+            layers = dict(self._layers)
+            del layers[name]
+            self._layers = layers
+        self._remove_from_layer_dict(name)
+        self.call_js_method("removeVideoLayer", id=name)
+
+    def play_video(self, name: str) -> None:
+        """Start playing a video layer.
+
+        Args:
+            name: The video layer identifier.
+        """
+        self.call_js_method("playVideo", id=name)
+
+    def pause_video(self, name: str) -> None:
+        """Pause a video layer.
+
+        Args:
+            name: The video layer identifier.
+        """
+        self.call_js_method("pauseVideo", id=name)
+
+    def seek_video(self, name: str, time: float) -> None:
+        """Seek to a specific time in a video layer.
+
+        Args:
+            name: The video layer identifier.
+            time: Time in seconds to seek to.
+        """
+        self.call_js_method("seekVideo", id=name, time=time)
+
+    # -------------------------------------------------------------------------
+    # Split Map (Swipe/Compare)
+    # -------------------------------------------------------------------------
+
+    def add_split_map(
+        self,
+        left_layer: str,
+        right_layer: str,
+        position: int = 50,
+    ) -> None:
+        """Add a split map comparison view with a draggable divider.
+
+        Creates a side-by-side comparison of two layers. The left side shows
+        the left layer and the right side shows the right layer, with a
+        draggable slider to adjust the split position.
+
+        Args:
+            left_layer: Layer ID for the left side.
+            right_layer: Layer ID for the right side.
+            position: Initial slider position as percentage (0-100).
+                Default is 50 (middle).
+
+        Note:
+            Both layers must exist on the map before calling this method.
+            Best suited for raster tile layers (e.g., satellite vs streets).
+
+        Example:
+            >>> m.add_tile_layer(
+            ...     "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+            ...     name="satellite",
+            ... )
+            >>> m.add_tile_layer(
+            ...     "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            ...     name="osm",
+            ... )
+            >>> m.add_split_map("satellite", "osm")
+        """
+        if not 0 <= position <= 100:
+            raise ValueError(f"position must be between 0 and 100, got {position}")
+
+        self.call_js_method(
+            "addSplitMap",
+            leftLayer=left_layer,
+            rightLayer=right_layer,
+            position=position,
+        )
+
+    def remove_split_map(self) -> None:
+        """Remove the split map comparison view.
+
+        Restores the map to normal single-view mode with all layers visible.
+        """
+        self.call_js_method("removeSplitMap")
+
+    # -------------------------------------------------------------------------
     # HTML Export
     # -------------------------------------------------------------------------
 
