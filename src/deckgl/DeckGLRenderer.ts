@@ -704,7 +704,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
   // New Layer Handlers
   // -------------------------------------------------------------------------
 
-  private handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `bitmap-${Date.now()}`;
     const image = kwargs.image as string;
     const bounds = kwargs.bounds as [number, number, number, number];
@@ -725,7 +725,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `column-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -756,7 +756,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `gridcell-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -782,7 +782,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `solidpolygon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -805,7 +805,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddDeckTileLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddDeckTileLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `tile-${Date.now()}`;
     const data = kwargs.data as string | string[];
 
@@ -832,7 +832,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddMVTLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddMVTLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `mvt-${Date.now()}`;
     const data = kwargs.data as string | string[];
 
@@ -857,7 +857,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddTile3DLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddTile3DLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `tile3d-${Date.now()}`;
     const data = kwargs.data as string;
 
@@ -891,7 +891,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddTerrainLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddTerrainLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `terrain-${Date.now()}`;
     const elevationData = kwargs.elevationData as string | string[];
 
@@ -917,7 +917,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddGreatCircleLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddGreatCircleLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `greatcircle-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -939,7 +939,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddH3HexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddH3HexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `h3hexagon-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -965,7 +965,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddH3ClusterLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddH3ClusterLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `h3cluster-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -988,7 +988,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddS2Layer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddS2Layer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `s2-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -1013,7 +1013,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddQuadkeyLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddQuadkeyLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `quadkey-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -1038,7 +1038,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddGeohashLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddGeohashLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `geohash-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
@@ -1063,7 +1063,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddWMSLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddWMSLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `wms-${Date.now()}`;
     const data = kwargs.data as string;
 
@@ -1081,7 +1081,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddSimpleMeshLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddSimpleMeshLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `simplemesh-${Date.now()}`;
     const data = kwargs.data as unknown[];
     const mesh = kwargs.mesh;
@@ -1124,7 +1124,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     this.updateDeckOverlay();
   }
 
-  private handleAddScenegraphLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  protected override handleAddScenegraphLayer(args: unknown[], kwargs: Record<string, unknown>): void {
     const id = kwargs.id as string || `scenegraph-${Date.now()}`;
     const data = kwargs.data as unknown[];
     const scenegraph = kwargs.scenegraph;

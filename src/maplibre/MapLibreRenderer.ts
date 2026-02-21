@@ -24,6 +24,10 @@ import {
   TextLayer,
   GeoJsonLayer,
   LineLayer,
+  BitmapLayer,
+  ColumnLayer,
+  GridCellLayer,
+  SolidPolygonLayer,
 } from '@deck.gl/layers';
 import {
   HexagonLayer,
@@ -32,7 +36,21 @@ import {
   ContourLayer,
   ScreenGridLayer,
 } from '@deck.gl/aggregation-layers';
-import { TripsLayer } from '@deck.gl/geo-layers';
+import {
+  TripsLayer,
+  TileLayer,
+  MVTLayer,
+  Tile3DLayer,
+  TerrainLayer,
+  GreatCircleLayer,
+  H3HexagonLayer,
+  H3ClusterLayer,
+  S2Layer,
+  QuadkeyLayer,
+  GeohashLayer,
+  _WMSLayer as WMSLayer,
+} from '@deck.gl/geo-layers';
+import { SimpleMeshLayer, ScenegraphLayer } from '@deck.gl/mesh-layers';
 import along from '@turf/along';
 import length from '@turf/length';
 import { lineString } from '@turf/helpers';
@@ -415,6 +433,50 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addDeckGLLayer', this.handleAddDeckGLLayer.bind(this));
     this.registerMethod('removeDeckLayer', this.handleRemoveDeckLayer.bind(this));
     this.registerMethod('setDeckLayerVisibility', this.handleSetDeckLayerVisibility.bind(this));
+
+    // Additional deck.gl layers
+    this.registerMethod('addBitmapLayer', this.handleAddBitmapLayer.bind(this));
+    this.registerMethod('addColumnLayer', this.handleAddColumnLayer.bind(this));
+    this.registerMethod('addGridCellLayer', this.handleAddGridCellLayer.bind(this));
+    this.registerMethod('addSolidPolygonLayer', this.handleAddSolidPolygonLayer.bind(this));
+    this.registerMethod('addMVTLayer', this.handleAddMVTLayer.bind(this));
+    this.registerMethod('addTile3DLayer', this.handleAddTile3DLayer.bind(this));
+    this.registerMethod('addTerrainLayer', this.handleAddTerrainLayer.bind(this));
+    this.registerMethod('addGreatCircleLayer', this.handleAddGreatCircleLayer.bind(this));
+    this.registerMethod('addH3HexagonLayer', this.handleAddH3HexagonLayer.bind(this));
+    this.registerMethod('addH3ClusterLayer', this.handleAddH3ClusterLayer.bind(this));
+    this.registerMethod('addS2Layer', this.handleAddS2Layer.bind(this));
+    this.registerMethod('addQuadkeyLayer', this.handleAddQuadkeyLayer.bind(this));
+    this.registerMethod('addGeohashLayer', this.handleAddGeohashLayer.bind(this));
+    this.registerMethod('addWMSLayer', this.handleAddWMSLayer.bind(this));
+    this.registerMethod('addSimpleMeshLayer', this.handleAddSimpleMeshLayer.bind(this));
+    this.registerMethod('addScenegraphLayer', this.handleAddScenegraphLayer.bind(this));
+    this.registerMethod('addDeckTileLayer', this.handleAddDeckTileLayer.bind(this));
+
+    // Native MapLibre features
+    this.registerMethod('setProjection', this.handleSetProjection.bind(this));
+    this.registerMethod('updateGeoJSONSource', this.handleUpdateGeoJSONSource.bind(this));
+    this.registerMethod('addMapImage', this.handleAddMapImage.bind(this));
+    this.registerMethod('addTooltip', this.handleAddTooltip.bind(this));
+    this.registerMethod('removeTooltip', this.handleRemoveTooltip.bind(this));
+    this.registerMethod('addCoordinatesControl', this.handleAddCoordinatesControl.bind(this));
+    this.registerMethod('removeCoordinatesControl', this.handleRemoveCoordinatesControl.bind(this));
+
+    // Time slider
+    this.registerMethod('addTimeSlider', this.handleAddTimeSlider.bind(this));
+    this.registerMethod('removeTimeSlider', this.handleRemoveTimeSlider.bind(this));
+
+    // UI enhancements
+    this.registerMethod('addSwipeMap', this.handleAddSwipeMap.bind(this));
+    this.registerMethod('removeSwipeMap', this.handleRemoveSwipeMap.bind(this));
+    this.registerMethod('addOpacitySlider', this.handleAddOpacitySlider.bind(this));
+    this.registerMethod('removeOpacitySlider', this.handleRemoveOpacitySlider.bind(this));
+    this.registerMethod('addStyleSwitcher', this.handleAddStyleSwitcher.bind(this));
+    this.registerMethod('removeStyleSwitcher', this.handleRemoveStyleSwitcher.bind(this));
+
+    // Data export
+    this.registerMethod('getVisibleFeatures', this.handleGetVisibleFeatures.bind(this));
+    this.registerMethod('getLayerData', this.handleGetLayerData.bind(this));
 
     // LiDAR layers (maplibre-gl-lidar)
     this.registerMethod('addLidarControl', this.handleAddLidarControl.bind(this));
@@ -2215,6 +2277,23 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       'PointCloudLayer': this.handleAddPointCloudLayer.bind(this),
       'TripsLayer': this.handleAddTripsLayer.bind(this),
       'LineLayer': this.handleAddLineLayer.bind(this),
+      'BitmapLayer': this.handleAddBitmapLayer.bind(this),
+      'ColumnLayer': this.handleAddColumnLayer.bind(this),
+      'GridCellLayer': this.handleAddGridCellLayer.bind(this),
+      'SolidPolygonLayer': this.handleAddSolidPolygonLayer.bind(this),
+      'TileLayer': this.handleAddDeckTileLayer.bind(this),
+      'MVTLayer': this.handleAddMVTLayer.bind(this),
+      'Tile3DLayer': this.handleAddTile3DLayer.bind(this),
+      'TerrainLayer': this.handleAddTerrainLayer.bind(this),
+      'GreatCircleLayer': this.handleAddGreatCircleLayer.bind(this),
+      'H3HexagonLayer': this.handleAddH3HexagonLayer.bind(this),
+      'H3ClusterLayer': this.handleAddH3ClusterLayer.bind(this),
+      'S2Layer': this.handleAddS2Layer.bind(this),
+      'QuadkeyLayer': this.handleAddQuadkeyLayer.bind(this),
+      'GeohashLayer': this.handleAddGeohashLayer.bind(this),
+      'WMSLayer': this.handleAddWMSLayer.bind(this),
+      'SimpleMeshLayer': this.handleAddSimpleMeshLayer.bind(this),
+      'ScenegraphLayer': this.handleAddScenegraphLayer.bind(this),
     };
 
     const handler = handlerMap[layerType];
@@ -2254,6 +2333,1124 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const updatedLayer = layer.clone({ visible });
       this.deckLayers.set(id, updatedLayer);
       this.updateDeckOverlay();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Accessor helper for deck.gl layer properties
+  // -------------------------------------------------------------------------
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected makeDeckAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any {
+    if (typeof value === 'string') {
+      return (d: any) => d[value];
+    }
+    if (typeof value === 'function') {
+      return value;
+    }
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+    return fallbackFn || ((d: any) => d[defaultProp]);
+  }
+
+  // -------------------------------------------------------------------------
+  // Additional deck.gl layer handlers
+  // -------------------------------------------------------------------------
+
+  protected handleAddBitmapLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `bitmap-${Date.now()}`;
+    const image = kwargs.image as string;
+    const bounds = kwargs.bounds as [number, number, number, number];
+
+    const layer = new BitmapLayer({
+      id,
+      image,
+      bounds,
+      opacity: kwargs.opacity as number ?? 1,
+      visible: kwargs.visible !== false,
+      pickable: kwargs.pickable as boolean ?? false,
+      desaturate: kwargs.desaturate as number ?? 0,
+      transparentColor: (kwargs.transparentColor ?? [0, 0, 0, 0]) as any,
+      tintColor: (kwargs.tintColor ?? [255, 255, 255]) as any,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddColumnLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `column-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new ColumnLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      extruded: kwargs.extruded as boolean ?? true,
+      diskResolution: kwargs.diskResolution as number ?? 20,
+      radius: kwargs.radius as number ?? 1000,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      coverage: kwargs.coverage as number ?? 1,
+      filled: kwargs.filled !== false,
+      stroked: kwargs.stroked as boolean ?? false,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      getPosition: this.makeDeckAccessor(
+        kwargs.getPosition, 'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [255, 140, 0, 200]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 1000),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddGridCellLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `gridcell-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new GridCellLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      extruded: kwargs.extruded as boolean ?? true,
+      cellSize: kwargs.cellSize as number ?? 200,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      coverage: kwargs.coverage as number ?? 1,
+      getPosition: this.makeDeckAccessor(
+        kwargs.getPosition, 'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getColor: this.makeDeckAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 140, 0, 200]),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 1000),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddSolidPolygonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `solidpolygon-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new SolidPolygonLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      filled: kwargs.filled !== false,
+      extruded: kwargs.extruded as boolean ?? false,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      getPolygon: this.makeDeckAccessor(kwargs.getPolygon, 'polygon', (d: any) => d.polygon || d.contour || d.coordinates),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddDeckTileLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `tile-${Date.now()}`;
+    const data = kwargs.data as string | string[];
+
+    const layer = new TileLayer({
+      id,
+      data,
+      minZoom: kwargs.minZoom as number ?? 0,
+      maxZoom: kwargs.maxZoom as number ?? 19,
+      tileSize: kwargs.tileSize as number ?? 256,
+      pickable: kwargs.pickable as boolean ?? false,
+      visible: kwargs.visible !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      renderSubLayers: (props: any) => {
+        const { boundingBox } = props.tile;
+        return new BitmapLayer(props, {
+          data: undefined,
+          image: props.data,
+          bounds: [boundingBox[0][0], boundingBox[0][1], boundingBox[1][0], boundingBox[1][1]],
+        });
+      },
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddMVTLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `mvt-${Date.now()}`;
+    const data = kwargs.data as string | string[];
+
+    const layer = new MVTLayer({
+      id,
+      data,
+      minZoom: kwargs.minZoom as number ?? 0,
+      maxZoom: kwargs.maxZoom as number ?? 14,
+      pickable: kwargs.pickable !== false,
+      visible: kwargs.visible !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      binary: kwargs.binary as boolean ?? true,
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getLineWidth: this.makeDeckAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
+      getPointRadius: this.makeDeckAccessor(kwargs.getPointRadius ?? kwargs.pointRadius, 'pointRadius', () => 5),
+      lineWidthMinPixels: kwargs.lineWidthMinPixels as number ?? 1,
+      pointRadiusMinPixels: kwargs.pointRadiusMinPixels as number ?? 2,
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddTile3DLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `tile3d-${Date.now()}`;
+    const data = kwargs.data as string;
+
+    const layer = new Tile3DLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      visible: kwargs.visible !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      pointSize: kwargs.pointSize as number ?? 1,
+      loadOptions: kwargs.loadOptions as Record<string, unknown> ?? {},
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddTerrainLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `terrain-${Date.now()}`;
+    const elevationData = kwargs.elevationData as string | string[];
+
+    const layer = new TerrainLayer({
+      id,
+      elevationData,
+      texture: kwargs.texture as string,
+      meshMaxError: kwargs.meshMaxError as number ?? 4.0,
+      bounds: kwargs.bounds as [number, number, number, number],
+      elevationDecoder: kwargs.elevationDecoder as any ?? {
+        rScaler: 256,
+        gScaler: 1,
+        bScaler: 1 / 256,
+        offset: -32768,
+      },
+      pickable: kwargs.pickable as boolean ?? false,
+      visible: kwargs.visible !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      wireframe: kwargs.wireframe as boolean ?? false,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddGreatCircleLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `greatcircle-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new GreatCircleLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      getSourcePosition: this.makeDeckAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: this.makeDeckAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
+      getSourceColor: this.makeDeckAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
+      getTargetColor: this.makeDeckAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
+      getWidth: this.makeDeckAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      widthMinPixels: kwargs.widthMinPixels as number ?? 1,
+      widthMaxPixels: kwargs.widthMaxPixels as number ?? Number.MAX_SAFE_INTEGER,
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddH3HexagonLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `h3hexagon-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new H3HexagonLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      filled: kwargs.filled !== false,
+      stroked: kwargs.stroked as boolean ?? true,
+      extruded: kwargs.extruded as boolean ?? false,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      coverage: kwargs.coverage as number ?? 1,
+      highPrecision: kwargs.highPrecision as boolean ?? false,
+      getHexagon: this.makeDeckAccessor(kwargs.getHexagon, 'hexagon', (d: any) => d.hexagon || d.h3 || d.h3Index),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddH3ClusterLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `h3cluster-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new H3ClusterLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      filled: kwargs.filled !== false,
+      stroked: kwargs.stroked as boolean ?? true,
+      extruded: kwargs.extruded as boolean ?? false,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      getHexagons: this.makeDeckAccessor(kwargs.getHexagons, 'hexagons', (d: any) => d.hexagons || d.h3Indexes),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getLineWidth: this.makeDeckAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddS2Layer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `s2-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new S2Layer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      filled: kwargs.filled !== false,
+      stroked: kwargs.stroked as boolean ?? true,
+      extruded: kwargs.extruded as boolean ?? false,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      getS2Token: this.makeDeckAccessor(kwargs.getS2Token, 's2Token', (d: any) => d.s2Token || d.token || d.s2),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getLineWidth: this.makeDeckAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddQuadkeyLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `quadkey-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new QuadkeyLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      filled: kwargs.filled !== false,
+      stroked: kwargs.stroked as boolean ?? true,
+      extruded: kwargs.extruded as boolean ?? false,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      getQuadkey: this.makeDeckAccessor(kwargs.getQuadkey, 'quadkey', (d: any) => d.quadkey || d.key),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getLineWidth: this.makeDeckAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddGeohashLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `geohash-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+
+    const layer = new GeohashLayer({
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 0.8,
+      filled: kwargs.filled !== false,
+      stroked: kwargs.stroked as boolean ?? true,
+      extruded: kwargs.extruded as boolean ?? false,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      elevationScale: kwargs.elevationScale as number ?? 1,
+      getGeohash: this.makeDeckAccessor(kwargs.getGeohash, 'geohash', (d: any) => d.geohash || d.hash),
+      getFillColor: this.makeDeckAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeDeckAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getLineWidth: this.makeDeckAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
+      getElevation: this.makeDeckAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+    } as any);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddWMSLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `wms-${Date.now()}`;
+    const data = kwargs.data as string;
+
+    const layer = new WMSLayer({
+      id,
+      data,
+      serviceType: kwargs.serviceType as 'wms' | 'template' ?? 'wms',
+      layers: kwargs.layers as string[],
+      pickable: kwargs.pickable as boolean ?? false,
+      visible: kwargs.visible !== false,
+      opacity: kwargs.opacity as number ?? 1,
+    });
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddSimpleMeshLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `simplemesh-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+    const mesh = kwargs.mesh;
+
+    const layerProps: Record<string, unknown> = {
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      sizeScale: kwargs.sizeScale as number ?? 1,
+      wireframe: kwargs.wireframe as boolean ?? false,
+      getPosition: this.makeDeckAccessor(
+        kwargs.getPosition, 'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getColor: this.makeDeckAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
+      getOrientation: this.makeDeckAccessor(kwargs.getOrientation, 'orientation', () => [0, 0, 0]),
+      getScale: this.makeDeckAccessor(kwargs.getScale, 'scale', () => [1, 1, 1]),
+      getTranslation: this.makeDeckAccessor(kwargs.getTranslation, 'translation', () => [0, 0, 0]),
+    };
+
+    if (mesh !== undefined && mesh !== null) {
+      layerProps.mesh = mesh;
+    }
+    if (kwargs.texture) {
+      layerProps.texture = kwargs.texture as string;
+    }
+
+    const layer = new SimpleMeshLayer(layerProps);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  protected handleAddScenegraphLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    this.initializeDeckOverlay();
+
+    const id = kwargs.id as string || `scenegraph-${Date.now()}`;
+    const data = kwargs.data as unknown[];
+    const scenegraph = kwargs.scenegraph;
+
+    const layerProps: Record<string, unknown> = {
+      id,
+      data,
+      pickable: kwargs.pickable !== false,
+      opacity: kwargs.opacity as number ?? 1,
+      sizeScale: kwargs.sizeScale as number ?? 1,
+      sizeMinPixels: kwargs.sizeMinPixels as number ?? 0,
+      sizeMaxPixels: kwargs.sizeMaxPixels as number ?? Number.MAX_SAFE_INTEGER,
+      getPosition: this.makeDeckAccessor(
+        kwargs.getPosition, 'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getColor: this.makeDeckAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
+      getOrientation: this.makeDeckAccessor(kwargs.getOrientation, 'orientation', () => [0, 0, 0]),
+      getScale: this.makeDeckAccessor(kwargs.getScale, 'scale', () => [1, 1, 1]),
+      getTranslation: this.makeDeckAccessor(kwargs.getTranslation, 'translation', () => [0, 0, 0]),
+    };
+
+    if (scenegraph !== undefined && scenegraph !== null) {
+      layerProps.scenegraph = scenegraph;
+    }
+
+    const layer = new ScenegraphLayer(layerProps);
+
+    this.deckLayers.set(id, layer);
+    this.updateDeckOverlay();
+
+    if (this.deckLayerAdapter) {
+      this.deckLayerAdapter.notifyLayerAdded(id);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Native MapLibre feature handlers (Section 3)
+  // -------------------------------------------------------------------------
+
+  protected handleSetProjection(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const projection = (kwargs.projection as string) || (args[0] as string) || 'mercator';
+    (this.map as any).setProjection(projection);
+  }
+
+  protected handleUpdateGeoJSONSource(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const sourceId = kwargs.sourceId as string || args[0] as string;
+    const data = kwargs.data;
+    if (!sourceId) return;
+
+    const source = this.map.getSource(sourceId) as maplibregl.GeoJSONSource;
+    if (source && typeof source.setData === 'function') {
+      source.setData(data as any);
+    }
+  }
+
+  protected handleAddMapImage(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const name = kwargs.name as string || args[0] as string;
+    const url = kwargs.url as string || args[1] as string;
+    if (!name || !url) return;
+
+    this.map.loadImage(url).then((response) => {
+      if (response && response.data && !this.map!.hasImage(name)) {
+        this.map!.addImage(name, response.data);
+      }
+    }).catch((err) => {
+      console.warn(`Failed to load image '${name}':`, err);
+    });
+  }
+
+  private tooltipPopup: maplibregl.Popup | null = null;
+  private tooltipLayerHandlers: Map<string, (e: any) => void> = new Map();
+
+  protected handleAddTooltip(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const template = kwargs.template as string || '';
+    const properties = kwargs.properties as string[] | undefined;
+    if (!layerId) return;
+
+    // Remove existing tooltip for this layer
+    if (this.tooltipLayerHandlers.has(layerId)) {
+      const oldHandler = this.tooltipLayerHandlers.get(layerId)!;
+      this.map.off('mousemove', layerId, oldHandler);
+      this.tooltipLayerHandlers.delete(layerId);
+    }
+
+    const popup = new Popup({
+      closeButton: false,
+      closeOnClick: false,
+      className: 'anymap-tooltip',
+    });
+
+    const handler = (e: any) => {
+      if (!e.features || e.features.length === 0) {
+        popup.remove();
+        return;
+      }
+
+      const feature = e.features[0];
+      const props = feature.properties || {};
+      let html = template;
+
+      if (template) {
+        // Replace {property} placeholders
+        html = template.replace(/\{(\w+)\}/g, (_: string, key: string) => {
+          return props[key] !== undefined ? String(props[key]) : '';
+        });
+      } else if (properties && properties.length > 0) {
+        // Show only specified properties
+        html = '<div style="font-size:12px">' +
+          properties.map(p => `<b>${p}:</b> ${props[p] !== undefined ? props[p] : 'N/A'}`).join('<br>') +
+          '</div>';
+      } else {
+        // Show all properties
+        html = '<div style="font-size:12px">' +
+          Object.entries(props).map(([k, v]) => `<b>${k}:</b> ${v}`).join('<br>') +
+          '</div>';
+      }
+
+      popup.setLngLat(e.lngLat).setHTML(html).addTo(this.map!);
+    };
+
+    this.map.on('mousemove', layerId, handler);
+    this.map.on('mouseleave', layerId, () => { popup.remove(); });
+    this.tooltipLayerHandlers.set(layerId, handler);
+  }
+
+  protected handleRemoveTooltip(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    if (!layerId) return;
+
+    if (this.tooltipLayerHandlers.has(layerId)) {
+      const handler = this.tooltipLayerHandlers.get(layerId)!;
+      this.map.off('mousemove', layerId, handler);
+      this.tooltipLayerHandlers.delete(layerId);
+    }
+  }
+
+  private coordinatesControl: HTMLDivElement | null = null;
+  private coordinatesHandler: ((e: any) => void) | null = null;
+
+  protected handleAddCoordinatesControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const position = kwargs.position as string || 'bottom-left';
+
+    // Remove existing
+    if (this.coordinatesControl) {
+      this.coordinatesControl.remove();
+      if (this.coordinatesHandler) {
+        this.map.off('mousemove', this.coordinatesHandler);
+      }
+    }
+
+    const div = document.createElement('div');
+    div.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-coordinates';
+    div.style.cssText = 'padding:4px 8px;font-size:11px;font-family:monospace;background:rgba(255,255,255,0.9);pointer-events:none;';
+    div.textContent = 'Lng: 0.0000, Lat: 0.0000';
+
+    const precision = kwargs.precision as number ?? 4;
+
+    const handler = (e: any) => {
+      div.textContent = `Lng: ${e.lngLat.lng.toFixed(precision)}, Lat: ${e.lngLat.lat.toFixed(precision)}`;
+    };
+
+    this.map.on('mousemove', handler);
+    this.coordinatesHandler = handler;
+
+    // Add to map container
+    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+    if (controlContainer) {
+      controlContainer.appendChild(div);
+    } else {
+      this.map.getContainer().appendChild(div);
+    }
+    this.coordinatesControl = div;
+  }
+
+  protected handleRemoveCoordinatesControl(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    if (this.coordinatesControl) {
+      this.coordinatesControl.remove();
+      this.coordinatesControl = null;
+    }
+    if (this.coordinatesHandler) {
+      this.map.off('mousemove', this.coordinatesHandler);
+      this.coordinatesHandler = null;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Time Slider handler (Section 4)
+  // -------------------------------------------------------------------------
+
+  private timeSliderContainer: HTMLDivElement | null = null;
+
+  protected handleAddTimeSlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const property = kwargs.property as string;
+    const min = kwargs.min as number ?? 0;
+    const max = kwargs.max as number ?? 100;
+    const step = kwargs.step as number ?? 1;
+    const position = kwargs.position as string || 'bottom-left';
+    const label = kwargs.label as string || 'Time';
+    const autoPlay = kwargs.autoPlay as boolean ?? false;
+    const interval = kwargs.interval as number ?? 500;
+
+    // Remove existing slider
+    this.handleRemoveTimeSlider(args, kwargs);
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-time-slider';
+    container.style.cssText = 'padding:10px;background:rgba(255,255,255,0.95);min-width:250px;border-radius:4px;';
+
+    const labelEl = document.createElement('div');
+    labelEl.style.cssText = 'font-size:12px;font-weight:bold;margin-bottom:5px;';
+    labelEl.textContent = `${label}: ${min}`;
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = String(min);
+    slider.max = String(max);
+    slider.step = String(step);
+    slider.value = String(min);
+    slider.style.cssText = 'width:100%;cursor:pointer;';
+
+    const playBtn = document.createElement('button');
+    playBtn.textContent = '\u25B6';
+    playBtn.style.cssText = 'margin-top:5px;padding:2px 8px;cursor:pointer;border:1px solid #ccc;border-radius:3px;background:#fff;';
+
+    let animTimer: number | null = null;
+
+    const updateFilter = (value: number) => {
+      labelEl.textContent = `${label}: ${value}`;
+      if (this.map && layerId && property) {
+        this.map.setFilter(layerId, ['<=', property, value]);
+      }
+    };
+
+    slider.addEventListener('input', () => {
+      updateFilter(Number(slider.value));
+    });
+
+    const stopAnim = () => {
+      if (animTimer !== null) {
+        clearInterval(animTimer);
+        animTimer = null;
+        playBtn.textContent = '\u25B6';
+      }
+    };
+
+    playBtn.addEventListener('click', () => {
+      if (animTimer !== null) {
+        stopAnim();
+      } else {
+        playBtn.textContent = '\u23F8';
+        animTimer = window.setInterval(() => {
+          let val = Number(slider.value) + step;
+          if (val > max) val = min;
+          slider.value = String(val);
+          updateFilter(val);
+        }, interval);
+      }
+    });
+
+    container.appendChild(labelEl);
+    container.appendChild(slider);
+    container.appendChild(playBtn);
+
+    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+    if (controlContainer) {
+      controlContainer.appendChild(container);
+    } else {
+      this.map.getContainer().appendChild(container);
+    }
+    this.timeSliderContainer = container;
+
+    if (autoPlay) {
+      playBtn.click();
+    }
+  }
+
+  protected handleRemoveTimeSlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (this.timeSliderContainer) {
+      this.timeSliderContainer.remove();
+      this.timeSliderContainer = null;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // UI Enhancement handlers (Section 6)
+  // -------------------------------------------------------------------------
+
+  private swipeContainer: HTMLDivElement | null = null;
+  private swipeHandler: (() => void) | null = null;
+
+  protected handleAddSwipeMap(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const leftLayer = kwargs.leftLayer as string;
+    const rightLayer = kwargs.rightLayer as string;
+    if (!leftLayer || !rightLayer) return;
+
+    // Remove existing
+    this.handleRemoveSwipeMap(args, kwargs);
+
+    const container = this.map.getContainer();
+    const slider = document.createElement('div');
+    slider.className = 'anymap-swipe-slider';
+    slider.style.cssText = 'position:absolute;top:0;bottom:0;width:4px;background:#fff;cursor:ew-resize;z-index:10;left:50%;box-shadow:0 0 4px rgba(0,0,0,0.3);';
+
+    const handle = document.createElement('div');
+    handle.style.cssText = 'position:absolute;top:50%;left:-10px;width:24px;height:24px;background:#fff;border-radius:50%;border:2px solid #333;transform:translateY(-50%);cursor:ew-resize;';
+    slider.appendChild(handle);
+    container.appendChild(slider);
+
+    let isDragging = false;
+
+    const updateClip = () => {
+      const rect = container.getBoundingClientRect();
+      const sliderLeft = slider.offsetLeft;
+      const clipRight = rect.width - sliderLeft;
+
+      // Clip the right layer to show only on the right side of the slider
+      this.map!.getContainer();
+      // Use clip-path on canvas layers
+      const mapCanvas = this.map!.getCanvas();
+      if (mapCanvas) {
+        // Set the left layer to show fully, clip the right layer
+        if (this.map!.getLayer(leftLayer)) {
+          // Left layer is fully visible
+        }
+        if (this.map!.getLayer(rightLayer)) {
+          this.map!.setPaintProperty(rightLayer, 'raster-opacity', 1);
+        }
+      }
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      e.preventDefault();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const rect = container.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      slider.style.left = `${x}px`;
+
+      // Clip left layer
+      if (this.map!.getLayer(leftLayer)) {
+        (this.map! as any).setLayerClipBounds?.(leftLayer, [[0, 0], [x, rect.height]]);
+      }
+      if (this.map!.getLayer(rightLayer)) {
+        (this.map! as any).setLayerClipBounds?.(rightLayer, [[x, 0], [rect.width, rect.height]]);
+      }
+    };
+
+    const onMouseUp = () => { isDragging = false; };
+
+    slider.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    this.swipeContainer = slider;
+    this.swipeHandler = () => {
+      slider.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }
+
+  protected handleRemoveSwipeMap(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (this.swipeContainer) {
+      this.swipeContainer.remove();
+      this.swipeContainer = null;
+    }
+    if (this.swipeHandler) {
+      this.swipeHandler();
+      this.swipeHandler = null;
+    }
+  }
+
+  private opacitySliderContainer: Map<string, HTMLDivElement> = new Map();
+
+  protected handleAddOpacitySlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layerId = kwargs.layerId as string;
+    const position = kwargs.position as string || 'top-right';
+    const label = kwargs.label as string || layerId;
+    if (!layerId) return;
+
+    // Remove existing for this layer
+    this.removeOpacitySliderForLayer(layerId);
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-opacity-slider';
+    container.style.cssText = 'padding:8px;background:rgba(255,255,255,0.95);min-width:150px;border-radius:4px;';
+
+    const labelEl = document.createElement('div');
+    labelEl.style.cssText = 'font-size:11px;margin-bottom:4px;';
+    labelEl.textContent = `${label}: 100%`;
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = '100';
+    slider.value = '100';
+    slider.style.cssText = 'width:100%;cursor:pointer;';
+
+    slider.addEventListener('input', () => {
+      const opacity = Number(slider.value) / 100;
+      labelEl.textContent = `${label}: ${slider.value}%`;
+
+      // Try to set opacity on different layer types
+      if (this.map!.getLayer(layerId)) {
+        try {
+          const layerObj = this.map!.getLayer(layerId);
+          const layerType = (layerObj as any)?.type;
+          if (layerType === 'raster') {
+            this.map!.setPaintProperty(layerId, 'raster-opacity', opacity);
+          } else if (layerType === 'fill') {
+            this.map!.setPaintProperty(layerId, 'fill-opacity', opacity);
+          } else if (layerType === 'line') {
+            this.map!.setPaintProperty(layerId, 'line-opacity', opacity);
+          } else if (layerType === 'circle') {
+            this.map!.setPaintProperty(layerId, 'circle-opacity', opacity);
+          } else if (layerType === 'symbol') {
+            this.map!.setPaintProperty(layerId, 'icon-opacity', opacity);
+            this.map!.setPaintProperty(layerId, 'text-opacity', opacity);
+          } else if (layerType === 'fill-extrusion') {
+            this.map!.setPaintProperty(layerId, 'fill-extrusion-opacity', opacity);
+          }
+        } catch {
+          // Deck.gl layer - try deck.gl approach
+          const deckLayer = this.deckLayers.get(layerId) as { clone?: (props: Record<string, unknown>) => unknown } | undefined;
+          if (deckLayer && typeof deckLayer.clone === 'function') {
+            const updated = deckLayer.clone({ opacity });
+            this.deckLayers.set(layerId, updated);
+            this.updateDeckOverlay();
+          }
+        }
+      }
+    });
+
+    container.appendChild(labelEl);
+    container.appendChild(slider);
+
+    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+    if (controlContainer) {
+      controlContainer.appendChild(container);
+    }
+
+    this.opacitySliderContainer.set(layerId, container);
+  }
+
+  private removeOpacitySliderForLayer(layerId: string): void {
+    const existing = this.opacitySliderContainer.get(layerId);
+    if (existing) {
+      existing.remove();
+      this.opacitySliderContainer.delete(layerId);
+    }
+  }
+
+  protected handleRemoveOpacitySlider(args: unknown[], kwargs: Record<string, unknown>): void {
+    const layerId = kwargs.layerId as string;
+    if (layerId) {
+      this.removeOpacitySliderForLayer(layerId);
+    }
+  }
+
+  private styleSwitcherContainer: HTMLDivElement | null = null;
+
+  protected handleAddStyleSwitcher(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const styles = kwargs.styles as Record<string, string>;
+    const position = kwargs.position as string || 'top-right';
+    if (!styles || Object.keys(styles).length === 0) return;
+
+    // Remove existing
+    this.handleRemoveStyleSwitcher(args, kwargs);
+
+    const container = document.createElement('div');
+    container.className = 'maplibregl-ctrl maplibregl-ctrl-group anymap-style-switcher';
+    container.style.cssText = 'padding:8px;background:rgba(255,255,255,0.95);border-radius:4px;';
+
+    const select = document.createElement('select');
+    select.style.cssText = 'font-size:12px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;cursor:pointer;';
+
+    for (const [name, url] of Object.entries(styles)) {
+      const option = document.createElement('option');
+      option.value = url;
+      option.textContent = name;
+      select.appendChild(option);
+    }
+
+    select.addEventListener('change', () => {
+      this.map!.setStyle(select.value);
+    });
+
+    container.appendChild(select);
+
+    const controlContainer = this.map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+    if (controlContainer) {
+      controlContainer.appendChild(container);
+    }
+
+    this.styleSwitcherContainer = container;
+  }
+
+  protected handleRemoveStyleSwitcher(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (this.styleSwitcherContainer) {
+      this.styleSwitcherContainer.remove();
+      this.styleSwitcherContainer = null;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Data Export handlers (Section 7)
+  // -------------------------------------------------------------------------
+
+  protected handleGetVisibleFeatures(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const layers = kwargs.layers as string[] | undefined;
+
+    try {
+      const features = layers
+        ? this.map.queryRenderedFeatures(undefined, { layers })
+        : this.map.queryRenderedFeatures();
+
+      const geojson: FeatureCollection = {
+        type: 'FeatureCollection',
+        features: features.map(f => ({
+          type: 'Feature' as const,
+          geometry: f.geometry,
+          properties: f.properties,
+        })),
+      };
+
+      // Send back via model
+      if (this.model) {
+        this.model.set('_queried_features', {
+          type: 'visible_features',
+          data: geojson,
+        });
+        this.model.save_changes();
+      }
+    } catch (err) {
+      console.warn('Error getting visible features:', err);
+    }
+  }
+
+  protected handleGetLayerData(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+    const sourceId = kwargs.sourceId as string;
+    if (!sourceId) return;
+
+    try {
+      const features = this.map.querySourceFeatures(sourceId);
+
+      const geojson: FeatureCollection = {
+        type: 'FeatureCollection',
+        features: features.map(f => ({
+          type: 'Feature' as const,
+          geometry: f.geometry,
+          properties: f.properties,
+        })),
+      };
+
+      if (this.model) {
+        this.model.set('_queried_features', {
+          type: 'layer_data',
+          sourceId,
+          data: geojson,
+        });
+        this.model.save_changes();
+      }
+    } catch (err) {
+      console.warn('Error getting layer data:', err);
     }
   }
 
