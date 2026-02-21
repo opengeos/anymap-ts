@@ -78,6 +78,7 @@ class TestWidgetInheritance:
 
     def test_maplibre_is_mapwidget(self):
         from anymap_ts.base import MapWidget
+
         m = MapLibreMap(controls={})
         assert isinstance(m, MapWidget)
 

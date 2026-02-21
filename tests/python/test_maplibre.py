@@ -393,7 +393,11 @@ class TestMapLibreHtmlExport:
         m = MapLibreMap(controls={})
         html = m.to_html()
         assert isinstance(html, str)
-        assert "maplibre" in html.lower() or "<html" in html.lower() or "<!DOCTYPE" in html.lower()
+        assert (
+            "maplibre" in html.lower()
+            or "<html" in html.lower()
+            or "<!DOCTYPE" in html.lower()
+        )
 
     def test_to_html_file(self, tmp_path):
         m = MapLibreMap(controls={})

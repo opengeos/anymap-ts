@@ -53,7 +53,10 @@ class TestLeafletInit:
 
     def test_custom_init(self):
         m = LeafletMap(
-            center=(-122.4, 37.8), zoom=12.0, width="800px", height="500px",
+            center=(-122.4, 37.8),
+            zoom=12.0,
+            width="800px",
+            height="500px",
             controls={},
         )
         assert m.center == [-122.4, 37.8]
