@@ -8,7 +8,7 @@ import type { MapWidgetModel, JsCall, JsEvent, LayerState, SourceState } from '.
 /**
  * Method handler function type.
  */
-export type MethodHandler = (args: unknown[], kwargs: Record<string, unknown>) => void;
+export type MethodHandler = (args: unknown[], kwargs: Record<string, unknown>) => void | Promise<void>;
 
 /**
  * Abstract base class for map renderers.
@@ -90,7 +90,7 @@ export abstract class BaseMapRenderer<TMap> {
    * Set up model trait listeners.
    */
   protected setupModelListeners(): void {
-    const onJsCallsChange = () => this.processJsCalls();
+    const onJsCallsChange = () => { this.processJsCalls().catch(console.error); };
     const onCenterChange = () => this.onCenterChange();
     const onZoomChange = () => this.onZoomChange();
     const onStyleChange = () => this.onStyleChange();
@@ -126,11 +126,11 @@ export abstract class BaseMapRenderer<TMap> {
   /**
    * Execute a method by name.
    */
-  protected executeMethod(method: string, args: unknown[], kwargs: Record<string, unknown>): void {
+  protected async executeMethod(method: string, args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     const handler = this.methodHandlers.get(method);
     if (handler) {
       try {
-        handler(args, kwargs);
+        await handler(args, kwargs);
       } catch (error) {
         console.error(`Error executing method ${method}:`, error);
       }
@@ -142,13 +142,13 @@ export abstract class BaseMapRenderer<TMap> {
   /**
    * Process queued JavaScript calls from Python.
    */
-  protected processJsCalls(): void {
+  protected async processJsCalls(): Promise<void> {
     const calls = this.model.get('_js_calls') || [];
     const newCalls = calls.filter(call => call.id > this.lastProcessedCallId);
 
     for (const call of newCalls) {
       if (this.isMapReady) {
-        this.executeMethod(call.method, call.args, call.kwargs);
+        await this.executeMethod(call.method, call.args, call.kwargs);
       } else {
         this.pendingCalls.push(call);
       }
@@ -159,9 +159,9 @@ export abstract class BaseMapRenderer<TMap> {
   /**
    * Process pending calls after map is ready.
    */
-  protected processPendingCalls(): void {
+  protected async processPendingCalls(): Promise<void> {
     for (const call of this.pendingCalls) {
-      this.executeMethod(call.method, call.args, call.kwargs);
+      await this.executeMethod(call.method, call.args, call.kwargs);
     }
     this.pendingCalls = [];
   }
@@ -184,11 +184,11 @@ export abstract class BaseMapRenderer<TMap> {
    * Restore persisted state (layers, sources, controls) from model.
    * Called when the map is displayed in a subsequent cell.
    */
-  protected restoreState(): void {
+  protected async restoreState(): Promise<void> {
     // Restore sources first
     const sources = this.model.get('_sources') || {};
     for (const [sourceId, sourceConfig] of Object.entries(sources)) {
-      this.executeMethod('addSource', [sourceId], sourceConfig as unknown as Record<string, unknown>);
+      await this.executeMethod('addSource', [sourceId], sourceConfig as unknown as Record<string, unknown>);
     }
 
     // Then restore layers, ensuring correct z-order:

@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "build:maplibre": "esbuild src/maplibre/index.ts --bundle --format=esm --outfile=anymap_ts/static/maplibre.js --loader:.css=css --external:path --external:fs --minify",
+    "build:maplibre": "esbuild src/maplibre/index.ts --bundle --format=esm --outfile=anymap_ts/static/maplibre.js --loader:.css=css --external:path --external:fs --external:maplibre-gl --external:@deck.gl/* --external:@turf/* --external:@developmentseed/deck.gl-geotiff --external:@carbonplan/zarr-layer --external:maplibre-gl-components --external:maplibre-gl-lidar --external:maplibre-gl-geoman-free --external:maplibre-gl-geo-editor --external:maplibre-gl-layer-control --external:flatgeobuf --minify",
     "build:mapbox": "esbuild src/mapbox/index.ts --bundle --format=esm --outfile=anymap_ts/static/mapbox.js --loader:.css=css --external:path --external:fs --minify",
     "build:leaflet": "esbuild src/leaflet/index.ts --bundle --format=esm --outfile=anymap_ts/static/leaflet.js --loader:.css=css --loader:.png=dataurl --minify",
     "build:deckgl": "esbuild src/deckgl/index.ts --bundle --format=esm --outfile=anymap_ts/static/deckgl.js --loader:.css=css --external:path --external:fs --minify",

@@ -1,12 +1,22 @@
 /**
  * MapLibre GL Geo Editor plugin integration.
+ * Uses dynamic CDN imports.
  */
 
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { Geoman } from '@geoman-io/maplibre-geoman-free';
-import { GeoEditor } from 'maplibre-gl-geo-editor';
 import type { FeatureCollection, Feature } from 'geojson';
 import type { ControlPosition } from '../../types/maplibre';
+
+// Dynamic import helpers
+async function loadGeoman() {
+  const mod = await import('https://esm.sh/@geoman-io/maplibre-geoman-free@0.6.2');
+  return mod.Geoman;
+}
+
+async function loadGeoEditor() {
+  const mod = await import('https://esm.sh/maplibre-gl-geo-editor@0.7.3');
+  return mod.GeoEditor;
+}
 
 export interface GeoEditorOptions {
   position?: ControlPosition;
@@ -23,8 +33,8 @@ export interface GeoEditorOptions {
  */
 export class GeoEditorPlugin {
   private map: MapLibreMap;
-  private geoman: Geoman | null = null;
-  private geoEditor: GeoEditor | null = null;
+  private geoman: any | null = null;
+  private geoEditor: any | null = null;
   private onDataChange: ((data: FeatureCollection) => void) | null = null;
 
   constructor(map: MapLibreMap) {
@@ -34,10 +44,10 @@ export class GeoEditorPlugin {
   /**
    * Initialize the geo editor control.
    */
-  initialize(
+  async initialize(
     options: GeoEditorOptions,
     onDataChange: (data: FeatureCollection) => void
-  ): void {
+  ): Promise<void> {
     if (this.geoEditor) {
       this.destroy();
     }
@@ -54,13 +64,18 @@ export class GeoEditorPlugin {
       fitBoundsOnLoad = true,
     } = options;
 
+    // Load modules from CDN
+    const [GeomanClass, GeoEditorClass] = await Promise.all([
+      loadGeoman(),
+      loadGeoEditor(),
+    ]);
+
     // Helper to create GeoEditor once Geoman is ready
     const createGeoEditor = () => {
-      if (this.geoEditor) return; // Already created
+      if (this.geoEditor) return;
 
       try {
-        // Create GeoEditor with valid options
-        this.geoEditor = new GeoEditor({
+        this.geoEditor = new GeoEditorClass({
           position,
           drawModes: drawModes as any[],
           editModes: editModes as any[],
@@ -75,10 +90,7 @@ export class GeoEditorPlugin {
           onGeoJsonLoad: () => this.syncFeatures(),
         });
 
-        // Connect Geoman to GeoEditor
         this.geoEditor.setGeoman(this.geoman!);
-
-        // Add control to map
         this.map.addControl(this.geoEditor, position);
       } catch (error) {
         console.error('Failed to create GeoEditor:', error);
@@ -86,12 +98,10 @@ export class GeoEditorPlugin {
     };
 
     // Initialize Geoman first
-    this.geoman = new Geoman(this.map, {});
+    this.geoman = new GeomanClass(this.map, {});
 
-    // Listen for gm:loaded event
     this.map.on('gm:loaded', createGeoEditor);
 
-    // Also set a timeout fallback in case gm:loaded doesn't fire
     setTimeout(() => {
       if (!this.geoEditor && this.geoman) {
         console.warn('gm:loaded event not received, initializing GeoEditor with timeout fallback');
@@ -100,9 +110,6 @@ export class GeoEditorPlugin {
     }, 1000);
   }
 
-  /**
-   * Sync features to Python.
-   */
   private syncFeatures(): void {
     if (this.geoEditor && this.onDataChange) {
       const features = this.geoEditor.getFeatures();
@@ -110,9 +117,6 @@ export class GeoEditorPlugin {
     }
   }
 
-  /**
-   * Get all features as GeoJSON.
-   */
   getFeatures(): FeatureCollection {
     if (!this.geoEditor) {
       return { type: 'FeatureCollection', features: [] };
@@ -120,9 +124,6 @@ export class GeoEditorPlugin {
     return this.geoEditor.getFeatures();
   }
 
-  /**
-   * Load GeoJSON features.
-   */
   loadFeatures(geojson: FeatureCollection): void {
     if (!this.geoEditor) {
       console.warn('GeoEditor not initialized');
@@ -132,16 +133,11 @@ export class GeoEditorPlugin {
     this.syncFeatures();
   }
 
-  /**
-   * Clear all features.
-   */
   clear(): void {
     if (this.geoEditor) {
-      // Get all features and delete them
       const features = this.geoEditor.getFeatures();
       for (const feature of features.features) {
         if (feature.id) {
-          // Select and delete each feature
           this.geoEditor.selectFeatures([feature]);
           this.geoEditor.deleteSelectedFeatures();
         }
@@ -150,9 +146,6 @@ export class GeoEditorPlugin {
     }
   }
 
-  /**
-   * Get selected features.
-   */
   getSelectedFeatures(): Feature[] {
     if (!this.geoEditor) {
       return [];
@@ -160,43 +153,28 @@ export class GeoEditorPlugin {
     return this.geoEditor.getSelectedFeatures();
   }
 
-  /**
-   * Enable a draw mode.
-   */
   enableDrawMode(mode: string): void {
     if (this.geoEditor) {
       this.geoEditor.enableDrawMode(mode as any);
     }
   }
 
-  /**
-   * Enable an edit mode.
-   */
   enableEditMode(mode: string): void {
     if (this.geoEditor) {
       this.geoEditor.enableEditMode(mode as any);
     }
   }
 
-  /**
-   * Disable all modes.
-   */
   disableAllModes(): void {
     if (this.geoEditor) {
       this.geoEditor.disableAllModes();
     }
   }
 
-  /**
-   * Get the GeoEditor instance.
-   */
-  getGeoEditor(): GeoEditor | null {
+  getGeoEditor(): any | null {
     return this.geoEditor;
   }
 
-  /**
-   * Destroy the geo editor.
-   */
   destroy(): void {
     if (this.geoEditor) {
       this.map.removeControl(this.geoEditor);
