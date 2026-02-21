@@ -30,7 +30,6 @@
 
         // Track added layers for layer control
         const addedLayers = [];
-        const markerGroups = new Map(); // groupId -> maplibregl.Marker[]
         let layerControlConfig = null;
         let drawControlConfig = null;
         let controlGridConfig = null;
@@ -107,12 +106,7 @@
                 }
             }
 
-            // 5. Add marker group toggles to layer control
-            if (markerGroups.size > 0) {
-                addMarkerGroupToggles();
-            }
-
-            // 6. Add draw control if configured
+            // 5. Add draw control if configured
             if (drawControlConfig || (state.controls && state.controls['draw-control'])) {
                 createDrawControl(drawControlConfig || state.controls['draw-control']);
             }
@@ -251,7 +245,6 @@
                     const color = kwargs.color || '#3388ff';
                     const scale = kwargs.scale || 1.0;
                     const draggable = kwargs.draggable || false;
-                    const markerId = kwargs.id || 'marker';
                     const marker = new maplibregl.Marker({ color, scale, draggable })
                         .setLngLat([lng, lat]);
                     if (kwargs.popup) {
@@ -259,9 +252,6 @@
                         marker.setPopup(new maplibregl.Popup({ maxWidth: popupMaxWidth }).setHTML(kwargs.popup));
                     }
                     marker.addTo(map);
-                    // Track marker for layer control
-                    if (!markerGroups.has(markerId)) markerGroups.set(markerId, []);
-                    markerGroups.get(markerId).push(marker);
                     // Add tooltip on hover if provided
                     if (kwargs.tooltip) {
                         const tooltipMaxWidth = kwargs.tooltipMaxWidth || '240px';
@@ -288,10 +278,6 @@
                     const draggable = kwargs.draggable || false;
                     const popupMaxWidth = kwargs.popupMaxWidth || '240px';
                     const tooltipMaxWidth = kwargs.tooltipMaxWidth || '240px';
-                    const groupId = kwargs.id || 'markers';
-
-                    if (!markerGroups.has(groupId)) markerGroups.set(groupId, []);
-                    const group = markerGroups.get(groupId);
 
                     for (const m of markers) {
                         const [lng, lat] = m.lngLat;
@@ -301,7 +287,6 @@
                             marker.setPopup(new maplibregl.Popup({ maxWidth: popupMaxWidth }).setHTML(m.popup));
                         }
                         marker.addTo(map);
-                        group.push(marker);
                         // Add tooltip on hover if provided
                         if (m.tooltip) {
                             const tooltipPopup = new maplibregl.Popup({
@@ -996,53 +981,6 @@
                 // layerStates: layerStates
             });
             map.addControl(layerControl, position);
-        }
-
-        function addMarkerGroupToggles() {
-            // Find or create a container for marker toggles
-            // Try to append to an existing layer control panel
-            let lcContainer = document.querySelector('.maplibregl-layer-control');
-            if (!lcContainer) {
-                // No layer control exists — create a standalone marker control
-                const position = (layerControlConfig && layerControlConfig.position) || 'top-right';
-                const posClass = 'maplibregl-ctrl-' + position;
-                const container = document.querySelector('.' + posClass);
-                if (!container) return;
-                lcContainer = document.createElement('div');
-                lcContainer.className = 'maplibregl-ctrl maplibregl-layer-control';
-                lcContainer.style.cssText = 'background: #fff; padding: 8px 10px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px;';
-                container.appendChild(lcContainer);
-            }
-
-            // Add a "Markers" section header
-            const header = document.createElement('div');
-            header.style.cssText = 'font-weight: bold; margin-top: 6px; margin-bottom: 4px; padding-top: 6px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;';
-            header.textContent = 'Markers';
-            lcContainer.appendChild(header);
-
-            for (const [groupId, markers] of markerGroups) {
-                const row = document.createElement('label');
-                row.style.cssText = 'display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0; font-size: 12px;';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = true;
-                checkbox.style.cssText = 'margin: 0; cursor: pointer;';
-
-                const label = document.createElement('span');
-                label.textContent = groupId;
-
-                checkbox.addEventListener('change', () => {
-                    const display = checkbox.checked ? '' : 'none';
-                    for (const m of markers) {
-                        m.getElement().style.display = display;
-                    }
-                });
-
-                row.appendChild(checkbox);
-                row.appendChild(label);
-                lcContainer.appendChild(row);
-            }
         }
 
         function createDrawControl(config) {
