@@ -224,4 +224,11 @@ marimo/_lsp/
 __marimo__/
 CLAUDE.md
 private/
-docs/notebooks/*.html
+docs/maplibre/*.html
+docs/deckgl/*.html
+docs/cesium/*.html
+docs/keplergl/*.html
+docs/leaflet/*.html
+docs/mapbox/*.html
+docs/openlayers/*.html
+docs/potree/*.html
