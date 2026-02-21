@@ -61,7 +61,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 
 import { GeoEditorPlugin } from './plugins/GeoEditorPlugin';
 import { LayerControlPlugin } from './plugins/LayerControlPlugin';
-import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter } from './adapters';
+import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter, MarkerLayerAdapter } from './adapters';
 import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
 import type { LidarControlOptions, LidarLayerOptions, LidarColorScheme } from '../types/lidar';
 
@@ -123,6 +123,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private zarrAdapter: ZarrLayerAdapter | null = null;
   private deckLayerAdapter: DeckLayerAdapter | null = null;
   private lidarAdapter: LidarLayerAdapter | null = null;
+  private markerAdapter: MarkerLayerAdapter | null = null;
 
   // LiDAR control
   protected lidarControl: LidarControl | null = null;
@@ -1065,6 +1066,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (this.lidarControl) {
       this.lidarAdapter = new LidarLayerAdapter(this.lidarControl);
       customLayerAdapters.push(this.lidarAdapter);
+    }
+
+    // Create Marker adapter if there are markers
+    if (this.markersMap.size > 0) {
+      this.markerAdapter = new MarkerLayerAdapter(this.markersMap);
+      customLayerAdapters.push(this.markerAdapter);
     }
 
     // Initialize plugin if not already
