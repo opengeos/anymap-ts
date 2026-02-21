@@ -185,7 +185,43 @@
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/mapbox/choropleth/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/mapbox/cog_layer/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/mapbox/deck_layers/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/mapbox/layer_management/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/mapbox/mapbox/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/mapbox/markers/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/mapbox/popups_tooltips/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/mapbox/terrain_3d/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/mapbox/ui_controls/</loc>
+         <lastmod>2026-02-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/mapbox/vector_data/</loc>
          <lastmod>2026-02-21</lastmod>
     </url>
     <url>
