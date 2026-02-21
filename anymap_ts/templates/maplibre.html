@@ -25,10 +25,6 @@
 <body>
     <div id="map"></div>
     <script type="module">
-        // Import controls from esm.sh
-        import { LayerControl } from 'https://esm.sh/maplibre-gl-layer-control@0.13.0';
-        import { addControlGrid } from 'https://esm.sh/maplibre-gl-components@0.14.0';
-
         // Map state from Python
         const state = {{state}};
 
@@ -40,7 +36,19 @@
         let controlGridAdded = false;
         let layerControlAdded = false;
 
-        // Create map
+        // Load optional dependencies in parallel (non-blocking)
+        let LayerControl = null;
+        let addControlGridFn = null;
+
+        const lcPromise = import('https://esm.sh/maplibre-gl-layer-control@0.13.0')
+            .then(mod => { LayerControl = mod.LayerControl; })
+            .catch(() => console.warn('LayerControl library unavailable — layer control will be skipped'));
+
+        const cgPromise = import('https://esm.sh/maplibre-gl-components@0.14.0')
+            .then(mod => { addControlGridFn = mod.addControlGrid; })
+            .catch(() => console.warn('ControlGrid library unavailable — control grid will be skipped'));
+
+        // Create map immediately (no imports needed)
         const map = new maplibregl.Map({
             container: 'map',
             style: state.style,
@@ -56,8 +64,8 @@
             maplibregl.addProtocol("pmtiles", protocol.tile);
         }
 
-        map.on('load', function() {
-            // Replay JS calls
+        map.on('load', async function() {
+            // 1. Replay ALL js_calls first (markers, legends, GeoJSON, etc.)
             for (const call of state.js_calls || []) {
                 try {
                     executeMethod(call.method, call.args, call.kwargs);
@@ -66,28 +74,39 @@
                 }
             }
 
-            // Add layer control first (so it appears on top)
+            // 2. Wait for optional imports to settle
+            await Promise.allSettled([lcPromise, cgPromise]);
+
+            // 3. Add layer control if library loaded and configured
             if (!layerControlAdded && (layerControlConfig || (state.controls && state.controls['layer-control']))) {
                 const config = layerControlConfig || state.controls['layer-control'];
-                createLayerControl(config);
-                layerControlAdded = true;
+                if (LayerControl) {
+                    createLayerControl(config);
+                    layerControlAdded = true;
+                } else {
+                    console.warn('LayerControl not available — skipping layer control');
+                }
             }
 
-            // Add control grid below layer control
+            // 4. Add control grid if library loaded and configured
             if (!controlGridAdded && (controlGridConfig || (state.controls && state.controls['control-grid']))) {
                 const config = controlGridConfig || state.controls['control-grid'];
-                addControlGrid(map, {
-                    position: config.position || 'top-right',
-                    defaultControls: config.defaultControls,
-                    exclude: config.exclude,
-                    rows: config.rows,
-                    columns: config.columns,
-                    collapsed: config.collapsed !== false
-                });
-                controlGridAdded = true;
+                if (addControlGridFn) {
+                    addControlGridFn(map, {
+                        position: config.position || 'top-right',
+                        defaultControls: config.defaultControls,
+                        exclude: config.exclude,
+                        rows: config.rows,
+                        columns: config.columns,
+                        collapsed: config.collapsed !== false
+                    });
+                    controlGridAdded = true;
+                } else {
+                    console.warn('ControlGrid not available — skipping control grid');
+                }
             }
 
-            // Add draw control if configured
+            // 5. Add draw control if configured
             if (drawControlConfig || (state.controls && state.controls['draw-control'])) {
                 createDrawControl(drawControlConfig || state.controls['draw-control']);
             }
