@@ -214,30 +214,9 @@ export abstract class BaseMapRenderer<TMap> {
       this.executeMethod('addLayer', [], layerConfig as unknown as Record<string, unknown>);
     }
 
-    // Restore controls
-    const controls = this.model.get('_controls') || {};
-
-    // Get layer IDs from restored layers for layer control
-    const layerIds = Object.keys(layers);
-
-    for (const [controlId, controlConfig] of Object.entries(controls)) {
-      const config = controlConfig as { type: string; position: string; options?: Record<string, unknown> };
-      // Dispatch to correct method based on control type
-      if (config.type === 'layer-control') {
-        // Pass restored layer IDs so they show separately (not grouped in Background)
-        this.executeMethod('addLayerControl', [], {
-          position: config.position,
-          layers: layerIds,
-          ...config.options
-        });
-      } else if (config.type === 'draw-control') {
-        this.executeMethod('addDrawControl', [], { position: config.position, ...config.options });
-      } else if (config.type === 'control-grid') {
-        this.executeMethod('addControlGrid', [], { position: config.position, ...config.options });
-      } else {
-        this.executeMethod('addControl', [config.type], { position: config.position, ...config.options });
-      }
-    }
+    // Controls are NOT restored here because they are already present in
+    // _js_calls and will be replayed by processPendingCalls().  Restoring
+    // them from _controls AND replaying the calls caused duplicate controls.
   }
 
   /**
