@@ -52,7 +52,7 @@ class MapboxMap(MapWidget):
 
     # ESM module for frontend
     _esm = STATIC_DIR / "mapbox.js"
-    _css = STATIC_DIR / "mapbox.css"
+    # CSS is loaded dynamically from CDN in the frontend
 
     # Mapbox-specific traits
     access_token = traitlets.Unicode("").tag(sync=True)
