@@ -1,6 +1,6 @@
 {
   "name": "anymap-ts",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "TypeScript frontend for anymap-ts interactive maps",
   "type": "module",
   "main": "src/index.ts",
