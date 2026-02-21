@@ -193,8 +193,16 @@ export abstract class BaseMapRenderer<TMap> {
 
     // Then restore layers, ensuring correct z-order:
     // Basemap (raster) layers must be added first so they sit below vector layers.
+    // Skip non-native MapLibre layer types (deck.gl, markers, etc.) — they are
+    // restored via js_calls replay, not through addLayer.
+    const NATIVE_LAYER_TYPES = new Set([
+      'fill', 'line', 'symbol', 'circle', 'heatmap',
+      'fill-extrusion', 'raster', 'hillshade', 'color-relief', 'background',
+    ]);
     const layers = this.model.get('_layers') || {};
-    const entries = Object.entries(layers);
+    const entries = Object.entries(layers).filter(([, cfg]) => {
+      return NATIVE_LAYER_TYPES.has(cfg.type);
+    });
     const basemapEntries = entries.filter(([id, cfg]) => {
       return id.startsWith('basemap-') || cfg.type === 'raster';
     });

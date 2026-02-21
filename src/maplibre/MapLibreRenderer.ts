@@ -68,9 +68,16 @@ import {
   ZarrLayerControl,
   AddVectorControl,
   addControlGrid,
+  Colorbar,
+  SearchControl,
+  MeasureControl,
+  PrintControl,
 } from 'maplibre-gl-components';
 import type { ControlGrid } from 'maplibre-gl-components';
 import 'maplibre-gl-components/style.css';
+
+// FlatGeobuf for streaming cloud-native vector data
+import { geojson as flatgeobuf } from 'flatgeobuf';
 
 /**
  * Parse GeoKeys to proj4 definition for COG reprojection.
@@ -123,6 +130,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   protected zarrLayerUiControl: ZarrLayerControl | null = null;
   protected addVectorControl: AddVectorControl | null = null;
   protected controlGrid: ControlGrid | null = null;
+
+  // Colorbar, Search, Measure, Print controls
+  protected colorbarsMap: globalThis.Map<string, Colorbar> = new globalThis.Map();
+  protected searchControl: SearchControl | null = null;
+  protected measureControl: MeasureControl | null = null;
+  protected printControl: PrintControl | null = null;
 
   // Route animations
   protected animations: globalThis.Map<string, {
@@ -461,6 +474,27 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // Split Map
     this.registerMethod('addSplitMap', this.handleAddSplitMap.bind(this));
     this.registerMethod('removeSplitMap', this.handleRemoveSplitMap.bind(this));
+
+    // Colorbar
+    this.registerMethod('addColorbar', this.handleAddColorbar.bind(this));
+    this.registerMethod('removeColorbar', this.handleRemoveColorbar.bind(this));
+    this.registerMethod('updateColorbar', this.handleUpdateColorbar.bind(this));
+
+    // Search Control
+    this.registerMethod('addSearchControl', this.handleAddSearchControl.bind(this));
+    this.registerMethod('removeSearchControl', this.handleRemoveSearchControl.bind(this));
+
+    // Measure Control
+    this.registerMethod('addMeasureControl', this.handleAddMeasureControl.bind(this));
+    this.registerMethod('removeMeasureControl', this.handleRemoveMeasureControl.bind(this));
+
+    // Print Control
+    this.registerMethod('addPrintControl', this.handleAddPrintControl.bind(this));
+    this.registerMethod('removePrintControl', this.handleRemovePrintControl.bind(this));
+
+    // FlatGeobuf
+    this.registerMethod('addFlatGeobuf', this.handleAddFlatGeobuf.bind(this));
+    this.registerMethod('removeFlatGeobuf', this.handleRemoveFlatGeobuf.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -4001,6 +4035,357 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.stateManager.removeControl('split-map');
   }
 
+  // -------------------------------------------------------------------------
+  // Colorbar handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddColorbar(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const colorbarId = (kwargs.colorbarId as string) || `colorbar-${Date.now()}`;
+    const position = (kwargs.position as ControlPosition) || 'bottom-right';
+
+    // Remove existing colorbar with same ID
+    const existing = this.colorbarsMap.get(colorbarId);
+    if (existing) {
+      this.map.removeControl(existing as unknown as maplibregl.IControl);
+      this.colorbarsMap.delete(colorbarId);
+      this.controlsMap.delete(colorbarId);
+    }
+
+    // Build options
+    const options: Record<string, unknown> = {};
+    if (kwargs.colormap !== undefined) options.colormap = kwargs.colormap;
+    if (kwargs.vmin !== undefined) options.vmin = kwargs.vmin;
+    if (kwargs.vmax !== undefined) options.vmax = kwargs.vmax;
+    if (kwargs.label !== undefined) options.label = kwargs.label;
+    if (kwargs.units !== undefined) options.units = kwargs.units;
+    if (kwargs.orientation !== undefined) options.orientation = kwargs.orientation;
+    if (kwargs.barThickness !== undefined) options.barThickness = kwargs.barThickness;
+    if (kwargs.barLength !== undefined) options.barLength = kwargs.barLength;
+    if (kwargs.ticks !== undefined) options.ticks = kwargs.ticks;
+    if (kwargs.opacity !== undefined) options.opacity = kwargs.opacity;
+
+    const colorbar = new Colorbar(options as ConstructorParameters<typeof Colorbar>[0]);
+    this.map.addControl(colorbar as unknown as maplibregl.IControl, position);
+    this.colorbarsMap.set(colorbarId, colorbar);
+    this.controlsMap.set(colorbarId, colorbar as unknown as maplibregl.IControl);
+    this.stateManager.addControl(colorbarId, 'colorbar', position, kwargs);
+  }
+
+  private handleRemoveColorbar(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const colorbarId = (kwargs.colorbarId as string) || (args[0] as string);
+
+    if (colorbarId) {
+      // Remove specific colorbar
+      const colorbar = this.colorbarsMap.get(colorbarId);
+      if (colorbar) {
+        this.map.removeControl(colorbar as unknown as maplibregl.IControl);
+        this.colorbarsMap.delete(colorbarId);
+        this.controlsMap.delete(colorbarId);
+        this.stateManager.removeControl(colorbarId);
+      }
+    } else {
+      // Remove all colorbars
+      this.colorbarsMap.forEach((colorbar, id) => {
+        if (this.map) {
+          this.map.removeControl(colorbar as unknown as maplibregl.IControl);
+        }
+        this.controlsMap.delete(id);
+        this.stateManager.removeControl(id);
+      });
+      this.colorbarsMap.clear();
+    }
+  }
+
+  private handleUpdateColorbar(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const colorbarId = (kwargs.colorbarId as string) || 'colorbar-0';
+    const colorbar = this.colorbarsMap.get(colorbarId);
+    if (!colorbar) {
+      console.warn(`Colorbar '${colorbarId}' not found`);
+      return;
+    }
+
+    // Build update options
+    const updateOptions: Record<string, unknown> = {};
+    if (kwargs.colormap !== undefined) updateOptions.colormap = kwargs.colormap;
+    if (kwargs.vmin !== undefined) updateOptions.vmin = kwargs.vmin;
+    if (kwargs.vmax !== undefined) updateOptions.vmax = kwargs.vmax;
+    if (kwargs.label !== undefined) updateOptions.label = kwargs.label;
+    if (kwargs.units !== undefined) updateOptions.units = kwargs.units;
+    if (kwargs.orientation !== undefined) updateOptions.orientation = kwargs.orientation;
+    if (kwargs.barThickness !== undefined) updateOptions.barThickness = kwargs.barThickness;
+    if (kwargs.barLength !== undefined) updateOptions.barLength = kwargs.barLength;
+    if (kwargs.ticks !== undefined) updateOptions.ticks = kwargs.ticks;
+    if (kwargs.opacity !== undefined) updateOptions.opacity = kwargs.opacity;
+
+    colorbar.update(updateOptions as Parameters<typeof colorbar.update>[0]);
+  }
+
+  // -------------------------------------------------------------------------
+  // Search Control handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddSearchControl(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-left';
+
+    // Remove existing search control
+    if (this.searchControl) {
+      this.map.removeControl(this.searchControl as unknown as maplibregl.IControl);
+      this.controlsMap.delete('search-control');
+      this.searchControl = null;
+    }
+
+    // Build options
+    const options: Record<string, unknown> = {};
+    if (kwargs.placeholder !== undefined) options.placeholder = kwargs.placeholder;
+    if (kwargs.collapsed !== undefined) options.collapsed = kwargs.collapsed;
+    if (kwargs.flyToZoom !== undefined) options.flyToZoom = kwargs.flyToZoom;
+    if (kwargs.showMarker !== undefined) options.showMarker = kwargs.showMarker;
+    if (kwargs.markerColor !== undefined) options.markerColor = kwargs.markerColor;
+    if (kwargs.maxResults !== undefined) options.maxResults = kwargs.maxResults;
+    if (kwargs.debounceMs !== undefined) options.debounceMs = kwargs.debounceMs;
+
+    this.searchControl = new SearchControl(options as ConstructorParameters<typeof SearchControl>[0]);
+
+    // Wire result selection event
+    this.searchControl.on('resultselect', (event) => {
+      this.sendEvent('search_result_select', {
+        result: (event as Record<string, unknown>).result,
+      });
+    });
+
+    this.map.addControl(this.searchControl as unknown as maplibregl.IControl, position);
+    this.controlsMap.set('search-control', this.searchControl as unknown as maplibregl.IControl);
+    this.stateManager.addControl('search-control', 'search-control', position, kwargs);
+  }
+
+  private handleRemoveSearchControl(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.map || !this.searchControl) return;
+
+    this.map.removeControl(this.searchControl as unknown as maplibregl.IControl);
+    this.controlsMap.delete('search-control');
+    this.stateManager.removeControl('search-control');
+    this.searchControl = null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Measure Control handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddMeasureControl(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+
+    // Remove existing measure control
+    if (this.measureControl) {
+      this.map.removeControl(this.measureControl as unknown as maplibregl.IControl);
+      this.controlsMap.delete('measure-control');
+      this.measureControl = null;
+    }
+
+    // Build options
+    const options: Record<string, unknown> = {};
+    if (kwargs.collapsed !== undefined) options.collapsed = kwargs.collapsed;
+    if (kwargs.defaultMode !== undefined) options.defaultMode = kwargs.defaultMode;
+    if (kwargs.distanceUnit !== undefined) options.distanceUnit = kwargs.distanceUnit;
+    if (kwargs.areaUnit !== undefined) options.areaUnit = kwargs.areaUnit;
+    if (kwargs.lineColor !== undefined) options.lineColor = kwargs.lineColor;
+    if (kwargs.lineWidth !== undefined) options.lineWidth = kwargs.lineWidth;
+    if (kwargs.fillColor !== undefined) options.fillColor = kwargs.fillColor;
+
+    this.measureControl = new MeasureControl(options as ConstructorParameters<typeof MeasureControl>[0]);
+
+    this.map.addControl(this.measureControl as unknown as maplibregl.IControl, position);
+    this.controlsMap.set('measure-control', this.measureControl as unknown as maplibregl.IControl);
+    this.stateManager.addControl('measure-control', 'measure-control', position, kwargs);
+  }
+
+  private handleRemoveMeasureControl(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.map || !this.measureControl) return;
+
+    this.map.removeControl(this.measureControl as unknown as maplibregl.IControl);
+    this.controlsMap.delete('measure-control');
+    this.stateManager.removeControl('measure-control');
+    this.measureControl = null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Print Control handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddPrintControl(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+
+    // Remove existing print control
+    if (this.printControl) {
+      this.map.removeControl(this.printControl as unknown as maplibregl.IControl);
+      this.controlsMap.delete('print-control');
+      this.printControl = null;
+    }
+
+    // Build options
+    const options: Record<string, unknown> = {};
+    if (kwargs.collapsed !== undefined) options.collapsed = kwargs.collapsed;
+    if (kwargs.format !== undefined) options.format = kwargs.format;
+    if (kwargs.filename !== undefined) options.filename = kwargs.filename;
+    if (kwargs.includeNorthArrow !== undefined) options.includeNorthArrow = kwargs.includeNorthArrow;
+    if (kwargs.includeScaleBar !== undefined) options.includeScaleBar = kwargs.includeScaleBar;
+
+    this.printControl = new PrintControl(options as ConstructorParameters<typeof PrintControl>[0]);
+
+    // Wire export event
+    this.printControl.on('export', (event) => {
+      this.sendEvent('print_export', {
+        state: (event as Record<string, unknown>).state,
+      });
+    });
+
+    this.map.addControl(this.printControl as unknown as maplibregl.IControl, position);
+    this.controlsMap.set('print-control', this.printControl as unknown as maplibregl.IControl);
+    this.stateManager.addControl('print-control', 'print-control', position, kwargs);
+  }
+
+  private handleRemovePrintControl(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.map || !this.printControl) return;
+
+    this.map.removeControl(this.printControl as unknown as maplibregl.IControl);
+    this.controlsMap.delete('print-control');
+    this.stateManager.removeControl('print-control');
+    this.printControl = null;
+  }
+
+  // -------------------------------------------------------------------------
+  // FlatGeobuf handlers
+  // -------------------------------------------------------------------------
+
+  private async handleAddFlatGeobuf(_args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.map) return;
+
+    const url = kwargs.url as string;
+    const name = (kwargs.name as string) || `flatgeobuf-${Date.now()}`;
+    const layerType = kwargs.layerType as string | undefined;
+    const paint = kwargs.paint as Record<string, unknown> | undefined;
+    const fitBounds = kwargs.fitBounds !== false;
+
+    const sourceId = `${name}-source`;
+    const layerId = name;
+
+    try {
+      // Fetch the FlatGeobuf file and stream features via ReadableStream.
+      // Using fetch+ReadableStream avoids the `deserializeFiltered` path
+      // which requires a bounding-box Rect parameter.
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const features: Feature[] = [];
+      for await (const feature of flatgeobuf.deserialize(response.body as ReadableStream)) {
+        features.push(feature as Feature);
+      }
+
+      const featureCollection: FeatureCollection = {
+        type: 'FeatureCollection',
+        features,
+      };
+
+      // Infer layer type from geometry
+      let type = layerType;
+      if (!type && features.length > 0) {
+        type = this.inferLayerType(features[0].geometry.type);
+      }
+      type = type || 'circle';
+
+      // Get default paint if not provided
+      const layerPaint = paint || this.getDefaultPaint(type);
+
+      // Add source
+      if (!this.map.getSource(sourceId)) {
+        const sourceConfig = {
+          type: 'geojson' as const,
+          data: featureCollection,
+        };
+        this.map.addSource(sourceId, sourceConfig);
+        this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
+      }
+
+      // Add layer
+      if (!this.map.getLayer(layerId)) {
+        const layerConfig = {
+          id: layerId,
+          type: type as maplibregl.LayerSpecification['type'],
+          source: sourceId,
+          paint: layerPaint,
+        };
+        this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
+        this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
+      }
+
+      // Fit bounds
+      if (fitBounds && features.length > 0) {
+        const bounds = new maplibregl.LngLatBounds();
+        for (const feature of features) {
+          const geometry = feature.geometry;
+          if (geometry.type === 'Point') {
+            bounds.extend(geometry.coordinates as [number, number]);
+          } else if (geometry.type === 'MultiPoint' || geometry.type === 'LineString') {
+            for (const coord of geometry.coordinates) {
+              bounds.extend(coord as [number, number]);
+            }
+          } else if (geometry.type === 'MultiLineString' || geometry.type === 'Polygon') {
+            for (const ring of geometry.coordinates) {
+              for (const coord of ring) {
+                bounds.extend(coord as [number, number]);
+              }
+            }
+          } else if (geometry.type === 'MultiPolygon') {
+            for (const polygon of geometry.coordinates) {
+              for (const ring of polygon) {
+                for (const coord of ring) {
+                  bounds.extend(coord as [number, number]);
+                }
+              }
+            }
+          }
+        }
+        if (!bounds.isEmpty()) {
+          this.map.fitBounds(bounds, { padding: 50 });
+        }
+      }
+    } catch (error) {
+      console.error(`Error loading FlatGeobuf from ${url}:`, error);
+    }
+  }
+
+  private handleRemoveFlatGeobuf(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const name = (kwargs.name as string) || (args[0] as string);
+    if (!name) return;
+
+    const layerId = name;
+    const sourceId = `${name}-source`;
+
+    if (this.map.getLayer(layerId)) {
+      this.map.removeLayer(layerId);
+      this.stateManager.removeLayer(layerId);
+    }
+
+    if (this.map.getSource(sourceId)) {
+      this.map.removeSource(sourceId);
+      this.stateManager.removeSource(sourceId);
+    }
+  }
+
   destroy(): void {
     // Clean up split map
     if (this.splitActive) {
@@ -4030,6 +4415,32 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (this.layerControlPlugin) {
       this.layerControlPlugin.destroy();
       this.layerControlPlugin = null;
+    }
+
+    // Remove colorbars
+    this.colorbarsMap.forEach((colorbar) => {
+      if (this.map) {
+        this.map.removeControl(colorbar as unknown as maplibregl.IControl);
+      }
+    });
+    this.colorbarsMap.clear();
+
+    // Remove search control
+    if (this.searchControl && this.map) {
+      this.map.removeControl(this.searchControl as unknown as maplibregl.IControl);
+      this.searchControl = null;
+    }
+
+    // Remove measure control
+    if (this.measureControl && this.map) {
+      this.map.removeControl(this.measureControl as unknown as maplibregl.IControl);
+      this.measureControl = null;
+    }
+
+    // Remove print control
+    if (this.printControl && this.map) {
+      this.map.removeControl(this.printControl as unknown as maplibregl.IControl);
+      this.printControl = null;
     }
 
     // Remove control grid
