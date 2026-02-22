@@ -4532,8 +4532,9 @@ excels at WMS/WMTS support and projection handling.</p>
 <span class="sd">        &gt;&gt;&gt; m</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># ESM module for frontend</span>
+    <span class="c1"># ESM module and CSS for frontend</span>
     <span class="n">_esm</span> <span class="o">=</span> <span class="n">STATIC_DIR</span> <span class="o">/</span> <span class="s2">&quot;openlayers.js&quot;</span>
+    <span class="n">_css</span> <span class="o">=</span> <span class="n">STATIC_DIR</span> <span class="o">/</span> <span class="s2">&quot;openlayers.css&quot;</span>
 
     <span class="c1"># OpenLayers-specific traits</span>
     <span class="n">projection</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Unicode</span><span class="p">(</span><span class="s2">&quot;EPSG:3857&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
