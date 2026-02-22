@@ -1,4 +1,8 @@
 import { defineConfig } from '@playwright/test';
+import path from 'path';
+
+// Resolve project root (two levels up from tests/e2e/)
+const projectRoot = path.resolve(__dirname, '..', '..');
 
 export default defineConfig({
   testDir: '.',
@@ -12,8 +16,14 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command:
-      'uv run jupyter lab --port=8888 --no-browser --ServerApp.token="" --ServerApp.disable_check_xsrf=true',
+    command: [
+      'uv run jupyter lab',
+      '--port=8888',
+      '--no-browser',
+      '--ServerApp.token=""',
+      '--ServerApp.disable_check_xsrf=true',
+      `--notebook-dir=${projectRoot}`,
+    ].join(' '),
     port: 8888,
     timeout: 60000,
     reuseExistingServer: !process.env.CI,

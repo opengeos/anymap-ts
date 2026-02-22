@@ -34,6 +34,10 @@ jobs:
                   uv venv --python 3.12
                   uv pip install .[all] jupyterlab
 
+            - name: Fix JupyterLab CJS/ESM conflict
+              run: |
+                  echo '{"type": "commonjs"}' > .venv/package.json
+
             - name: Install E2E test dependencies
               run: |
                   cd tests/e2e
