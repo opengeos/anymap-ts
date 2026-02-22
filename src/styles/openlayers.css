@@ -1,0 +1,39 @@
+/**
+ * anymap-ts OpenLayers styles.
+ * Use !important to override dark mode themes (JupyterLab, VS Code, etc.)
+ */
+
+/* Popup styling */
+.ol-popup {
+  background-color: white !important;
+  color: #333 !important;
+  border-color: #ccc !important;
+}
+
+.ol-popup * {
+  color: #333 !important;
+}
+
+.ol-popup-closer {
+  color: #999 !important;
+}
+
+/* Choropleth legend styling */
+.ol-legend {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #333 !important;
+}
+
+.ol-legend * {
+  color: #333 !important;
+}
+
+/* Layer control styling */
+.ol-layer-control {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #333 !important;
+}
+
+.ol-layer-control * {
+  color: #333 !important;
+}

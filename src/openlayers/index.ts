@@ -3,6 +3,7 @@
  */
 
 import 'ol/ol.css';
+import '../styles/openlayers.css';
 import { OpenLayersRenderer } from './OpenLayersRenderer';
 import type { MapWidgetModel, RenderContext } from '../types/anywidget';
 
