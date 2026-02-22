@@ -46,12 +46,19 @@ export async function openNotebook(
   serverPath: string
 ): Promise<void> {
   const encodedPath = encodeURIComponent(serverPath);
-  await page.goto(
-    `${BASE_URL}/lab/tree/${encodedPath}`
-  );
+  await page.goto(`${BASE_URL}/lab/tree/${encodedPath}`);
 
-  // Wait for JupyterLab to fully load
+  // Wait for JupyterLab to fully load the notebook
   await page.waitForSelector('.jp-Notebook', { timeout: 30000 });
+
+  // Wait for kernel to be ready before attempting to run cells.
+  // The kernel indicator appears once the kernel is connected.
+  await page
+    .waitForSelector('.jp-Notebook-ExecutionIndicator', { timeout: 30000 })
+    .catch(() => {});
+
+  // Brief wait to ensure the kernel is fully initialized
+  await page.waitForTimeout(2000);
 }
 
 /**
