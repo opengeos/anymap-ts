@@ -181,7 +181,35 @@
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/leaflet/choropleth/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/leaflet/custom_markers/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/leaflet/geojson_interaction/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/leaflet/heatmap/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/leaflet/image_video_overlay/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/leaflet/leaflet/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/leaflet/shapes/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/leaflet/wms_layer/</loc>
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>
