@@ -9,3 +9,23 @@
   height: 30px;
   background-size: 20px 20px;
 }
+
+/* Legend base styles */
+.anymap-legend {
+  background: white;
+  color: #333;
+  padding: 8px 12px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .anymap-legend {
+    background: #1e1e1e;
+    color: #e0e0e0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  }
+}

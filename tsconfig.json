@@ -17,7 +17,8 @@
     "paths": {
       "@core/*": ["core/*"],
       "@maplibre/*": ["maplibre/*"],
-      "@types/*": ["types/*"]
+      "@types/*": ["types/*"],
+      "cesium": ["../node_modules/cesium/Source/Cesium.d.ts"]
     },
     "types": ["node", "@anywidget/types"],
     "noEmit": true,

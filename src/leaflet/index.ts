@@ -2,6 +2,12 @@
  * Leaflet module entry point for anywidget.
  */
 
+// Setup must come first — it exposes L globally for plugins
+import { L } from './leaflet-setup';
+
+// Side-effect import: leaflet.heat attaches L.heatLayer to the global L
+import 'leaflet.heat';
+
 import { LeafletRenderer } from './LeafletRenderer';
 import type { AnyModel } from '@anywidget/types';
 
@@ -16,7 +22,6 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 // @ts-ignore
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import * as L from 'leaflet/dist/leaflet-src.esm.js';
 
 // @ts-ignore - Override prototype to fix icon paths for bundled builds
 delete (L.Icon.Default.prototype as any)._getIconUrl;

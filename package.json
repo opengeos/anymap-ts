@@ -52,6 +52,7 @@
     "geotiff-geokeys-to-proj4": "^2024.4.13",
     "jspdf": "^4.1.0",
     "leaflet": "^1.9.4",
+    "leaflet.heat": "^0.2.0",
     "mapbox-gl": "^3.18.1",
     "maplibre-gl": ">=5.14.0",
     "maplibre-gl-components": "^0.15.0",
