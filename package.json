@@ -10,7 +10,7 @@
     "build:leaflet": "esbuild src/leaflet/index.ts --bundle --format=esm --outfile=anymap_ts/static/leaflet.js --loader:.css=css --loader:.png=dataurl --minify",
     "build:deckgl": "esbuild src/deckgl/index.ts --bundle --format=esm --outfile=anymap_ts/static/deckgl.js --loader:.css=css --external:path --external:fs --minify",
     "build:openlayers": "esbuild src/openlayers/index.ts --bundle --format=esm --outfile=anymap_ts/static/openlayers.js --loader:.css=css --minify",
-    "build:cesium": "esbuild src/cesium/index.ts --bundle --format=esm --outfile=anymap_ts/static/cesium.js --loader:.css=css --minify",
+    "build:cesium": "esbuild src/cesium/index.ts --bundle --format=esm --outfile=anymap_ts/static/cesium.js --loader:.css=css --alias:cesium=./node_modules/cesium/Build/Cesium/index.js --alias:cesium-widgets-css=./node_modules/cesium/Build/Cesium/Widgets/widgets.css --define:CESIUM_BASE_URL='\"https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/\"' --minify",
     "build:keplergl": "esbuild src/keplergl/index.ts --bundle --format=esm --outfile=anymap_ts/static/keplergl.js --loader:.css=css --minify",
     "build:potree": "esbuild src/potree/index.ts --bundle --format=esm --outfile=anymap_ts/static/potree.js --loader:.css=css --minify",
     "build:custom-css": "esbuild src/styles/maplibre.css --bundle --outfile=anymap_ts/static/custom.css --loader:.css=css --minify",

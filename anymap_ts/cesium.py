@@ -41,6 +41,7 @@ class CesiumMap(MapWidget):
 
     # ESM module for frontend
     _esm = STATIC_DIR / "cesium.js"
+    _css = STATIC_DIR / "cesium.css"
 
     # Cesium-specific traits
     access_token = traitlets.Unicode("").tag(sync=True)
