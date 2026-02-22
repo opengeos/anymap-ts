@@ -5,16 +5,6 @@ import { Page, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:8888';
 
-interface KernelInfo {
-  id: string;
-  name: string;
-}
-
-interface SessionInfo {
-  id: string;
-  kernel: KernelInfo;
-}
-
 /**
  * Upload a notebook file to the Jupyter server via REST API.
  */
@@ -65,19 +55,35 @@ export async function openNotebook(
 }
 
 /**
- * Run all cells in the currently open notebook via keyboard shortcut.
+ * Run all cells in the currently open notebook using the Run menu.
  */
 export async function runAllCells(page: Page): Promise<void> {
-  // Use the JupyterLab menu: Run > Run All Cells
-  await page.keyboard.press('Control+Shift+Enter');
+  // Wait for kernel to be ready (kernel indicator appears)
+  await page.waitForSelector('.jp-Notebook-ExecutionIndicator', {
+    timeout: 30000,
+  }).catch(() => {});
 
-  // Wait for kernel to become idle (the kernel indicator shows idle)
-  await page.waitForSelector(
-    '.jp-Notebook-ExecutionIndicator[data-status="idle"]',
+  // Use the JupyterLab menu bar: Run > Run All Cells
+  // This is more reliable than keyboard shortcuts which depend on focus state
+  await page.locator('.lm-MenuBar-itemLabel:text-is("Run")').click();
+  await page.locator('.lm-Menu-itemLabel:text-is("Run All Cells")').click();
+
+  // Wait for kernel to finish execution (idle status)
+  // Try multiple selectors since JupyterLab versions may differ
+  await page.waitForFunction(
+    () => {
+      // Check if any cell has a running indicator (asterisk [*])
+      const executionCounts = document.querySelectorAll(
+        '.jp-InputArea-prompt'
+      );
+      for (const el of executionCounts) {
+        if (el.textContent?.includes('[*]')) return false;
+      }
+      // All cells finished if none show [*]
+      return document.querySelectorAll('.jp-InputArea-prompt').length > 0;
+    },
     { timeout: 60000 }
-  ).catch(() => {
-    // Fallback: just wait for some time if the indicator selector doesn't match
-  });
+  ).catch(() => {});
 
   // Give widget JS time to load asynchronously
   await page.waitForTimeout(5000);
