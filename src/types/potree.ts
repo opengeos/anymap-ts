@@ -37,24 +37,3 @@ export interface CameraConfig {
   far?: number;
 }
 
-export interface MeasurementConfig {
-  type: 'point' | 'distance' | 'area' | 'angle' | 'height' | 'profile';
-  showLabels?: boolean;
-  showArea?: boolean;
-  closed?: boolean;
-}
-
-export interface AnnotationConfig {
-  position: [number, number, number];
-  title?: string;
-  description?: string;
-  cameraPosition?: [number, number, number];
-  cameraTarget?: [number, number, number];
-}
-
-export interface ClippingVolumeConfig {
-  type: 'box' | 'polygon' | 'plane';
-  position?: [number, number, number];
-  scale?: [number, number, number];
-  rotation?: [number, number, number];
-}

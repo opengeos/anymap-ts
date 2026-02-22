@@ -150,19 +150,3 @@ class TestVisualizationSettings:
         v = PotreeViewer()
         v.set_edl(enabled=False)
         assert v.edl_enabled is False
-
-
-class TestMeasurementTools:
-    """Tests for measurement tool methods."""
-
-    def test_add_measurement_tool(self):
-        v = PotreeViewer()
-        v.add_measurement_tool("distance")
-        calls = [c for c in v._js_calls if c["method"] == "addMeasurementTool"]
-        assert len(calls) == 1
-
-    def test_clear_measurements(self):
-        v = PotreeViewer()
-        v.clear_measurements()
-        calls = [c for c in v._js_calls if c["method"] == "clearMeasurements"]
-        assert len(calls) == 1
