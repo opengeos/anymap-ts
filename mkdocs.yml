@@ -196,6 +196,8 @@ nav:
           - openlayers/wms_wmts.ipynb
     - Potree:
           - potree/potree.ipynb
+          - potree/point_cloud_settings.ipynb
+          - potree/camera_controls.ipynb
     - API Reference:
           - anymap_ts module: anymap_ts.md
           - base module: base.md

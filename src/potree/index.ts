@@ -1,12 +1,23 @@
 /**
  * Potree point cloud viewer widget entry point.
  *
- * Potree is a Three.js-based point cloud renderer. This widget provides
- * a simple display showing the configured point clouds and settings.
- * For full interactivity, use the to_html() export method.
+ * Uses potree-core (npm) + Three.js for bundled point cloud rendering.
+ * No CDN loading required — everything is bundled by esbuild.
  */
 
 import type { AnyModel } from '@anywidget/types';
+import {
+  Scene,
+  PerspectiveCamera,
+  WebGLRenderer,
+  Color,
+  Vector3,
+  Box3,
+  AmbientLight,
+  Euler,
+} from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { Potree, PointCloudOctree, PotreeRenderer } from 'potree-core';
 
 interface PotreeModel extends AnyModel {
   get(key: 'width'): string;
@@ -30,204 +41,417 @@ interface PotreeModel extends AnyModel {
 }
 
 /**
- * Format number with appropriate suffix.
+ * Potree point cloud viewer widget using potree-core + Three.js.
  */
-function formatNumber(num: number): string {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-  return num.toString();
-}
+class PotreeWidget {
+  private model: PotreeModel;
+  private el: HTMLElement;
+  private container: HTMLDivElement | null = null;
+  private canvas: HTMLCanvasElement | null = null;
 
-/**
- * Create the widget content.
- */
-function createWidgetContent(model: PotreeModel): HTMLElement {
-  const container = document.createElement('div');
-  container.style.cssText = `
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
-    color: #fff;
-    padding: 24px;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-  `;
+  private scene: Scene | null = null;
+  private camera: PerspectiveCamera | null = null;
+  private renderer: WebGLRenderer | null = null;
+  private controls: OrbitControls | null = null;
+  private potree: Potree | null = null;
+  private potreeRenderer: PotreeRenderer | null = null;
 
-  const pointBudget = model.get('point_budget') || 1000000;
-  const pointSize = model.get('point_size') || 1.0;
-  const fov = model.get('fov') || 60;
-  const background = model.get('background') || '#000000';
-  const edlEnabled = model.get('edl_enabled') !== false;
-  const pointClouds = model.get('point_clouds') || {};
-  const cameraPosition = model.get('camera_position') || [0, 0, 100];
-  const cameraTarget = model.get('camera_target') || [0, 0, 0];
+  private pointClouds: Map<string, PointCloudOctree> = new Map();
+  private pointCloudList: PointCloudOctree[] = [];
+  private lastProcessedCallId: number = 0;
+  private animationId: number = 0;
+  private resizeObserver: ResizeObserver | null = null;
 
-  const pointCloudCount = Object.keys(pointClouds).length;
-  const pointCloudItems = Object.entries(pointClouds).map(([id, pc]: [string, any]) => {
-    return `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-        <div>
-          <span style="color: #64b5f6;">${pc.name || id}</span>
-          <div style="font-size: 11px; color: #666; margin-top: 2px;">${pc.url ? pc.url.substring(0, 40) + '...' : 'No URL'}</div>
-        </div>
-        <span style="color: ${pc.visible ? '#81c784' : '#e57373'}; font-size: 12px;">
-          ${pc.visible ? '● Visible' : '○ Hidden'}
-        </span>
-      </div>
-    `;
-  }).join('');
+  constructor(model: PotreeModel, el: HTMLElement) {
+    this.model = model;
+    this.el = el;
+  }
 
-  container.innerHTML = `
-    <div style="display: flex; align-items: center; margin-bottom: 20px;">
-      <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #64b5f6, #42a5f5); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-          <circle cx="4" cy="4" r="2"/>
-          <circle cx="12" cy="4" r="2"/>
-          <circle cx="20" cy="4" r="2"/>
-          <circle cx="4" cy="12" r="2"/>
-          <circle cx="12" cy="12" r="2"/>
-          <circle cx="20" cy="12" r="2"/>
-          <circle cx="4" cy="20" r="2"/>
-          <circle cx="12" cy="20" r="2"/>
-          <circle cx="20" cy="20" r="2"/>
-        </svg>
-      </div>
-      <div>
-        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Potree Viewer</h2>
-        <p style="margin: 4px 0 0 0; font-size: 13px; color: #888;">WebGL Point Cloud Visualization</p>
-      </div>
-    </div>
+  async initialize(): Promise<void> {
+    this.el.style.width = '100%';
+    this.el.style.display = 'block';
 
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
-      <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 8px; text-align: center;">
-        <div style="font-size: 20px; font-weight: bold; color: #64b5f6;">${pointCloudCount}</div>
-        <div style="font-size: 11px; color: #888; margin-top: 4px;">Point Clouds</div>
-      </div>
-      <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 8px; text-align: center;">
-        <div style="font-size: 20px; font-weight: bold; color: #81c784;">${formatNumber(pointBudget)}</div>
-        <div style="font-size: 11px; color: #888; margin-top: 4px;">Point Budget</div>
-      </div>
-      <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 8px; text-align: center;">
-        <div style="font-size: 20px; font-weight: bold; color: #ffd54f;">${pointSize}</div>
-        <div style="font-size: 11px; color: #888; margin-top: 4px;">Point Size</div>
-      </div>
-      <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 8px; text-align: center;">
-        <div style="font-size: 20px; font-weight: bold; color: #ce93d8;">${fov}°</div>
-        <div style="font-size: 11px; color: #888; margin-top: 4px;">FOV</div>
-      </div>
-    </div>
+    // Create container
+    this.container = document.createElement('div');
+    this.container.style.width = this.model.get('width') || '100%';
+    this.container.style.height = this.model.get('height') || '600px';
+    this.container.style.position = 'relative';
+    this.container.style.minWidth = '200px';
+    this.el.appendChild(this.container);
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-      <div>
-        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Camera</h3>
-        <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #888;">Position</span>
-            <span style="color: #fff; font-family: monospace; font-size: 12px;">
-              [${cameraPosition.map(v => v.toFixed(1)).join(', ')}]
-            </span>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: #888;">Target</span>
-            <span style="color: #fff; font-family: monospace; font-size: 12px;">
-              [${cameraTarget.map(v => v.toFixed(1)).join(', ')}]
-            </span>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Rendering</h3>
-        <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #888;">EDL</span>
-            <span style="color: ${edlEnabled ? '#81c784' : '#e57373'};">${edlEnabled ? 'Enabled' : 'Disabled'}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #888;">Background</span>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 20px; height: 20px; background: ${background}; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);"></div>
-              <span style="color: #fff; font-family: monospace; font-size: 12px;">${background}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    // Create canvas
+    this.canvas = document.createElement('canvas');
+    this.canvas.style.width = '100%';
+    this.canvas.style.height = '100%';
+    this.canvas.style.display = 'block';
+    this.container.appendChild(this.canvas);
 
-    ${pointCloudCount > 0 ? `
-      <div>
-        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px;">Point Clouds</h3>
-        <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
-          ${pointCloudItems}
-        </div>
-      </div>
-    ` : `
-      <div style="text-align: center; padding: 24px; color: #666; background: rgba(255,255,255,0.03); border-radius: 8px;">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.3; margin-bottom: 12px;">
-          <circle cx="4" cy="4" r="2"/>
-          <circle cx="12" cy="4" r="2"/>
-          <circle cx="20" cy="4" r="2"/>
-          <circle cx="4" cy="12" r="2"/>
-          <circle cx="12" cy="12" r="2"/>
-          <circle cx="20" cy="12" r="2"/>
-        </svg>
-        <p style="margin: 0;">No point clouds loaded</p>
-        <p style="margin: 8px 0 0 0; font-size: 12px;">Use <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">load_point_cloud(url)</code> to add a point cloud</p>
-      </div>
-    `}
+    // Three.js setup
+    const fov = this.model.get('fov') || 60;
+    const bg = this.model.get('background') || '#000000';
 
-    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
-      <p style="margin: 0; font-size: 12px; color: #666;">
-        Use <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">to_html()</code> to export as standalone 3D viewer
-      </p>
-    </div>
-  `;
+    this.scene = new Scene();
+    this.scene.background = new Color(bg);
+    this.scene.add(new AmbientLight(0xffffff));
 
-  return container;
+    const rect = this.container.getBoundingClientRect();
+    const width = rect.width || 800;
+    const height = rect.height || 600;
+
+    this.camera = new PerspectiveCamera(fov, width / height, 0.1, 10000);
+    const camPos = this.model.get('camera_position') || [0, 0, 100];
+    this.camera.position.set(camPos[0], camPos[1], camPos[2]);
+
+    this.renderer = new WebGLRenderer({
+      canvas: this.canvas,
+      alpha: true,
+      antialias: true,
+      precision: 'highp',
+      powerPreference: 'high-performance',
+    });
+    this.renderer.setSize(width, height);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+
+    // OrbitControls for mouse navigation
+    this.controls = new OrbitControls(this.camera, this.canvas);
+    const camTarget = this.model.get('camera_target') || [0, 0, 0];
+    this.controls.target.set(camTarget[0], camTarget[1], camTarget[2]);
+    this.controls.update();
+
+    // Potree setup
+    this.potree = new Potree();
+    this.potree.pointBudget = this.model.get('point_budget') || 1000000;
+
+    const edlEnabled = this.model.get('edl_enabled') !== false;
+    const edlRadius = this.model.get('edl_radius') || 1.4;
+    const edlStrength = this.model.get('edl_strength') || 0.4;
+
+    this.potreeRenderer = new PotreeRenderer({
+      edl: {
+        enabled: edlEnabled,
+        strength: edlStrength,
+        radius: edlRadius,
+        opacity: 1.0,
+      },
+    });
+
+    // Load point clouds from state
+    const pointCloudsState = this.model.get('point_clouds') || {};
+    for (const [name, config] of Object.entries(pointCloudsState)) {
+      await this.loadPointCloud(config.url, name, config.material, config.visible);
+    }
+
+    // Process pending JS calls
+    this.processJsCalls();
+
+    // Listen for model changes
+    this.model.on('change:_js_calls', () => this.processJsCalls());
+
+    // Resize observer
+    this.resizeObserver = new ResizeObserver(() => this.onResize());
+    this.resizeObserver.observe(this.container);
+
+    // Start animation loop
+    this.loop();
+  }
+
+  private onResize(): void {
+    if (!this.container || !this.renderer || !this.camera) return;
+    const rect = this.container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    this.renderer.setSize(rect.width, rect.height);
+    this.camera.aspect = rect.width / rect.height;
+    this.camera.updateProjectionMatrix();
+  }
+
+  private loop = (): void => {
+    this.animationId = requestAnimationFrame(this.loop);
+    if (!this.potree || !this.camera || !this.renderer || !this.scene || !this.controls || !this.potreeRenderer) return;
+
+    this.potree.updatePointClouds(this.pointCloudList, this.camera, this.renderer);
+    this.controls.update();
+    this.potreeRenderer.render({
+      renderer: this.renderer,
+      scene: this.scene,
+      camera: this.camera,
+      pointClouds: this.pointCloudList,
+    });
+  };
+
+  private processJsCalls(): void {
+    const jsCalls = this.model.get('_js_calls') || [];
+    for (const call of jsCalls) {
+      if (call.id > this.lastProcessedCallId) {
+        this.executeMethod(call);
+        this.lastProcessedCallId = call.id;
+      }
+    }
+  }
+
+  private executeMethod(call: { method: string; args: unknown[]; kwargs: Record<string, unknown> }): void {
+    const { method, args, kwargs } = call;
+    const handler = (this as any)[`handle_${method}`];
+    if (handler) {
+      try {
+        handler.call(this, args, kwargs);
+      } catch (error) {
+        console.error(`Error executing method ${method}:`, error);
+      }
+    } else {
+      console.warn(`Unknown Potree method: ${method}`);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Point Cloud Methods
+  // ---------------------------------------------------------------------------
+
+  private async loadPointCloud(
+    url: string,
+    name: string,
+    material?: Record<string, unknown>,
+    visible?: boolean
+  ): Promise<void> {
+    if (!this.potree || !this.scene) return;
+
+    try {
+      // Split URL into baseUrl + filename for potree-core API
+      const lastSlash = url.lastIndexOf('/');
+      const baseUrl = url.substring(0, lastSlash + 1);
+      const filename = url.substring(lastSlash + 1);
+
+      const pco = await this.potree.loadPointCloud(filename, baseUrl);
+
+      // Point clouds typically need rotation to align Y-up to Z-up
+      pco.rotation.copy(new Euler(-Math.PI / 2, 0, 0));
+
+      // Apply material settings
+      pco.material.inputColorEncoding = 1;
+      pco.material.outputColorEncoding = 1;
+
+      if (material) {
+        if (material.size !== undefined) pco.material.size = material.size as number;
+        if (material.pointSizeType) {
+          const types: Record<string, number> = { fixed: 0, attenuated: 1, adaptive: 2 };
+          pco.material.pointSizeType = types[material.pointSizeType as string] ?? 2;
+        }
+        if (material.shape) {
+          const shapes: Record<string, number> = { square: 0, circle: 1, paraboloid: 2 };
+          pco.material.shape = shapes[material.shape as string] ?? 1;
+        }
+      } else {
+        pco.material.size = this.model.get('point_size') || 1.0;
+        pco.material.shape = 1; // circle
+        pco.material.pointSizeType = 2; // adaptive
+      }
+
+      pco.visible = visible !== false;
+
+      this.scene.add(pco);
+      this.pointClouds.set(name, pco);
+      this.pointCloudList = Array.from(this.pointClouds.values());
+
+      // Fit camera to show the point cloud
+      this.fitToPointClouds();
+    } catch (error) {
+      console.error('Error loading point cloud:', error);
+    }
+  }
+
+  private fitToPointClouds(): void {
+    if (!this.camera || !this.controls || this.pointCloudList.length === 0) return;
+
+    const box = new Box3();
+    for (const pco of this.pointCloudList) {
+      if (pco.pcoGeometry?.boundingBox) {
+        const pcBox = pco.pcoGeometry.boundingBox.clone();
+        pcBox.applyMatrix4(pco.matrixWorld);
+        box.union(pcBox);
+      }
+    }
+
+    if (box.isEmpty()) return;
+
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    this.camera.position.copy(center).add(new Vector3(0, -maxDim * 1.5, maxDim * 0.8));
+    this.controls.target.copy(center);
+    this.controls.update();
+  }
+
+  handle_loadPointCloud(args: unknown[], kwargs: Record<string, unknown>): void {
+    this.loadPointCloud(
+      kwargs.url as string,
+      kwargs.name as string,
+      kwargs.material as Record<string, unknown>,
+      kwargs.visible as boolean
+    );
+  }
+
+  handle_removePointCloud(args: unknown[], kwargs: Record<string, unknown>): void {
+    const name = kwargs.name as string;
+    const pco = this.pointClouds.get(name);
+    if (pco && this.scene) {
+      this.scene.remove(pco);
+      pco.dispose();
+      this.pointClouds.delete(name);
+      this.pointCloudList = Array.from(this.pointClouds.values());
+    }
+  }
+
+  handle_setPointCloudVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
+    const pco = this.pointClouds.get(kwargs.name as string);
+    if (pco) {
+      pco.visible = kwargs.visible as boolean;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Camera Methods
+  // ---------------------------------------------------------------------------
+
+  handle_setCameraPosition(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.camera) return;
+    this.camera.position.set(
+      kwargs.x as number,
+      kwargs.y as number,
+      kwargs.z as number
+    );
+  }
+
+  handle_setCameraTarget(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.controls) return;
+    this.controls.target.set(
+      kwargs.x as number,
+      kwargs.y as number,
+      kwargs.z as number
+    );
+    this.controls.update();
+  }
+
+  handle_flyToPointCloud(args: unknown[], kwargs: Record<string, unknown>): void {
+    const name = kwargs.name as string;
+    if (name) {
+      const pco = this.pointClouds.get(name);
+      if (pco && this.camera && this.controls && pco.pcoGeometry?.boundingBox) {
+        const box = pco.pcoGeometry.boundingBox.clone();
+        box.applyMatrix4(pco.matrixWorld);
+        const center = box.getCenter(new Vector3());
+        const size = box.getSize(new Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        this.camera.position.copy(center).add(new Vector3(0, -maxDim * 1.5, maxDim * 0.8));
+        this.controls.target.copy(center);
+        this.controls.update();
+      }
+    } else {
+      this.fitToPointClouds();
+    }
+  }
+
+  handle_resetCamera(): void {
+    this.fitToPointClouds();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Visualization Settings
+  // ---------------------------------------------------------------------------
+
+  handle_setPointBudget(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.potree) return;
+    this.potree.pointBudget = kwargs.budget as number;
+  }
+
+  handle_setPointSize(args: unknown[], kwargs: Record<string, unknown>): void {
+    const size = kwargs.size as number;
+    this.pointClouds.forEach(pco => {
+      pco.material.size = size;
+    });
+  }
+
+  handle_setFOV(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.camera) return;
+    this.camera.fov = kwargs.fov as number;
+    this.camera.updateProjectionMatrix();
+  }
+
+  handle_setBackground(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.scene) return;
+    this.scene.background = new Color(kwargs.color as string);
+  }
+
+  handle_setEDL(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.potreeRenderer) return;
+    this.potreeRenderer.setEDL({
+      enabled: kwargs.enabled as boolean,
+      radius: kwargs.radius as number,
+      strength: kwargs.strength as number,
+      opacity: 1.0,
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cleanup
+  // ---------------------------------------------------------------------------
+
+  destroy(): void {
+    cancelAnimationFrame(this.animationId);
+
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+
+    this.pointClouds.forEach(pco => pco.dispose());
+    this.pointClouds.clear();
+    this.pointCloudList = [];
+
+    this.potreeRenderer?.dispose();
+    this.potreeRenderer = null;
+
+    this.controls?.dispose();
+    this.controls = null;
+
+    this.renderer?.dispose();
+    this.renderer = null;
+
+    this.scene = null;
+    this.camera = null;
+    this.potree = null;
+
+    if (this.container && this.container.parentNode) {
+      this.container.parentNode.removeChild(this.container);
+    }
+    this.container = null;
+    this.canvas = null;
+  }
 }
 
 /**
  * anywidget render function.
  */
-function render({ model, el }: { model: PotreeModel; el: HTMLElement }): () => void {
-  el.style.width = '100%';
-  el.style.display = 'block';
+async function render({ model, el }: { model: PotreeModel; el: HTMLElement }): Promise<() => void> {
+  const widget = new PotreeWidget(model as PotreeModel, el);
 
-  // Create container
-  const container = document.createElement('div');
-  container.style.width = model.get('width') || '100%';
-  container.style.height = model.get('height') || 'auto';
-  container.style.minHeight = '300px';
-  container.style.position = 'relative';
-  el.appendChild(container);
+  try {
+    await widget.initialize();
+  } catch (error) {
+    console.error('Failed to initialize Potree viewer:', error);
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:400px;
+        background:linear-gradient(135deg,#0f0f23,#1a1a3e);color:#e57373;font-family:sans-serif;
+        border-radius:8px;padding:24px;">
+        <div style="text-align:center">
+          <div style="font-size:20px;margin-bottom:12px;">Failed to initialize Potree viewer</div>
+          <div style="font-size:12px;color:#666;margin-top:12px;">${error}</div>
+        </div>
+      </div>
+    `;
+  }
 
-  // Create widget content
-  const content = createWidgetContent(model);
-  container.appendChild(content);
-
-  // Handle model changes
-  const updateContent = () => {
-    container.innerHTML = '';
-    const newContent = createWidgetContent(model);
-    container.appendChild(newContent);
-  };
-
-  model.on('change:point_clouds', updateContent);
-  model.on('change:point_budget', updateContent);
-  model.on('change:point_size', updateContent);
-  model.on('change:background', updateContent);
-  model.on('change:camera_position', updateContent);
-  model.on('change:camera_target', updateContent);
-
-  // Return cleanup function
   return () => {
-    model.off('change:point_clouds', updateContent);
-    model.off('change:point_budget', updateContent);
-    model.off('change:point_size', updateContent);
-    model.off('change:background', updateContent);
-    model.off('change:camera_position', updateContent);
-    model.off('change:camera_target', updateContent);
-    if (container.parentNode) {
-      container.parentNode.removeChild(container);
-    }
+    widget.destroy();
   };
 }
 

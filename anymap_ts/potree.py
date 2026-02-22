@@ -1,14 +1,14 @@
 """Potree point cloud viewer widget implementation.
 
-Potree is loaded via CDN since it's a complex Three.js-based viewer.
-This implementation provides a Python wrapper for point cloud visualization.
+Uses potree-core (npm) + Three.js for bundled point cloud rendering.
+No CDN loading required — everything is bundled by esbuild.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import traitlets
 
@@ -23,9 +23,7 @@ class PotreeViewer(MapWidget):
 
     Potree is a WebGL-based point cloud renderer for large-scale LiDAR
     datasets. This class provides a Python interface for loading and
-    visualizing point clouds.
-
-    Note: Potree is loaded from CDN due to its complex Three.js dependencies.
+    visualizing point clouds using potree-core + Three.js (bundled).
 
     Example:
         >>> from anymap_ts import PotreeViewer
@@ -285,84 +283,6 @@ class PotreeViewer(MapWidget):
         )
 
     # -------------------------------------------------------------------------
-    # Measurement Tools
-    # -------------------------------------------------------------------------
-
-    def add_measurement_tool(self, tool_type: str = "distance") -> None:
-        """Add a measurement tool.
-
-        Args:
-            tool_type: Type of measurement ('point', 'distance', 'area', 'angle', 'height', 'profile').
-        """
-        self.call_js_method("addMeasurementTool", type=tool_type)
-
-    def clear_measurements(self) -> None:
-        """Clear all measurements."""
-        self.call_js_method("clearMeasurements")
-
-    # -------------------------------------------------------------------------
-    # Clipping
-    # -------------------------------------------------------------------------
-
-    def add_clipping_volume(
-        self,
-        volume_type: str = "box",
-        position: Optional[Tuple[float, float, float]] = None,
-        scale: Optional[Tuple[float, float, float]] = None,
-    ) -> None:
-        """Add a clipping volume.
-
-        Args:
-            volume_type: Type of volume ('box', 'polygon', 'plane').
-            position: Volume position (x, y, z).
-            scale: Volume scale (x, y, z).
-        """
-        self.call_js_method(
-            "addClippingVolume",
-            type=volume_type,
-            position=list(position) if position else None,
-            scale=list(scale) if scale else None,
-        )
-
-    def clear_clipping_volumes(self) -> None:
-        """Clear all clipping volumes."""
-        self.call_js_method("clearClippingVolumes")
-
-    # -------------------------------------------------------------------------
-    # Annotations
-    # -------------------------------------------------------------------------
-
-    def add_annotation(
-        self,
-        position: Tuple[float, float, float],
-        title: str,
-        description: str = "",
-        camera_position: Optional[Tuple[float, float, float]] = None,
-        camera_target: Optional[Tuple[float, float, float]] = None,
-    ) -> None:
-        """Add an annotation.
-
-        Args:
-            position: Annotation position (x, y, z).
-            title: Annotation title.
-            description: Annotation description.
-            camera_position: Camera position when focused.
-            camera_target: Camera target when focused.
-        """
-        self.call_js_method(
-            "addAnnotation",
-            position=list(position),
-            title=title,
-            description=description,
-            cameraPosition=list(camera_position) if camera_position else None,
-            cameraTarget=list(camera_target) if camera_target else None,
-        )
-
-    def clear_annotations(self) -> None:
-        """Clear all annotations."""
-        self.call_js_method("clearAnnotations")
-
-    # -------------------------------------------------------------------------
     # HTML Export
     # -------------------------------------------------------------------------
 
@@ -412,7 +332,10 @@ class PotreeViewer(MapWidget):
     <div id="potree_render_area"></div>
     <script>
         const state = {{state}};
-        document.getElementById('potree_render_area').innerHTML = '<p style="color: white; padding: 20px;">Potree viewer requires Potree library. Point clouds: ' + Object.keys(state.point_clouds || {}).length + '</p>';
+        document.getElementById('potree_render_area').innerHTML =
+            '<p style="color: white; padding: 20px;">Potree viewer requires '
+            + 'Potree library. Point clouds: '
+            + Object.keys(state.point_clouds || {}).length + '</p>';
     </script>
 </body>
 </html>"""
