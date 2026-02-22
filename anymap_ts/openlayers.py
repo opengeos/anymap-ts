@@ -35,8 +35,9 @@ class OpenLayersMap(MapWidget):
         >>> m
     """
 
-    # ESM module for frontend
+    # ESM module and CSS for frontend
     _esm = STATIC_DIR / "openlayers.js"
+    _css = STATIC_DIR / "openlayers.css"
 
     # OpenLayers-specific traits
     projection = traitlets.Unicode("EPSG:3857").tag(sync=True)
