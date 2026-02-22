@@ -25,6 +25,9 @@ jobs:
             - name: Install JS dependencies
               run: npm install --legacy-peer-deps
 
+            - name: Run TypeScript tests
+              run: npm test
+
             # - name: Install GDAL system dependencies
             #   run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
 
@@ -44,7 +47,7 @@ jobs:
 
             - name: Install test dependencies
               run: |
-                  uv pip install pytest pytest-cov
+                  uv pip install pytest pytest-cov nbmake
 
             - name: Test import
               run: |
@@ -53,3 +56,7 @@ jobs:
             - name: Running pytest
               run: |
                   uv run pytest . --verbose
+
+            - name: Run notebook integration tests
+              run: |
+                  uv run pytest --nbmake tests/notebooks/ --nbmake-timeout=120 --verbose

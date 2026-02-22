@@ -1,0 +1,59 @@
+name: E2E Widget Tests
+
+on:
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    e2e:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "24"
+
+            - name: Install JS dependencies
+              run: npm install --legacy-peer-deps
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v7
+              with:
+                  version: "0.4.16"
+                  enable-cache: false
+
+            - name: Set up Python
+              run: uv python install 3.12
+
+            - name: Install Python dependencies
+              run: |
+                  uv venv --python 3.12
+                  uv pip install .[all] jupyterlab
+
+            - name: Fix JupyterLab CJS/ESM conflict
+              run: |
+                  echo '{"type": "commonjs"}' > .venv/package.json
+
+            - name: Install E2E test dependencies
+              run: |
+                  cd tests/e2e
+                  npm install
+                  npx playwright install chromium --with-deps
+
+            - name: Run E2E tests
+              working-directory: tests/e2e
+              run: npx playwright test
+
+            - name: Upload test artifacts
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: e2e-test-results
+                  path: |
+                      tests/e2e/test-results/
+                      tests/e2e/playwright-report/
+                  retention-days: 7

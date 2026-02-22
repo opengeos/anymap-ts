@@ -1,0 +1,15 @@
+{
+  "name": "anymap-ts-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end tests for anymap-ts widgets in JupyterLab",
+  "scripts": {
+    "start": "uv run jupyter lab --port=8888 --no-browser --ServerApp.token='' --ServerApp.disable_check_xsrf=true",
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
