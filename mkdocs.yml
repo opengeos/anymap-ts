@@ -180,6 +180,13 @@ nav:
           - mapbox/vector_data.ipynb
     - OpenLayers:
           - openlayers/openlayers.ipynb
+          - openlayers/choropleth.ipynb
+          - openlayers/clustering.ipynb
+          - openlayers/draw_measure.ipynb
+          - openlayers/graticule_controls.ipynb
+          - openlayers/heatmap.ipynb
+          - openlayers/image_overlay.ipynb
+          - openlayers/wms_wmts.ipynb
     - Potree:
           - potree/potree.ipynb
     - API Reference:
