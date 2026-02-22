@@ -129,6 +129,13 @@ nav:
           - keplergl/keplergl.ipynb
     - Leaflet:
           - leaflet/leaflet.ipynb
+          - leaflet/choropleth.ipynb
+          - leaflet/custom_markers.ipynb
+          - leaflet/geojson_interaction.ipynb
+          - leaflet/heatmap.ipynb
+          - leaflet/image_video_overlay.ipynb
+          - leaflet/shapes.ipynb
+          - leaflet/wms_layer.ipynb
     - MapLibre:
           - maplibre/maplibre.ipynb
           - maplibre/arc_layer.ipynb

@@ -4,15 +4,14 @@
     <meta charset="utf-8">
     <title>{{title}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Leaflet CSS and JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 
-        /* Layer control styles */
         .anymap-layer-control {
             position: absolute;
             background: white;
@@ -42,35 +41,40 @@
             gap: 8px;
             padding: 4px 0;
         }
-        .anymap-layer-item label {
-            flex: 1;
-            cursor: pointer;
+        .anymap-layer-item label { flex: 1; cursor: pointer; }
+        .anymap-layer-item input[type="checkbox"] { cursor: pointer; }
+        .anymap-layer-item input[type="range"] { width: 60px; }
+        .anymap-legend {
+            background: white;
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            font-size: 12px;
+            line-height: 18px;
         }
-        .anymap-layer-item input[type="checkbox"] {
-            cursor: pointer;
+        @media (prefers-color-scheme: dark) {
+            .anymap-legend {
+                background: #1e1e1e;
+                color: #e0e0e0;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+            }
         }
-        .anymap-layer-item input[type="range"] {
-            width: 60px;
-        }
+        .anymap-popup b { color: #333; }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <script>
-        // Map state from Python
         const state = {{state}};
-
-        // Track added layers
         const addedLayers = {};
         let layerControlConfig = null;
 
-        // Note: Leaflet uses [lat, lng], but we store [lng, lat] from Python
         const map = L.map('map', {
             zoomControl: false,
             attributionControl: false
         }).setView([state.center[1], state.center[0]], state.zoom);
 
-        // Replay JS calls
         for (const call of state.js_calls || []) {
             try {
                 executeMethod(call.method, call.args, call.kwargs);
@@ -79,7 +83,6 @@
             }
         }
 
-        // Add layer control if configured
         if (layerControlConfig || (state.controls && state.controls['layers'])) {
             const config = layerControlConfig || state.controls['layers'];
             createLayerControl(config);
@@ -88,66 +91,85 @@
         function executeMethod(method, args, kwargs) {
             switch (method) {
                 case 'addBasemap': {
-                    const url = args[0];
-                    const name = kwargs.name || 'basemap';
-                    const layer = L.tileLayer(url, {
+                    const layer = L.tileLayer(args[0], {
                         attribution: kwargs.attribution || '',
                         maxZoom: 22
                     });
                     layer.addTo(map);
-                    addedLayers['basemap-' + name] = { layer, name, type: 'tile' };
+                    addedLayers['basemap-' + (kwargs.name || 'basemap')] = { layer, name: kwargs.name || 'basemap', type: 'tile' };
                     break;
                 }
 
                 case 'addTileLayer': {
-                    const url = args[0];
-                    const name = kwargs.name || 'tiles';
-                    const layer = L.tileLayer(url, {
+                    const layer = L.tileLayer(args[0], {
                         attribution: kwargs.attribution || '',
                         maxZoom: kwargs.maxZoom || 22,
                         minZoom: kwargs.minZoom || 0,
                         opacity: kwargs.opacity || 1
                     });
                     layer.addTo(map);
-                    addedLayers[name] = { layer, name, type: 'tile' };
+                    addedLayers[kwargs.name || 'tiles'] = { layer, name: kwargs.name || 'tiles', type: 'tile' };
+                    break;
+                }
+
+                case 'addWMSLayer': {
+                    const layer = L.tileLayer.wms(args[0], {
+                        layers: kwargs.layers || '',
+                        format: kwargs.format || 'image/png',
+                        transparent: kwargs.transparent !== false,
+                        attribution: kwargs.attribution || '',
+                        opacity: kwargs.opacity || 1,
+                        styles: kwargs.styles || '',
+                        version: kwargs.version || '1.1.1'
+                    });
+                    layer.addTo(map);
+                    addedLayers[kwargs.name || 'wms'] = { layer, name: kwargs.name || 'wms', type: 'wms' };
                     break;
                 }
 
                 case 'addGeoJSON': {
-                    const geojson = kwargs.data;
-                    const name = kwargs.name || 'geojson';
-                    const style = kwargs.style || getDefaultStyle(geojson);
-
-                    const layer = L.geoJSON(geojson, {
+                    const style = kwargs.style || getDefaultStyle(kwargs.data);
+                    const layer = L.geoJSON(kwargs.data, {
                         style: style,
-                        pointToLayer: (feature, latlng) => L.circleMarker(latlng, style)
+                        pointToLayer: (f, ll) => L.circleMarker(ll, style),
+                        onEachFeature: (feature, layer) => {
+                            const props = feature.properties || {};
+                            if (kwargs.popupProperties) {
+                                let html = '<div class="anymap-popup">';
+                                const keys = kwargs.popupProperties === true ? Object.keys(props) : kwargs.popupProperties;
+                                for (const key of keys) {
+                                    if (props[key] !== undefined && props[key] !== null) {
+                                        html += '<b>' + key + ':</b> ' + props[key] + '<br>';
+                                    }
+                                }
+                                html += '</div>';
+                                layer.bindPopup(html);
+                            }
+                            if (kwargs.tooltipProperty && props[kwargs.tooltipProperty] !== undefined) {
+                                layer.bindTooltip(String(props[kwargs.tooltipProperty]), { sticky: true });
+                            }
+                        }
                     });
                     layer.addTo(map);
-                    addedLayers[name] = { layer, name, type: 'geojson' };
-
+                    addedLayers[kwargs.name || 'geojson'] = { layer, name: kwargs.name || 'geojson', type: 'geojson' };
                     if (kwargs.fitBounds) {
                         const bounds = layer.getBounds();
-                        if (bounds.isValid()) {
-                            map.fitBounds(bounds, { padding: [50, 50] });
-                        }
+                        if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
                     }
                     break;
                 }
 
                 case 'addControl': {
-                    const controlType = args[0];
-                    const position = kwargs.position || 'topright';
-
-                    switch (controlType) {
-                        case 'zoom':
-                        case 'navigation':
-                            L.control.zoom({ position }).addTo(map);
+                    const pos = kwargs.position || 'topright';
+                    switch (args[0]) {
+                        case 'zoom': case 'navigation':
+                            L.control.zoom({ position: pos }).addTo(map);
                             break;
                         case 'scale':
-                            L.control.scale({ position, imperial: false }).addTo(map);
+                            L.control.scale({ position: pos, imperial: false }).addTo(map);
                             break;
                         case 'attribution':
-                            L.control.attribution({ position }).addTo(map);
+                            L.control.attribution({ position: pos }).addTo(map);
                             break;
                         case 'layers':
                             layerControlConfig = kwargs;
@@ -158,30 +180,258 @@
 
                 case 'addMarker': {
                     const [lng, lat] = args;
-                    const marker = L.marker([lat, lng]).addTo(map);
-                    if (kwargs.popup) {
-                        marker.bindPopup(kwargs.popup);
+                    const opts = {};
+                    if (kwargs.iconUrl) {
+                        opts.icon = L.icon({
+                            iconUrl: kwargs.iconUrl,
+                            iconSize: kwargs.iconSize || [25, 41],
+                            iconAnchor: kwargs.iconAnchor || [12, 41],
+                            popupAnchor: [1, -34]
+                        });
                     }
-                    if (kwargs.id) {
-                        addedLayers['marker-' + kwargs.id] = { layer: marker, name: kwargs.id, type: 'marker' };
+                    if (kwargs.opacity !== undefined) opts.opacity = kwargs.opacity;
+                    const marker = L.marker([lat, lng], opts).addTo(map);
+                    if (kwargs.popup) marker.bindPopup(kwargs.popup);
+                    if (kwargs.tooltip) marker.bindTooltip(kwargs.tooltip);
+                    if (kwargs.id) addedLayers['marker-' + kwargs.id] = { layer: marker, name: kwargs.id, type: 'marker' };
+                    break;
+                }
+
+                case 'addMarkers': {
+                    const group = L.layerGroup();
+                    for (const item of kwargs.data || []) {
+                        const mopts = {};
+                        if (item.iconUrl) {
+                            mopts.icon = L.icon({
+                                iconUrl: item.iconUrl,
+                                iconSize: item.iconSize || [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34]
+                            });
+                        }
+                        const mk = L.marker([item.lat, item.lng], mopts);
+                        if (item.popup) mk.bindPopup(item.popup);
+                        if (item.tooltip) mk.bindTooltip(item.tooltip);
+                        group.addLayer(mk);
+                    }
+                    group.addTo(map);
+                    addedLayers[kwargs.name || 'markers'] = { layer: group, name: kwargs.name || 'markers', type: 'markers' };
+                    break;
+                }
+
+                case 'addCircleMarker': {
+                    const cm = L.circleMarker([args[1], args[0]], {
+                        radius: kwargs.radius || 10,
+                        color: kwargs.color || '#3388ff',
+                        fillColor: kwargs.fillColor || kwargs.color || '#3388ff',
+                        fillOpacity: kwargs.fillOpacity != null ? kwargs.fillOpacity : 0.5,
+                        weight: kwargs.weight || 2,
+                        opacity: kwargs.opacity != null ? kwargs.opacity : 1
+                    }).addTo(map);
+                    if (kwargs.popup) cm.bindPopup(kwargs.popup);
+                    if (kwargs.tooltip) cm.bindTooltip(kwargs.tooltip);
+                    addedLayers[kwargs.name] = { layer: cm, name: kwargs.name, type: 'circle_marker' };
+                    break;
+                }
+
+                case 'addCircle': {
+                    const circle = L.circle([args[1], args[0]], {
+                        radius: kwargs.radius || 1000,
+                        color: kwargs.color || '#3388ff',
+                        fillColor: kwargs.fillColor || kwargs.color || '#3388ff',
+                        fillOpacity: kwargs.fillOpacity != null ? kwargs.fillOpacity : 0.2,
+                        weight: kwargs.weight || 2,
+                        opacity: kwargs.opacity != null ? kwargs.opacity : 1
+                    }).addTo(map);
+                    if (kwargs.popup) circle.bindPopup(kwargs.popup);
+                    if (kwargs.tooltip) circle.bindTooltip(kwargs.tooltip);
+                    addedLayers[kwargs.name] = { layer: circle, name: kwargs.name, type: 'circle' };
+                    break;
+                }
+
+                case 'addPolyline': {
+                    const latlngs = (kwargs.coordinates || []).map(c => [c[1], c[0]]);
+                    const plOpts = {
+                        color: kwargs.color || '#3388ff',
+                        weight: kwargs.weight || 3,
+                        opacity: kwargs.opacity != null ? kwargs.opacity : 1
+                    };
+                    if (kwargs.dashArray) plOpts.dashArray = kwargs.dashArray;
+                    const pl = L.polyline(latlngs, plOpts).addTo(map);
+                    if (kwargs.popup) pl.bindPopup(kwargs.popup);
+                    if (kwargs.tooltip) pl.bindTooltip(kwargs.tooltip);
+                    if (kwargs.fitBounds) map.fitBounds(pl.getBounds(), { padding: [50, 50] });
+                    addedLayers[kwargs.name] = { layer: pl, name: kwargs.name, type: 'polyline' };
+                    break;
+                }
+
+                case 'addPolygon': {
+                    const pgLatlngs = (kwargs.coordinates || []).map(c => [c[1], c[0]]);
+                    const pg = L.polygon(pgLatlngs, {
+                        color: kwargs.color || '#3388ff',
+                        fillColor: kwargs.fillColor || kwargs.color || '#3388ff',
+                        fillOpacity: kwargs.fillOpacity != null ? kwargs.fillOpacity : 0.5,
+                        weight: kwargs.weight || 2,
+                        opacity: kwargs.opacity != null ? kwargs.opacity : 1
+                    }).addTo(map);
+                    if (kwargs.popup) pg.bindPopup(kwargs.popup);
+                    if (kwargs.tooltip) pg.bindTooltip(kwargs.tooltip);
+                    if (kwargs.fitBounds) map.fitBounds(pg.getBounds(), { padding: [50, 50] });
+                    addedLayers[kwargs.name] = { layer: pg, name: kwargs.name, type: 'polygon' };
+                    break;
+                }
+
+                case 'addRectangle': {
+                    const rb = kwargs.bounds;
+                    const rect = L.rectangle([[rb[1], rb[0]], [rb[3], rb[2]]], {
+                        color: kwargs.color || '#3388ff',
+                        fillColor: kwargs.fillColor || kwargs.color || '#3388ff',
+                        fillOpacity: kwargs.fillOpacity != null ? kwargs.fillOpacity : 0.2,
+                        weight: kwargs.weight || 2,
+                        opacity: kwargs.opacity != null ? kwargs.opacity : 1
+                    }).addTo(map);
+                    if (kwargs.popup) rect.bindPopup(kwargs.popup);
+                    if (kwargs.tooltip) rect.bindTooltip(kwargs.tooltip);
+                    addedLayers[kwargs.name] = { layer: rect, name: kwargs.name, type: 'rectangle' };
+                    break;
+                }
+
+                case 'addImageOverlay': {
+                    const ib = kwargs.bounds;
+                    const imgOverlay = L.imageOverlay(args[0], [[ib[1], ib[0]], [ib[3], ib[2]]], {
+                        opacity: kwargs.opacity != null ? kwargs.opacity : 1,
+                        interactive: kwargs.interactive || false
+                    }).addTo(map);
+                    addedLayers[kwargs.name] = { layer: imgOverlay, name: kwargs.name, type: 'image_overlay' };
+                    break;
+                }
+
+                case 'addVideoOverlay': {
+                    const vb = kwargs.bounds;
+                    const vidOverlay = L.videoOverlay(kwargs.url, [[vb[1], vb[0]], [vb[3], vb[2]]], {
+                        opacity: kwargs.opacity != null ? kwargs.opacity : 1,
+                        autoplay: kwargs.autoplay !== false,
+                        loop: kwargs.loop !== false,
+                        muted: kwargs.muted !== false
+                    }).addTo(map);
+                    addedLayers[kwargs.name] = { layer: vidOverlay, name: kwargs.name, type: 'video_overlay' };
+                    break;
+                }
+
+                case 'addHeatmap': {
+                    const heatData = (kwargs.data || []).map(p =>
+                        p.length >= 3 ? [p[1], p[0], p[2]] : [p[1], p[0]]
+                    );
+                    const heatOpts = {
+                        radius: kwargs.radius || 25,
+                        blur: kwargs.blur || 15,
+                        maxZoom: kwargs.maxZoom || 18,
+                        max: kwargs.max || 1.0,
+                        minOpacity: kwargs.minOpacity || 0.05
+                    };
+                    if (kwargs.gradient) heatOpts.gradient = kwargs.gradient;
+                    const heat = L.heatLayer(heatData, heatOpts).addTo(map);
+                    addedLayers[kwargs.name] = { layer: heat, name: kwargs.name, type: 'heatmap' };
+                    break;
+                }
+
+                case 'addChoropleth': {
+                    const getColor = (value) => {
+                        const t = kwargs.thresholds || [];
+                        const c = kwargs.colors || ['#FFEDA0'];
+                        for (let i = t.length - 1; i >= 0; i--) {
+                            if (value >= t[i]) return c[i + 1] || c[c.length - 1];
+                        }
+                        return c[0];
+                    };
+                    const chorLayer = L.geoJSON(kwargs.data, {
+                        style: (feature) => ({
+                            fillColor: getColor(feature.properties[kwargs.valueProperty] || 0),
+                            weight: kwargs.lineWeight || 2,
+                            opacity: kwargs.lineOpacity != null ? kwargs.lineOpacity : 1,
+                            color: kwargs.lineColor || '#fff',
+                            fillOpacity: kwargs.fillOpacity != null ? kwargs.fillOpacity : 0.7
+                        }),
+                        onEachFeature: (feature, layer) => {
+                            const props = feature.properties || {};
+                            if (kwargs.popupProperties) {
+                                let html = '<div class="anymap-popup">';
+                                const keys = kwargs.popupProperties === true ? Object.keys(props) : kwargs.popupProperties;
+                                for (const key of keys) {
+                                    if (props[key] !== undefined) html += '<b>' + key + ':</b> ' + props[key] + '<br>';
+                                }
+                                html += '</div>';
+                                layer.bindPopup(html);
+                            }
+                            if (kwargs.tooltipProperty && props[kwargs.tooltipProperty] !== undefined) {
+                                layer.bindTooltip(String(props[kwargs.tooltipProperty]), { sticky: true });
+                            }
+                            layer.on({
+                                mouseover: (e) => {
+                                    e.target.setStyle({ weight: (kwargs.lineWeight || 2) + 2, fillOpacity: Math.min((kwargs.fillOpacity || 0.7) + 0.2, 1) });
+                                    e.target.bringToFront();
+                                },
+                                mouseout: (e) => { chorLayer.resetStyle(e.target); }
+                            });
+                        }
+                    }).addTo(map);
+                    addedLayers[kwargs.name] = { layer: chorLayer, name: kwargs.name, type: 'choropleth' };
+                    if (kwargs.fitBounds !== false) {
+                        const bounds = chorLayer.getBounds();
+                        if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
+                    }
+                    if (kwargs.legendTitle && kwargs.colors && kwargs.thresholds) {
+                        const legend = L.control({ position: kwargs.legendPosition || 'bottomright' });
+                        legend.onAdd = () => {
+                            const div = L.DomUtil.create('div', 'anymap-legend');
+                            let html = '<div style="font-weight:bold;margin-bottom:6px">' + kwargs.legendTitle + '</div>';
+                            const c = kwargs.colors, t = kwargs.thresholds;
+                            const numBins = t.length + 1;
+                            for (let i = 0; i < numBins; i++) {
+                                const color = c[i] || c[c.length - 1];
+                                const label = i === 0 ? '< ' + t[0] : i < t.length ? t[i-1] + ' – ' + t[i] : '≥ ' + t[t.length-1];
+                                html += '<div style="display:flex;align-items:center;margin:2px 0"><span style="width:18px;height:12px;display:inline-block;background:' + color + ';margin-right:6px;border-radius:2px"></span>' + label + '</div>';
+                            }
+                            div.innerHTML = html;
+                            return div;
+                        };
+                        legend.addTo(map);
                     }
                     break;
                 }
 
-                case 'flyTo': {
-                    const [lng, lat] = args;
-                    map.flyTo([lat, lng], kwargs.zoom || map.getZoom(), {
+                case 'addPopup': {
+                    L.popup({ maxWidth: kwargs.maxWidth || 300, closeButton: kwargs.closeButton !== false })
+                        .setLatLng([args[1], args[0]])
+                        .setContent(kwargs.content)
+                        .openOn(map);
+                    break;
+                }
+
+                case 'addLegend': {
+                    const leg = L.control({ position: kwargs.position || 'bottomright' });
+                    leg.onAdd = () => {
+                        const div = L.DomUtil.create('div', 'anymap-legend');
+                        let html = kwargs.title ? '<div style="font-weight:bold;margin-bottom:6px">' + kwargs.title + '</div>' : '';
+                        for (const item of kwargs.items || []) {
+                            html += '<div style="display:flex;align-items:center;margin:2px 0"><span style="width:18px;height:12px;display:inline-block;background:' + item.color + ';margin-right:6px;border-radius:2px"></span>' + item.label + '</div>';
+                        }
+                        div.innerHTML = html;
+                        return div;
+                    };
+                    leg.addTo(map);
+                    break;
+                }
+
+                case 'flyTo':
+                    map.flyTo([args[1], args[0]], kwargs.zoom || map.getZoom(), {
                         duration: (kwargs.duration || 2000) / 1000
                     });
                     break;
-                }
 
                 case 'fitBounds': {
-                    const bounds = args[0];
-                    map.fitBounds([
-                        [bounds[1], bounds[0]],
-                        [bounds[3], bounds[2]]
-                    ], {
+                    const b = args[0];
+                    map.fitBounds([[b[1], b[0]], [b[3], b[2]]], {
                         padding: [kwargs.padding || 50, kwargs.padding || 50],
                         animate: true,
                         duration: (kwargs.duration || 1000) / 1000
@@ -190,36 +440,21 @@
                 }
 
                 case 'setVisibility': {
-                    const [layerId, visible] = args;
-                    const layerInfo = addedLayers[layerId];
-                    if (layerInfo) {
-                        if (visible) {
-                            layerInfo.layer.addTo(map);
-                        } else {
-                            map.removeLayer(layerInfo.layer);
-                        }
-                    }
+                    const li = addedLayers[args[0]];
+                    if (li) { if (args[1]) li.layer.addTo(map); else map.removeLayer(li.layer); }
                     break;
                 }
 
                 case 'setOpacity': {
-                    const [layerId, opacity] = args;
-                    const layerInfo = addedLayers[layerId];
-                    if (layerInfo && layerInfo.layer.setOpacity) {
-                        layerInfo.layer.setOpacity(opacity);
-                    } else if (layerInfo && layerInfo.layer.setStyle) {
-                        layerInfo.layer.setStyle({ opacity, fillOpacity: opacity * 0.6 });
-                    }
+                    const lo = addedLayers[args[0]];
+                    if (lo && lo.layer.setOpacity) lo.layer.setOpacity(args[1]);
+                    else if (lo && lo.layer.setStyle) lo.layer.setStyle({ opacity: args[1], fillOpacity: args[1] * 0.6 });
                     break;
                 }
 
                 case 'removeLayer': {
-                    const [layerId] = args;
-                    const layerInfo = addedLayers[layerId];
-                    if (layerInfo) {
-                        map.removeLayer(layerInfo.layer);
-                        delete addedLayers[layerId];
-                    }
+                    const lr = addedLayers[args[0]];
+                    if (lr) { map.removeLayer(lr.layer); delete addedLayers[args[0]]; }
                     break;
                 }
 
@@ -231,10 +466,7 @@
         function getDefaultStyle(geojson) {
             const type = geojson.type === 'FeatureCollection' && geojson.features.length > 0
                 ? geojson.features[0].geometry.type
-                : geojson.type === 'Feature'
-                    ? geojson.geometry.type
-                    : 'Point';
-
+                : geojson.type === 'Feature' ? geojson.geometry.type : 'Point';
             const defaults = {
                 Point: { radius: 8, fillColor: '#3388ff', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.8 },
                 MultiPoint: { radius: 8, fillColor: '#3388ff', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.8 },
@@ -249,11 +481,7 @@
         function createLayerControl(config) {
             const position = config.position || 'topright';
             const layerIds = Object.keys(addedLayers).filter(id => !id.startsWith('basemap-'));
-
-            if (layerIds.length === 0) {
-                console.log('No layers to show in layer control');
-                return;
-            }
+            if (layerIds.length === 0) return;
 
             const container = document.createElement('div');
             container.className = 'anymap-layer-control ' + position;
@@ -275,11 +503,8 @@
                 checkbox.checked = true;
                 checkbox.id = 'layer-' + layerId;
                 checkbox.addEventListener('change', () => {
-                    if (checkbox.checked) {
-                        layerInfo.layer.addTo(map);
-                    } else {
-                        map.removeLayer(layerInfo.layer);
-                    }
+                    if (checkbox.checked) layerInfo.layer.addTo(map);
+                    else map.removeLayer(layerInfo.layer);
                 });
 
                 const label = document.createElement('label');
@@ -288,17 +513,11 @@
 
                 const slider = document.createElement('input');
                 slider.type = 'range';
-                slider.min = '0';
-                slider.max = '1';
-                slider.step = '0.1';
-                slider.value = '1';
+                slider.min = '0'; slider.max = '1'; slider.step = '0.1'; slider.value = '1';
                 slider.addEventListener('input', () => {
                     const opacity = parseFloat(slider.value);
-                    if (layerInfo.layer.setOpacity) {
-                        layerInfo.layer.setOpacity(opacity);
-                    } else if (layerInfo.layer.setStyle) {
-                        layerInfo.layer.setStyle({ opacity, fillOpacity: opacity * 0.6 });
-                    }
+                    if (layerInfo.layer.setOpacity) layerInfo.layer.setOpacity(opacity);
+                    else if (layerInfo.layer.setStyle) layerInfo.layer.setStyle({ opacity, fillOpacity: opacity * 0.6 });
                 });
 
                 item.appendChild(checkbox);
