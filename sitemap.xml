@@ -373,7 +373,35 @@
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/openlayers/choropleth/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/openlayers/clustering/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/openlayers/draw_measure/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/openlayers/graticule_controls/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/openlayers/heatmap/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/openlayers/image_overlay/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/openlayers/openlayers/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/openlayers/wms_wmts/</loc>
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>
