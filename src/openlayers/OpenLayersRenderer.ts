@@ -38,6 +38,8 @@ export class OpenLayersRenderer extends BaseMapRenderer<OLMap> {
   private olMethodHandlers: Record<string, MethodHandler> = {};
   private layersMap: globalThis.Map<string, TileLayer<any> | VectorLayer<any> | ImageLayer<any>> = new globalThis.Map();
   private controlsMap: globalThis.Map<string, any> = new globalThis.Map();
+  /** Guard flag to prevent view↔model sync feedback loops during interactions. */
+  private isSyncingFromView: boolean = false;
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -105,16 +107,17 @@ export class OpenLayersRenderer extends BaseMapRenderer<OLMap> {
     container.style.height = this.model.get('height') as string || '600px';
     container.style.position = 'relative';
     container.style.minWidth = '200px';
+    container.style.fontSize = '16px';
     this.el.appendChild(container);
 
-    // Create map
+    // Create map with no default controls — Python adds controls via addControl calls
     this.map = new Map({
       target: container,
       view: new View({
         center: fromLonLat(center),
         zoom: zoom,
       }),
-      controls: defaultControls({ attribution: false }),
+      controls: [],
       interactions: defaultInteractions().extend([new DragRotateAndZoom()]),
     });
 
@@ -132,6 +135,7 @@ export class OpenLayersRenderer extends BaseMapRenderer<OLMap> {
     });
 
     this.model.on('change:center', () => {
+      if (this.isSyncingFromView) return;
       const newCenter = this.model.get('center') as [number, number];
       if (this.map) {
         this.map.getView().setCenter(fromLonLat(newCenter));
@@ -139,26 +143,31 @@ export class OpenLayersRenderer extends BaseMapRenderer<OLMap> {
     });
 
     this.model.on('change:zoom', () => {
+      if (this.isSyncingFromView) return;
       const newZoom = this.model.get('zoom') as number;
       if (this.map) {
         this.map.getView().setZoom(newZoom);
       }
     });
 
-    // Sync view changes back to model
+    // Sync view changes back to model (guarded to prevent feedback loop)
     this.map.getView().on('change:center', () => {
       if (this.map) {
+        this.isSyncingFromView = true;
         const center = toLonLat(this.map.getView().getCenter() || [0, 0]);
         this.model.set('center', center);
         this.model.save_changes();
+        this.isSyncingFromView = false;
       }
     });
 
     this.map.getView().on('change:resolution', () => {
       if (this.map) {
+        this.isSyncingFromView = true;
         const zoom = this.map.getView().getZoom();
         this.model.set('zoom', zoom);
         this.model.save_changes();
+        this.isSyncingFromView = false;
       }
     });
   }
@@ -207,7 +216,7 @@ export class OpenLayersRenderer extends BaseMapRenderer<OLMap> {
         center: fromLonLat(center),
         zoom: zoom,
       }),
-      controls: defaultControls({ attribution: false }),
+      controls: [],
       interactions: defaultInteractions().extend([new DragRotateAndZoom()]),
     });
   }
@@ -216,6 +225,7 @@ export class OpenLayersRenderer extends BaseMapRenderer<OLMap> {
    * Handle changes to the center trait.
    */
   protected onCenterChange(): void {
+    if (this.isSyncingFromView) return;
     const newCenter = this.model.get('center') as [number, number];
     if (this.map) {
       this.map.getView().setCenter(fromLonLat(newCenter));
@@ -226,6 +236,7 @@ export class OpenLayersRenderer extends BaseMapRenderer<OLMap> {
    * Handle changes to the zoom trait.
    */
   protected onZoomChange(): void {
+    if (this.isSyncingFromView) return;
     const newZoom = this.model.get('zoom') as number;
     if (this.map) {
       this.map.getView().setZoom(newZoom);
