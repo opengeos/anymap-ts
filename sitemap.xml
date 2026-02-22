@@ -433,7 +433,23 @@
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>
+         <loc>https://ts.anymap.dev/potree/camera_controls/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/potree/multiple_point_clouds/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/potree/point_cloud_settings/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
          <loc>https://ts.anymap.dev/potree/potree/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://ts.anymap.dev/potree/sample_datasets/</loc>
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>

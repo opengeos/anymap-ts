@@ -3901,6 +3901,118 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="point_cloud_settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point cloud settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="camera_controls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Camera controls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="multiple_point_clouds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple point clouds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sample_datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sample datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4338,72 +4450,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.add_annotation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        add_annotation()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.add_clipping_volume" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        add_clipping_volume()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.add_measurement_tool" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        add_measurement_tool()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.clear_annotations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        clear_annotations()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.clear_clipping_volumes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        clear_clipping_volumes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.clear_measurements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        clear_measurements()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#anymap_ts.potree.PotreeViewer.fly_to_point_cloud" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4645,72 +4691,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.add_annotation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        add_annotation()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.add_clipping_volume" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        add_clipping_volume()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.add_measurement_tool" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        add_measurement_tool()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.clear_annotations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        clear_annotations()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.clear_clipping_volumes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        clear_clipping_volumes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anymap_ts.potree.PotreeViewer.clear_measurements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        clear_measurements()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#anymap_ts.potree.PotreeViewer.fly_to_point_cloud" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4879,8 +4859,8 @@
     <div class="doc doc-contents first">
 
       <p>Potree point cloud viewer widget implementation.</p>
-<p>Potree is loaded via CDN since it's a complex Three.js-based viewer.
-This implementation provides a Python wrapper for point cloud visualization.</p>
+<p>Uses potree-core (npm) + Three.js for bundled point cloud rendering.
+No CDN loading required — everything is bundled by esbuild.</p>
 
 
 
@@ -4913,8 +4893,7 @@ MapWidget            (AnyWidget)
       <p>Interactive point cloud viewer using Potree.</p>
 <p>Potree is a WebGL-based point cloud renderer for large-scale LiDAR
 datasets. This class provides a Python interface for loading and
-visualizing point clouds.</p>
-<p>Note: Potree is loaded from CDN due to its complex Three.js dependencies.</p>
+visualizing point clouds using potree-core + Three.js (bundled).</p>
 
 <p><strong>Examples:</strong></p>
     <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">PotreeViewer</span>
@@ -4930,9 +4909,7 @@ visualizing point clouds.</p>
 
 <span class="sd">    Potree is a WebGL-based point cloud renderer for large-scale LiDAR</span>
 <span class="sd">    datasets. This class provides a Python interface for loading and</span>
-<span class="sd">    visualizing point clouds.</span>
-
-<span class="sd">    Note: Potree is loaded from CDN due to its complex Three.js dependencies.</span>
+<span class="sd">    visualizing point clouds using potree-core + Three.js (bundled).</span>
 
 <span class="sd">    Example:</span>
 <span class="sd">        &gt;&gt;&gt; from anymap_ts import PotreeViewer</span>
@@ -5192,84 +5169,6 @@ visualizing point clouds.</p>
         <span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
-    <span class="c1"># Measurement Tools</span>
-    <span class="c1"># -------------------------------------------------------------------------</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_measurement_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;distance&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a measurement tool.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            tool_type: Type of measurement (&#39;point&#39;, &#39;distance&#39;, &#39;area&#39;, &#39;angle&#39;, &#39;height&#39;, &#39;profile&#39;).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addMeasurementTool&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">tool_type</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">clear_measurements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all measurements.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;clearMeasurements&quot;</span><span class="p">)</span>
-
-    <span class="c1"># -------------------------------------------------------------------------</span>
-    <span class="c1"># Clipping</span>
-    <span class="c1"># -------------------------------------------------------------------------</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_clipping_volume</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">volume_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;box&quot;</span><span class="p">,</span>
-        <span class="n">position</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a clipping volume.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            volume_type: Type of volume (&#39;box&#39;, &#39;polygon&#39;, &#39;plane&#39;).</span>
-<span class="sd">            position: Volume position (x, y, z).</span>
-<span class="sd">            scale: Volume scale (x, y, z).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-            <span class="s2">&quot;addClippingVolume&quot;</span><span class="p">,</span>
-            <span class="nb">type</span><span class="o">=</span><span class="n">volume_type</span><span class="p">,</span>
-            <span class="n">position</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="k">if</span> <span class="n">position</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">scale</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span> <span class="k">if</span> <span class="n">scale</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">clear_clipping_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all clipping volumes.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;clearClippingVolumes&quot;</span><span class="p">)</span>
-
-    <span class="c1"># -------------------------------------------------------------------------</span>
-    <span class="c1"># Annotations</span>
-    <span class="c1"># -------------------------------------------------------------------------</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_annotation</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">position</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
-        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-        <span class="n">camera_position</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">camera_target</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an annotation.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            position: Annotation position (x, y, z).</span>
-<span class="sd">            title: Annotation title.</span>
-<span class="sd">            description: Annotation description.</span>
-<span class="sd">            camera_position: Camera position when focused.</span>
-<span class="sd">            camera_target: Camera target when focused.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-            <span class="s2">&quot;addAnnotation&quot;</span><span class="p">,</span>
-            <span class="n">position</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">position</span><span class="p">),</span>
-            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
-            <span class="n">cameraPosition</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">camera_position</span><span class="p">)</span> <span class="k">if</span> <span class="n">camera_position</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">cameraTarget</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">camera_target</span><span class="p">)</span> <span class="k">if</span> <span class="n">camera_target</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">clear_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all annotations.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;clearAnnotations&quot;</span><span class="p">)</span>
-
-    <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># HTML Export</span>
     <span class="c1"># -------------------------------------------------------------------------</span>
 
@@ -5319,7 +5218,10 @@ visualizing point clouds.</p>
 <span class="s2">    &lt;div id=&quot;potree_render_area&quot;&gt;&lt;/div&gt;</span>
 <span class="s2">    &lt;script&gt;</span>
 <span class="s2">        const state = {{state}};</span>
-<span class="s2">        document.getElementById(&#39;potree_render_area&#39;).innerHTML = &#39;&lt;p style=&quot;color: white; padding: 20px;&quot;&gt;Potree viewer requires Potree library. Point clouds: &#39; + Object.keys(state.point_clouds || </span><span class="si">{}</span><span class="s2">).length + &#39;&lt;/p&gt;&#39;;</span>
+<span class="s2">        document.getElementById(&#39;potree_render_area&#39;).innerHTML =</span>
+<span class="s2">            &#39;&lt;p style=&quot;color: white; padding: 20px;&quot;&gt;Potree viewer requires &#39;</span>
+<span class="s2">            + &#39;Potree library. Point clouds: &#39;</span>
+<span class="s2">            + Object.keys(state.point_clouds || </span><span class="si">{}</span><span class="s2">).length + &#39;&lt;/p&gt;&#39;;</span>
 <span class="s2">    &lt;/script&gt;</span>
 <span class="s2">&lt;/body&gt;</span>
 <span class="s2">&lt;/html&gt;&quot;&quot;&quot;</span>
@@ -5465,303 +5367,6 @@ visualizing point clouds.</p>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">point_clouds</span> <span class="o">=</span> <span class="p">{}</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-method">
-
-
-
-<h3 id="anymap_ts.potree.PotreeViewer.add_annotation" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">camera_position</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">camera_target</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
-
-
-<a href="#anymap_ts.potree.PotreeViewer.add_annotation" class="headerlink" title="Permanent link">&para;</a></h3>
-
-    <div class="doc doc-contents ">
-
-      <p>Add an annotation.</p>
-
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>position</code></td>
-        <td><code>Tuple[float, float, float]</code></td>
-        <td><p>Annotation position (x, y, z).</p></td>
-        <td><em>required</em></td>
-      </tr>
-      <tr>
-        <td><code>title</code></td>
-        <td><code>str</code></td>
-        <td><p>Annotation title.</p></td>
-        <td><em>required</em></td>
-      </tr>
-      <tr>
-        <td><code>description</code></td>
-        <td><code>str</code></td>
-        <td><p>Annotation description.</p></td>
-        <td><code>&#39;&#39;</code></td>
-      </tr>
-      <tr>
-        <td><code>camera_position</code></td>
-        <td><code>Optional[Tuple[float, float, float]]</code></td>
-        <td><p>Camera position when focused.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>camera_target</code></td>
-        <td><code>Optional[Tuple[float, float, float]]</code></td>
-        <td><p>Camera target when focused.</p></td>
-        <td><code>None</code></td>
-      </tr>
-  </tbody>
-</table>
-        <details class="quote">
-          <summary>Source code in <code>anymap_ts/potree.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_annotation</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span>
-    <span class="n">position</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
-    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-    <span class="n">camera_position</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">camera_target</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add an annotation.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        position: Annotation position (x, y, z).</span>
-<span class="sd">        title: Annotation title.</span>
-<span class="sd">        description: Annotation description.</span>
-<span class="sd">        camera_position: Camera position when focused.</span>
-<span class="sd">        camera_target: Camera target when focused.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-        <span class="s2">&quot;addAnnotation&quot;</span><span class="p">,</span>
-        <span class="n">position</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">position</span><span class="p">),</span>
-        <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
-        <span class="n">cameraPosition</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">camera_position</span><span class="p">)</span> <span class="k">if</span> <span class="n">camera_position</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">cameraTarget</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">camera_target</span><span class="p">)</span> <span class="k">if</span> <span class="n">camera_target</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-method">
-
-
-
-<h3 id="anymap_ts.potree.PotreeViewer.add_clipping_volume" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_clipping_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">volume_type</span><span class="o">=</span><span class="s1">&#39;box&#39;</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
-
-
-<a href="#anymap_ts.potree.PotreeViewer.add_clipping_volume" class="headerlink" title="Permanent link">&para;</a></h3>
-
-    <div class="doc doc-contents ">
-
-      <p>Add a clipping volume.</p>
-
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>volume_type</code></td>
-        <td><code>str</code></td>
-        <td><p>Type of volume ('box', 'polygon', 'plane').</p></td>
-        <td><code>&#39;box&#39;</code></td>
-      </tr>
-      <tr>
-        <td><code>position</code></td>
-        <td><code>Optional[Tuple[float, float, float]]</code></td>
-        <td><p>Volume position (x, y, z).</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>scale</code></td>
-        <td><code>Optional[Tuple[float, float, float]]</code></td>
-        <td><p>Volume scale (x, y, z).</p></td>
-        <td><code>None</code></td>
-      </tr>
-  </tbody>
-</table>
-        <details class="quote">
-          <summary>Source code in <code>anymap_ts/potree.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_clipping_volume</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span>
-    <span class="n">volume_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;box&quot;</span><span class="p">,</span>
-    <span class="n">position</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a clipping volume.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        volume_type: Type of volume (&#39;box&#39;, &#39;polygon&#39;, &#39;plane&#39;).</span>
-<span class="sd">        position: Volume position (x, y, z).</span>
-<span class="sd">        scale: Volume scale (x, y, z).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-        <span class="s2">&quot;addClippingVolume&quot;</span><span class="p">,</span>
-        <span class="nb">type</span><span class="o">=</span><span class="n">volume_type</span><span class="p">,</span>
-        <span class="n">position</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="k">if</span> <span class="n">position</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">scale</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span> <span class="k">if</span> <span class="n">scale</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-method">
-
-
-
-<h3 id="anymap_ts.potree.PotreeViewer.add_measurement_tool" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_measurement_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool_type</span><span class="o">=</span><span class="s1">&#39;distance&#39;</span><span class="p">)</span></code>
-
-
-<a href="#anymap_ts.potree.PotreeViewer.add_measurement_tool" class="headerlink" title="Permanent link">&para;</a></h3>
-
-    <div class="doc doc-contents ">
-
-      <p>Add a measurement tool.</p>
-
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>tool_type</code></td>
-        <td><code>str</code></td>
-        <td><p>Type of measurement ('point', 'distance', 'area', 'angle', 'height', 'profile').</p></td>
-        <td><code>&#39;distance&#39;</code></td>
-      </tr>
-  </tbody>
-</table>
-        <details class="quote">
-          <summary>Source code in <code>anymap_ts/potree.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_measurement_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;distance&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a measurement tool.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        tool_type: Type of measurement (&#39;point&#39;, &#39;distance&#39;, &#39;area&#39;, &#39;angle&#39;, &#39;height&#39;, &#39;profile&#39;).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addMeasurementTool&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">tool_type</span><span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-method">
-
-
-
-<h3 id="anymap_ts.potree.PotreeViewer.clear_annotations" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">clear_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
-
-
-<a href="#anymap_ts.potree.PotreeViewer.clear_annotations" class="headerlink" title="Permanent link">&para;</a></h3>
-
-    <div class="doc doc-contents ">
-
-      <p>Clear all annotations.</p>
-
-        <details class="quote">
-          <summary>Source code in <code>anymap_ts/potree.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear all annotations.&quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;clearAnnotations&quot;</span><span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-method">
-
-
-
-<h3 id="anymap_ts.potree.PotreeViewer.clear_clipping_volumes" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">clear_clipping_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
-
-
-<a href="#anymap_ts.potree.PotreeViewer.clear_clipping_volumes" class="headerlink" title="Permanent link">&para;</a></h3>
-
-    <div class="doc doc-contents ">
-
-      <p>Clear all clipping volumes.</p>
-
-        <details class="quote">
-          <summary>Source code in <code>anymap_ts/potree.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_clipping_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear all clipping volumes.&quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;clearClippingVolumes&quot;</span><span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-method">
-
-
-
-<h3 id="anymap_ts.potree.PotreeViewer.clear_measurements" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">clear_measurements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
-
-
-<a href="#anymap_ts.potree.PotreeViewer.clear_measurements" class="headerlink" title="Permanent link">&para;</a></h3>
-
-    <div class="doc doc-contents ">
-
-      <p>Clear all measurements.</p>
-
-        <details class="quote">
-          <summary>Source code in <code>anymap_ts/potree.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_measurements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear all measurements.&quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;clearMeasurements&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
