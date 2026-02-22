@@ -1,8 +1,10 @@
-"""JupyterLab server configuration for E2E tests."""
+"""Server configuration for integration tests.
 
-c = get_config()  # noqa: F821
+!! Never use this configuration in production because it
+opens the server to the world and provides access to JupyterLab
+JavaScript objects through the global window variable.
+"""
 
-c.ServerApp.token = ""
-c.ServerApp.disable_check_xsrf = True
-c.ServerApp.open_browser = False
-c.ServerApp.port = 8888
+from jupyterlab.galata import configure_jupyter_server
+
+configure_jupyter_server(c)  # noqa: F821
