@@ -1,0 +1,16 @@
+{
+  "name": "anymap-ts-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end tests for anymap-ts widgets in JupyterLab",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "install:browsers": "npx playwright install chromium"
+  },
+  "devDependencies": {
+    "@jupyterlab/galata": "^5.0.0",
+    "@playwright/test": "^1.49.0"
+  }
+}
