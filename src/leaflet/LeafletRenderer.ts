@@ -33,6 +33,7 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
   private markersMap: globalThis.Map<string, Marker> = new globalThis.Map();
   private popupsMap: globalThis.Map<string, Popup> = new globalThis.Map();
   private controlsMap: globalThis.Map<string, Control> = new globalThis.Map();
+  private layerControl: L.Control.Layers | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private resizeDebounceTimer: number | null = null;
 
@@ -274,6 +275,11 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
 
     tileLayer.addTo(this.map);
     this.layersMap.set(name, tileLayer);
+
+    // Update layer control if it exists
+    if (this.layerControl) {
+      this.layerControl.addOverlay(tileLayer, name);
+    }
   }
 
   private handleRemoveTileLayer(args: unknown[], kwargs: Record<string, unknown>): void {
@@ -312,6 +318,11 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
     tileLayer.addTo(this.map);
     tileLayer.bringToBack();
     this.layersMap.set(`basemap-${name}`, tileLayer);
+
+    // Update layer control if it exists
+    if (this.layerControl) {
+      this.layerControl.addBaseLayer(tileLayer, name);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -344,6 +355,11 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
 
     geoJsonLayer.addTo(this.map);
     this.layersMap.set(name, geoJsonLayer);
+
+    // Update layer control if it exists
+    if (this.layerControl) {
+      this.layerControl.addOverlay(geoJsonLayer, name);
+    }
 
     // Fit bounds
     if (fitBounds && kwargs.bounds) {
@@ -428,6 +444,9 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
 
     const layer = this.layersMap.get(layerId);
     if (layer) {
+      if (this.layerControl) {
+        this.layerControl.removeLayer(layer);
+      }
       this.map.removeLayer(layer);
       this.layersMap.delete(layerId);
     }
@@ -482,7 +501,7 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
       case 'attribution':
         control = L.control.attribution({ position });
         break;
-      case 'layers':
+      case 'layers': {
         // Layer control needs baseLayers and overlays
         const baseLayers: Record<string, TileLayer> = {};
         const overlays: Record<string, L.Layer> = {};
@@ -493,8 +512,11 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
             overlays[name] = layer;
           }
         });
-        control = L.control.layers(baseLayers, overlays, { position, collapsed: kwargs.collapsed !== false });
+        const layersControl = L.control.layers(baseLayers, overlays, { position, collapsed: kwargs.collapsed !== false });
+        this.layerControl = layersControl;
+        control = layersControl;
         break;
+      }
     }
 
     if (control) {
@@ -513,6 +535,9 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
       this.map.removeControl(control);
       this.controlsMap.delete(controlType);
       this.stateManager.removeControl(controlType);
+      if (controlType === 'layers') {
+        this.layerControl = null;
+      }
     }
   }
 
@@ -620,6 +645,7 @@ export class LeafletRenderer extends BaseMapRenderer<LeafletMap> {
       }
     });
     this.controlsMap.clear();
+    this.layerControl = null;
 
     if (this.map) {
       this.map.remove();

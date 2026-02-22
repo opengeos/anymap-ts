@@ -1,0 +1,11 @@
+/* Match layer control toggle size to zoom control buttons */
+.leaflet-control-layers-toggle {
+  width: 26px;
+  height: 26px;
+  background-size: 16px 16px;
+}
+.leaflet-touch .leaflet-control-layers-toggle {
+  width: 30px;
+  height: 30px;
+  background-size: 20px 20px;
+}

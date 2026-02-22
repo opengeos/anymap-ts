@@ -135,7 +135,11 @@ class LeafletMap(MapWidget):
 
         # Add default controls
         if controls is None:
-            controls = {"zoom": True, "scale": True}
+            controls = {
+                "scale": {"position": "bottom-left"},
+                "attribution": {"position": "bottom-right"},
+                "layers": {"position": "top-right"},
+            }
 
         for control_name, config in controls.items():
             if config:
