@@ -4459,7 +4459,11 @@ accepts [lng, lat] for consistency with other map libraries.</p>
 
         <span class="c1"># Add default controls</span>
         <span class="k">if</span> <span class="n">controls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;zoom&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+            <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="s2">&quot;bottom-left&quot;</span><span class="p">},</span>
+                <span class="s2">&quot;attribution&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="s2">&quot;bottom-right&quot;</span><span class="p">},</span>
+                <span class="s2">&quot;layers&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="s2">&quot;top-right&quot;</span><span class="p">},</span>
+            <span class="p">}</span>
 
         <span class="k">for</span> <span class="n">control_name</span><span class="p">,</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">controls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">config</span><span class="p">:</span>
@@ -5010,7 +5014,11 @@ accepts [lng, lat] for consistency with other map libraries.</p>
 
     <span class="c1"># Add default controls</span>
     <span class="k">if</span> <span class="n">controls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;zoom&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+        <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="s2">&quot;bottom-left&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;attribution&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="s2">&quot;bottom-right&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;layers&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="s2">&quot;top-right&quot;</span><span class="p">},</span>
+        <span class="p">}</span>
 
     <span class="k">for</span> <span class="n">control_name</span><span class="p">,</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">controls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">config</span><span class="p">:</span>
