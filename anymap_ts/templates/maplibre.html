@@ -48,6 +48,37 @@
             .then(mod => { addControlGridFn = mod.addControlGrid; })
             .catch(() => console.warn('ControlGrid library unavailable — control grid will be skipped'));
 
+        // deck.gl COG layer support (lazy-loaded on first use)
+        let MapboxOverlay = null;
+        let COGLayer = null;
+        let geoKeysParser = null;
+        let deckOverlay = null;
+        const deckLayers = new Map();
+
+        async function ensureDeckGL() {
+            if (MapboxOverlay) return;
+            const [deckMapbox, cogModule, geokeysModule] = await Promise.all([
+                import('https://esm.sh/@deck.gl/mapbox@9.2.6?external=maplibre-gl'),
+                import('https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0'),
+                import('https://esm.sh/geotiff-geokeys-to-proj4@2024.4.13'),
+            ]);
+            MapboxOverlay = deckMapbox.MapboxOverlay;
+            COGLayer = cogModule.COGLayer;
+            geoKeysParser = geokeysModule.default || geokeysModule;
+        }
+
+        function initDeckOverlay() {
+            if (deckOverlay) return;
+            deckOverlay = new MapboxOverlay({ layers: [] });
+            map.addControl(deckOverlay);
+        }
+
+        function updateDeckOverlay() {
+            if (deckOverlay) {
+                deckOverlay.setProps({ layers: Array.from(deckLayers.values()) });
+            }
+        }
+
         // Create map immediately (no imports needed)
         const map = new maplibregl.Map({
             container: 'map',
@@ -68,7 +99,7 @@
             // 1. Replay ALL js_calls first (markers, legends, GeoJSON, etc.)
             for (const call of state.js_calls || []) {
                 try {
-                    executeMethod(call.method, call.args, call.kwargs);
+                    await executeMethod(call.method, call.args, call.kwargs);
                 } catch (e) {
                     console.error('Error executing', call.method, e);
                 }
@@ -112,7 +143,7 @@
             }
         });
 
-        function executeMethod(method, args, kwargs) {
+        async function executeMethod(method, args, kwargs) {
             switch (method) {
                 case 'addBasemap': {
                     const url = args[0];
@@ -912,6 +943,44 @@
                         rightContainer.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
                     });
                     window.addEventListener('pointerup', function() { splitDragging = false; });
+                    break;
+                }
+
+                case 'addCOGLayer': {
+                    await ensureDeckGL();
+                    initDeckOverlay();
+
+                    const cogId = kwargs.id || 'cog-' + Date.now();
+                    const geotiff = kwargs.geotiff;
+                    const cogFitBounds = kwargs.fitBounds !== false;
+                    const cogLayer = new COGLayer({
+                        id: cogId,
+                        geotiff,
+                        opacity: kwargs.opacity !== undefined ? kwargs.opacity : 1,
+                        visible: kwargs.visible !== false,
+                        debug: kwargs.debug || false,
+                        debugOpacity: kwargs.debugOpacity !== undefined ? kwargs.debugOpacity : 0.25,
+                        maxError: kwargs.maxError !== undefined ? kwargs.maxError : 0.125,
+                        geoKeysParser,
+                        onGeoTIFFLoad: (tiff, options) => {
+                            if (cogFitBounds) {
+                                const { west, south, east, north } = options.geographicBounds;
+                                map.fitBounds([[west, south], [east, north]], { padding: 40, duration: 1000 });
+                            }
+                        },
+                    });
+                    deckLayers.set(cogId, cogLayer);
+                    updateDeckOverlay();
+                    addedLayers.push({ id: cogId, name: kwargs.name || cogId, type: 'cog' });
+                    break;
+                }
+
+                case 'removeCOGLayer': {
+                    const removeCogId = args[0];
+                    deckLayers.delete(removeCogId);
+                    updateDeckOverlay();
+                    const cogIdx = addedLayers.findIndex(l => l.id === removeCogId);
+                    if (cogIdx > -1) addedLayers.splice(cogIdx, 1);
                     break;
                 }
 
