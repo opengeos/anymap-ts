@@ -57,9 +57,10 @@
 
         async function ensureDeckGL() {
             if (MapboxOverlay) return;
+            const DECKGL_V = '9.2.9';
             const [deckMapbox, cogModule, geokeysModule] = await Promise.all([
-                import('https://esm.sh/@deck.gl/mapbox@9.2.6?external=maplibre-gl'),
-                import('https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0'),
+                import(`https://esm.sh/@deck.gl/mapbox@${DECKGL_V}?external=maplibre-gl`),
+                import(`https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0?deps=@deck.gl/core@${DECKGL_V}`),
                 import('https://esm.sh/geotiff-geokeys-to-proj4@2024.4.13'),
             ]);
             MapboxOverlay = deckMapbox.MapboxOverlay;
