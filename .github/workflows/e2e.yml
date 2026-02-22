@@ -41,9 +41,8 @@ jobs:
                   npx playwright install chromium --with-deps
 
             - name: Run E2E tests
-              run: |
-                  cd tests/e2e
-                  npx playwright test
+              working-directory: tests/e2e
+              run: npx playwright test
 
             - name: Upload test artifacts
               if: failure()

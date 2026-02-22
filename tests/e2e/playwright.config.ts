@@ -12,8 +12,9 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command:
-      'jupyter lab --port=8888 --no-browser --ServerApp.token="" --ServerApp.disable_check_xsrf=true',
+    command: process.env.CI
+      ? 'uv run jupyter lab --port=8888 --no-browser --ServerApp.token="" --ServerApp.disable_check_xsrf=true'
+      : 'jupyter lab --port=8888 --no-browser --ServerApp.token="" --ServerApp.disable_check_xsrf=true',
     port: 8888,
     timeout: 60000,
     reuseExistingServer: !process.env.CI,
