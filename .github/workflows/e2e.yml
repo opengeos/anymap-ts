@@ -42,7 +42,7 @@ jobs:
 
             - name: Run E2E tests
               working-directory: tests/e2e
-              run: npx playwright test
+              run: uv run npx playwright test
 
             - name: Upload test artifacts
               if: failure()

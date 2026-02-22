@@ -29,6 +29,11 @@ vi.mock('../../src/maplibre/MapLibreRenderer', () => {
 
       this.initialize = vi.fn(async () => {
         el.appendChild(this.container);
+        // Simulate the real renderer registering model listeners
+        model.on('change:center', () => {});
+        model.on('change:zoom', () => {});
+        model.on('change:style', () => {});
+        model.on('change:_js_calls', () => {});
       });
 
       this.destroy = vi.fn(() => {
@@ -140,10 +145,27 @@ describe('MapLibre anywidget render', () => {
     cleanup();
   });
 
-  it('model listeners are registered for key traits', () => {
-    const listeners = model.getListeners();
+  it('model listeners are registered for key traits after render', async () => {
     // Before render, no listeners
-    expect(listeners.size).toBe(0);
+    expect(model.getListeners().size).toBe(0);
+
+    const { default: maplibreModule } = await import('../../src/maplibre/index');
+    const cleanup = maplibreModule.render({ model: model as any, el });
+
+    // Wait for async initialize to complete
+    await vi.waitFor(() => {
+      expect(el.querySelector('.maplibregl-map')).not.toBeNull();
+    });
+
+    // After render, listeners should be registered for key traits
+    const listeners = model.getListeners();
+    expect(listeners.size).toBeGreaterThan(0);
+    expect(listeners.has('change:center')).toBe(true);
+    expect(listeners.has('change:zoom')).toBe(true);
+    expect(listeners.has('change:style')).toBe(true);
+    expect(listeners.has('change:_js_calls')).toBe(true);
+
+    cleanup();
   });
 
   it('render returns a cleanup function', async () => {

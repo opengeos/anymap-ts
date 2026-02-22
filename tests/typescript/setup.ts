@@ -213,7 +213,7 @@ vi.mock('maplibre-gl-geo-editor/style.css', () => ({}));
 vi.mock('maplibre-gl-layer-control/style.css', () => ({}));
 vi.mock('maplibre-gl-lidar/style.css', () => ({}));
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}));
-vi.mock('../src/styles/maplibre.css', () => ({}));
+vi.mock('../../src/styles/maplibre.css', () => ({}));
 
 // Mock window.URL.createObjectURL
 if (typeof global.URL.createObjectURL === 'undefined') {
