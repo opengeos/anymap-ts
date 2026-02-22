@@ -4,12 +4,12 @@
   "private": true,
   "description": "End-to-end tests for anymap-ts widgets in JupyterLab",
   "scripts": {
-    "start": "uv run jupyter lab --config jupyter_server_test_config.py",
+    "start": "uv run jupyter lab --port=8888 --no-browser --ServerApp.token='' --ServerApp.disable_check_xsrf=true",
     "test": "npx playwright test",
-    "test:update": "npx playwright test --update-snapshots"
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug"
   },
   "devDependencies": {
-    "@jupyterlab/galata": "^5.0.5",
-    "@playwright/test": "^1.37.0"
+    "@playwright/test": "^1.49.0"
   }
 }

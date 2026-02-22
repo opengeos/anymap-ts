@@ -1,79 +1,57 @@
 /**
  * E2E test: MapLibre widget renders in JupyterLab.
  *
- * Uses Galata (Playwright) to open a notebook, run a cell that displays
- * a MapLibreMap widget, and verify that the widget output appears.
+ * Uses plain Playwright to open a notebook in JupyterLab,
+ * run a cell that displays a MapLibreMap widget, and verify output.
  */
-
-import { test, expect } from '@jupyterlab/galata';
+import { test, expect } from '@playwright/test';
 import path from 'path';
+import {
+  uploadNotebook,
+  deleteFile,
+  openNotebook,
+  runAllCells,
+  waitForCellOutput,
+  waitForWidgetOutput,
+  hasPythonErrors,
+  getPythonErrors,
+} from './helpers/jupyter';
 
 const NOTEBOOK = 'maplibre_basic.ipynb';
-
-test.use({ tmpPath: 'test-maplibre' });
+const SERVER_PATH = 'test_maplibre_basic.ipynb';
 
 test.describe('MapLibre Widget E2E', () => {
-  const errors: string[] = [];
-
-  test.beforeEach(async ({ page, tmpPath }) => {
-    errors.length = 0;
-
-    // Capture browser console errors for debugging
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        errors.push(msg.text());
-      }
-    });
-
+  test.beforeEach(async ({ page }) => {
     const notebookPath = path.resolve(__dirname, 'notebooks', NOTEBOOK);
-    await page.contents.uploadFile(notebookPath, `${tmpPath}/${NOTEBOOK}`);
+    await uploadNotebook(page, notebookPath, SERVER_PATH);
   });
 
-  test.afterEach(async ({ page, tmpPath }) => {
-    // Clean up
-    if (await page.contents.fileExists(`${tmpPath}/${NOTEBOOK}`)) {
-      await page.contents.deleteFile(`${tmpPath}/${NOTEBOOK}`);
+  test.afterEach(async ({ page }) => {
+    await deleteFile(page, SERVER_PATH).catch(() => {});
+  });
+
+  test('should execute MapLibre widget without errors', async ({ page }) => {
+    await openNotebook(page, SERVER_PATH);
+    await runAllCells(page);
+
+    // Verify cell produced output
+    const hasOutput = await waitForCellOutput(page);
+    expect(hasOutput, 'Cell should produce output').toBeTruthy();
+
+    // Check for Python errors
+    const hasErrors = await hasPythonErrors(page);
+    if (hasErrors) {
+      const errors = await getPythonErrors(page);
+      console.log('Python errors:', errors);
     }
-  });
+    expect(hasErrors, 'No Python errors should occur').toBeFalsy();
 
-  test('should render a MapLibre widget', async ({ page, tmpPath }) => {
-    await page.notebook.openByPath(`${tmpPath}/${NOTEBOOK}`);
-    await page.notebook.activate(NOTEBOOK);
-
-    // Run all cells and wait for execution
-    await page.notebook.runCellByCell();
-
-    // Wait for any cell output to appear first
-    const cellOutput = page.locator('.jp-OutputArea-child');
-    await expect(cellOutput.first()).toBeVisible({ timeout: 30000 });
-
-    // Check for widget output — anywidget creates a widget-subarea container
-    // Use a longer timeout since the widget JS loads asynchronously
-    const widgetOutput = page.locator('.jp-OutputArea-output .widget-subarea');
-    const hasWidget = await widgetOutput.first().isVisible({ timeout: 60000 }).catch(() => false);
-
+    // Check for widget rendering (best effort - may not render in CI)
+    const hasWidget = await waitForWidgetOutput(page);
     if (hasWidget) {
-      // Verify the widget has content (canvas or div)
-      const widgetContent = widgetOutput.locator('canvas, div').first();
-      await expect(widgetContent).toBeVisible({ timeout: 15000 });
-    } else {
-      // If widget-subarea isn't found, check for any output (text fallback)
-      // and log console errors for debugging
-      const anyOutput = page.locator('.jp-OutputArea-output');
-      await expect(anyOutput.first()).toBeVisible({ timeout: 10000 });
-
-      // Take a screenshot for debugging
-      await page.screenshot({ path: 'test-results/maplibre-debug.png' });
-
-      // Log captured errors
-      if (errors.length > 0) {
-        console.log('Browser console errors:', errors.join('\n'));
-      }
-
-      // Check that there are no Python errors in the output
-      const errorOutput = page.locator('.jp-OutputArea-output .jp-RenderedText[data-mime-type="application/vnd.jupyter.stderr"]');
-      const hasError = await errorOutput.count();
-      expect(hasError, 'Cell execution should not produce Python errors').toBe(0);
+      // Verify the map canvas exists (MapLibre renders to canvas)
+      const canvas = page.locator('.widget-subarea canvas').first();
+      await expect(canvas).toBeVisible({ timeout: 15000 });
     }
   });
 });

@@ -1,15 +1,23 @@
 /**
- * Configuration for Playwright using default from @jupyterlab/galata
+ * Playwright configuration for anymap-ts E2E tests.
+ *
+ * Uses plain Playwright (no Galata) for maximum compatibility.
+ * Starts JupyterLab via npm start and tests widget rendering.
  */
-const baseConfig = require('@jupyterlab/galata/lib/playwright-config');
+const { defineConfig } = require('@playwright/test');
 
-module.exports = {
-  ...baseConfig,
+module.exports = defineConfig({
   testDir: '.',
   testMatch: '*.test.ts',
   timeout: 120000,
   retries: 1,
   workers: 1,
+  use: {
+    baseURL: 'http://localhost:8888',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    trace: 'on-first-retry',
+  },
   webServer: {
     command: 'npm start',
     url: 'http://localhost:8888/lab',
@@ -21,4 +29,4 @@ module.exports = {
       maxDiffPixelRatio: 0.05,
     },
   },
-};
+});
