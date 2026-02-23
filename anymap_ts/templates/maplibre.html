@@ -106,6 +106,46 @@
             updateDeckOverlay();
         }
 
+        // COG layer display names for the adapter
+        const cogLayerNames = new Map();
+        const cogChangeCallbacks = [];
+
+        // CustomLayerAdapter for COG layers — used by maplibre-gl-layer-control
+        const cogLayerAdapter = {
+            type: 'cog',
+            getLayerIds() {
+                return Array.from(deckLayers.keys());
+            },
+            getLayerState(layerId) {
+                const layer = deckLayers.get(layerId);
+                if (!layer || !layer.props) return null;
+                return {
+                    visible: layer.props.visible !== false,
+                    opacity: layer.props.opacity ?? 1,
+                    name: cogLayerNames.get(layerId) || layerId,
+                };
+            },
+            setVisibility(layerId, visible) {
+                setCOGVisibility(layerId, visible);
+            },
+            setOpacity(layerId, opacity) {
+                setCOGOpacity(layerId, opacity);
+            },
+            getName(layerId) {
+                return cogLayerNames.get(layerId) || layerId;
+            },
+            getSymbolType() {
+                return 'cog';
+            },
+            onLayerChange(callback) {
+                cogChangeCallbacks.push(callback);
+                return () => {
+                    const idx = cogChangeCallbacks.indexOf(callback);
+                    if (idx >= 0) cogChangeCallbacks.splice(idx, 1);
+                };
+            },
+        };
+
         // Create map immediately (no imports needed)
         const map = new maplibregl.Map({
             container: 'map',
@@ -115,22 +155,6 @@
             bearing: state.bearing || 0,
             pitch: state.pitch || 0
         });
-
-        // Intercept map property changes to sync layer control actions to deck.gl layers
-        const _origSetLayout = map.setLayoutProperty.bind(map);
-        map.setLayoutProperty = function(layerId, name, value) {
-            _origSetLayout(layerId, name, value);
-            if (name === 'visibility' && deckLayers.has(layerId)) {
-                setCOGVisibility(layerId, value !== 'none');
-            }
-        };
-        const _origSetPaint = map.setPaintProperty.bind(map);
-        map.setPaintProperty = function(layerId, name, value) {
-            _origSetPaint(layerId, name, value);
-            if (name === 'circle-opacity' && deckLayers.has(layerId)) {
-                setCOGOpacity(layerId, value);
-            }
-        };
 
         // Initialize PMTiles protocol
         if (typeof pmtiles !== 'undefined') {
@@ -1020,31 +1044,25 @@
                         },
                     });
                     deckLayers.set(cogId, cogLayer);
+                    cogLayerNames.set(cogId, kwargs.name || cogId);
                     updateDeckOverlay();
 
-                    // Add an empty placeholder MapLibre layer so the layer control can see it
-                    if (!map.getSource(cogId + '-placeholder')) {
-                        map.addSource(cogId + '-placeholder', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+                    // Notify adapter so layer control picks up the new layer
+                    cogChangeCallbacks.forEach(cb => cb('add', cogId));
+
+                    // If layer control already exists, dynamically register the adapter
+                    if (layerControlInstance && typeof layerControlInstance.registerCustomAdapter === 'function') {
+                        layerControlInstance.registerCustomAdapter(cogLayerAdapter);
                     }
-                    if (!map.getLayer(cogId)) {
-                        map.addLayer({
-                            id: cogId,
-                            type: 'circle',
-                            source: cogId + '-placeholder',
-                            paint: { 'circle-radius': 0, 'circle-opacity': cogOpacity },
-                            layout: { visibility: kwargs.visible !== false ? 'visible' : 'none' }
-                        });
-                    }
-                    addedLayers.push({ id: cogId, name: kwargs.name || cogId, type: 'circle' });
                     break;
                 }
 
                 case 'removeCOGLayer': {
                     const removeCogId = args[0];
                     deckLayers.delete(removeCogId);
+                    cogLayerNames.delete(removeCogId);
                     updateDeckOverlay();
-                    const cogIdx = addedLayers.findIndex(l => l.id === removeCogId);
-                    if (cogIdx > -1) addedLayers.splice(cogIdx, 1);
+                    cogChangeCallbacks.forEach(cb => cb('remove', removeCogId));
                     break;
                 }
 
@@ -1091,29 +1109,24 @@
             return opacityMap[layerType];
         }
 
+        let layerControlInstance = null;
+
         function createLayerControl(config) {
             const position = config.position || 'top-right';
             const collapsed = config.collapsed !== false;
 
-            // Build layer IDs and states from addedLayers
+            // Build layer IDs from addedLayers (excludes COG layers managed by adapter)
             const layerIds = addedLayers.map(layer => layer.id);
-            const layerStates = {};
-            for (const layer of addedLayers) {
-                layerStates[layer.id] = {
-                    visible: true,
-                    opacity: 1.0,
-                    name: layer.name || layer.id
-                };
-            }
 
-            // Use maplibre-gl-layer-control with explicit layers
-            // Layers not in the array are grouped as "Background"
-            const layerControl = new LayerControl({
+            // Include COG adapter if any COG layers exist
+            const customAdapters = deckLayers.size > 0 ? [cogLayerAdapter] : [];
+
+            layerControlInstance = new LayerControl({
                 collapsed: collapsed,
                 layers: layerIds,
-                // layerStates: layerStates
+                customLayerAdapters: customAdapters.length > 0 ? customAdapters : undefined,
             });
-            map.addControl(layerControl, position);
+            map.addControl(layerControlInstance, position);
         }
 
         function createDrawControl(config) {
