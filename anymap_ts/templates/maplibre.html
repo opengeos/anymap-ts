@@ -68,7 +68,16 @@
             ]);
             COGLayer = cogModule.COGLayer;
             MapboxOverlay = deckMapbox.MapboxOverlay;
-            geoKeysParser = geokeysModule.default || geokeysModule;
+            const toProj4 = geokeysModule.toProj4;
+            const proj = cogModule.proj;
+            geoKeysParser = async (geoKeys) => {
+                const projDef = toProj4(geoKeys);
+                return {
+                    def: projDef.proj4,
+                    parsed: proj.parseCrs(projDef.proj4),
+                    coordinatesUnits: projDef.coordinatesUnits,
+                };
+            };
         }
 
         function initDeckOverlay() {
