@@ -57,19 +57,17 @@
 
         async function ensureDeckGL() {
             if (MapboxOverlay) return;
-            // Load geotiff first — it establishes the deck.gl version in globalThis.__deck_version
-            const [cogModule, geokeysModule] = await Promise.all([
-                import('https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0'),
+            // Pin all deck.gl packages to the same version to prevent
+            // esm.sh from resolving different semver ranges to different builds
+            const V = '9.2.9';
+            const [cogModule, deckMapbox, geokeysModule] = await Promise.all([
+                import(`https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0?deps=@deck.gl/core@${V},@deck.gl/layers@${V},@deck.gl/geo-layers@${V},@deck.gl/mesh-layers@${V},@deck.gl/extensions@${V}`),
+                import(`https://esm.sh/@deck.gl/mapbox@${V}?deps=@deck.gl/core@${V}`),
                 import('https://esm.sh/geotiff-geokeys-to-proj4@2024.4.13'),
             ]);
             COGLayer = cogModule.COGLayer;
-            geoKeysParser = geokeysModule.default || geokeysModule;
-            // Load @deck.gl/mapbox at the same version so the browser reuses the cached @deck.gl/core
-            const deckglVersion = globalThis.__deck_version || '9.2.9';
-            const deckMapbox = await import(
-                `https://esm.sh/@deck.gl/mapbox@${deckglVersion}?external=maplibre-gl`
-            );
             MapboxOverlay = deckMapbox.MapboxOverlay;
+            geoKeysParser = geokeysModule.default || geokeysModule;
         }
 
         function initDeckOverlay() {
