@@ -92,6 +92,20 @@
             }
         }
 
+        function setCOGVisibility(layerId, visible) {
+            const layer = deckLayers.get(layerId);
+            if (!layer) return;
+            deckLayers.set(layerId, layer.clone({ visible }));
+            updateDeckOverlay();
+        }
+
+        function setCOGOpacity(layerId, opacity) {
+            const layer = deckLayers.get(layerId);
+            if (!layer) return;
+            deckLayers.set(layerId, layer.clone({ opacity }));
+            updateDeckOverlay();
+        }
+
         // Create map immediately (no imports needed)
         const map = new maplibregl.Map({
             container: 'map',
@@ -101,6 +115,22 @@
             bearing: state.bearing || 0,
             pitch: state.pitch || 0
         });
+
+        // Intercept map property changes to sync layer control actions to deck.gl layers
+        const _origSetLayout = map.setLayoutProperty.bind(map);
+        map.setLayoutProperty = function(layerId, name, value) {
+            _origSetLayout(layerId, name, value);
+            if (name === 'visibility' && deckLayers.has(layerId)) {
+                setCOGVisibility(layerId, value !== 'none');
+            }
+        };
+        const _origSetPaint = map.setPaintProperty.bind(map);
+        map.setPaintProperty = function(layerId, name, value) {
+            _origSetPaint(layerId, name, value);
+            if (name === 'circle-opacity' && deckLayers.has(layerId)) {
+                setCOGOpacity(layerId, value);
+            }
+        };
 
         // Initialize PMTiles protocol
         if (typeof pmtiles !== 'undefined') {
@@ -535,6 +565,9 @@
                     if (map.getLayer(layerId)) {
                         map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
                     }
+                    if (deckLayers.has(layerId)) {
+                        setCOGVisibility(layerId, visible);
+                    }
                     break;
                 }
 
@@ -546,6 +579,9 @@
                         if (opacityProp) {
                             map.setPaintProperty(layerId, opacityProp, opacity);
                         }
+                    }
+                    if (deckLayers.has(layerId)) {
+                        setCOGOpacity(layerId, opacity);
                     }
                     break;
                 }
@@ -966,10 +1002,11 @@
                     const cogId = kwargs.id || 'cog-' + Date.now();
                     const geotiff = kwargs.geotiff;
                     const cogFitBounds = kwargs.fitBounds !== false;
+                    const cogOpacity = kwargs.opacity !== undefined ? kwargs.opacity : 1;
                     const cogLayer = new COGLayer({
                         id: cogId,
                         geotiff,
-                        opacity: kwargs.opacity !== undefined ? kwargs.opacity : 1,
+                        opacity: cogOpacity,
                         visible: kwargs.visible !== false,
                         debug: kwargs.debug || false,
                         debugOpacity: kwargs.debugOpacity !== undefined ? kwargs.debugOpacity : 0.25,
@@ -984,7 +1021,21 @@
                     });
                     deckLayers.set(cogId, cogLayer);
                     updateDeckOverlay();
-                    addedLayers.push({ id: cogId, name: kwargs.name || cogId, type: 'cog' });
+
+                    // Add an empty placeholder MapLibre layer so the layer control can see it
+                    if (!map.getSource(cogId + '-placeholder')) {
+                        map.addSource(cogId + '-placeholder', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+                    }
+                    if (!map.getLayer(cogId)) {
+                        map.addLayer({
+                            id: cogId,
+                            type: 'circle',
+                            source: cogId + '-placeholder',
+                            paint: { 'circle-radius': 0, 'circle-opacity': cogOpacity },
+                            layout: { visibility: kwargs.visible !== false ? 'visible' : 'none' }
+                        });
+                    }
+                    addedLayers.push({ id: cogId, name: kwargs.name || cogId, type: 'circle' });
                     break;
                 }
 
