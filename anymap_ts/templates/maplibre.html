@@ -48,6 +48,104 @@
             .then(mod => { addControlGridFn = mod.addControlGrid; })
             .catch(() => console.warn('ControlGrid library unavailable — control grid will be skipped'));
 
+        // deck.gl COG layer support (lazy-loaded on first use)
+        let MapboxOverlay = null;
+        let COGLayer = null;
+        let geoKeysParser = null;
+        let deckOverlay = null;
+        const deckLayers = new Map();
+
+        async function ensureDeckGL() {
+            if (MapboxOverlay) return;
+            // Use the deck.gl version already loaded by maplibre-gl-components,
+            // or fall back to 9.2.6. All deck.gl packages must share one version
+            // to avoid the "multiple versions detected" error.
+            const V = (globalThis.deck && globalThis.deck.VERSION) || '9.2.6';
+            const [cogModule, deckMapbox, geokeysModule] = await Promise.all([
+                import(`https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0?deps=@deck.gl/core@${V},@deck.gl/layers@${V},@deck.gl/geo-layers@${V},@deck.gl/mesh-layers@${V},@deck.gl/extensions@${V}`),
+                import(`https://esm.sh/@deck.gl/mapbox@${V}?deps=@deck.gl/core@${V}`),
+                import('https://esm.sh/geotiff-geokeys-to-proj4@2024.4.13'),
+            ]);
+            COGLayer = cogModule.COGLayer;
+            MapboxOverlay = deckMapbox.MapboxOverlay;
+            const toProj4 = geokeysModule.toProj4;
+            const proj = cogModule.proj;
+            geoKeysParser = async (geoKeys) => {
+                const projDef = toProj4(geoKeys);
+                return {
+                    def: projDef.proj4,
+                    parsed: proj.parseCrs(projDef.proj4),
+                    coordinatesUnits: projDef.coordinatesUnits,
+                };
+            };
+        }
+
+        function initDeckOverlay() {
+            if (deckOverlay) return;
+            deckOverlay = new MapboxOverlay({ layers: [] });
+            map.addControl(deckOverlay);
+        }
+
+        function updateDeckOverlay() {
+            if (deckOverlay) {
+                deckOverlay.setProps({ layers: Array.from(deckLayers.values()) });
+            }
+        }
+
+        function setCOGVisibility(layerId, visible) {
+            const layer = deckLayers.get(layerId);
+            if (!layer) return;
+            deckLayers.set(layerId, layer.clone({ visible }));
+            updateDeckOverlay();
+        }
+
+        function setCOGOpacity(layerId, opacity) {
+            const layer = deckLayers.get(layerId);
+            if (!layer) return;
+            deckLayers.set(layerId, layer.clone({ opacity }));
+            updateDeckOverlay();
+        }
+
+        // COG layer display names for the adapter
+        const cogLayerNames = new Map();
+        const cogChangeCallbacks = [];
+
+        // CustomLayerAdapter for COG layers — used by maplibre-gl-layer-control
+        const cogLayerAdapter = {
+            type: 'cog',
+            getLayerIds() {
+                return Array.from(deckLayers.keys());
+            },
+            getLayerState(layerId) {
+                const layer = deckLayers.get(layerId);
+                if (!layer || !layer.props) return null;
+                return {
+                    visible: layer.props.visible !== false,
+                    opacity: layer.props.opacity ?? 1,
+                    name: cogLayerNames.get(layerId) || layerId,
+                };
+            },
+            setVisibility(layerId, visible) {
+                setCOGVisibility(layerId, visible);
+            },
+            setOpacity(layerId, opacity) {
+                setCOGOpacity(layerId, opacity);
+            },
+            getName(layerId) {
+                return cogLayerNames.get(layerId) || layerId;
+            },
+            getSymbolType() {
+                return 'cog';
+            },
+            onLayerChange(callback) {
+                cogChangeCallbacks.push(callback);
+                return () => {
+                    const idx = cogChangeCallbacks.indexOf(callback);
+                    if (idx >= 0) cogChangeCallbacks.splice(idx, 1);
+                };
+            },
+        };
+
         // Create map immediately (no imports needed)
         const map = new maplibregl.Map({
             container: 'map',
@@ -68,7 +166,7 @@
             // 1. Replay ALL js_calls first (markers, legends, GeoJSON, etc.)
             for (const call of state.js_calls || []) {
                 try {
-                    executeMethod(call.method, call.args, call.kwargs);
+                    await executeMethod(call.method, call.args, call.kwargs);
                 } catch (e) {
                     console.error('Error executing', call.method, e);
                 }
@@ -112,7 +210,7 @@
             }
         });
 
-        function executeMethod(method, args, kwargs) {
+        async function executeMethod(method, args, kwargs) {
             switch (method) {
                 case 'addBasemap': {
                     const url = args[0];
@@ -491,6 +589,9 @@
                     if (map.getLayer(layerId)) {
                         map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
                     }
+                    if (deckLayers.has(layerId)) {
+                        setCOGVisibility(layerId, visible);
+                    }
                     break;
                 }
 
@@ -502,6 +603,9 @@
                         if (opacityProp) {
                             map.setPaintProperty(layerId, opacityProp, opacity);
                         }
+                    }
+                    if (deckLayers.has(layerId)) {
+                        setCOGOpacity(layerId, opacity);
                     }
                     break;
                 }
@@ -915,6 +1019,53 @@
                     break;
                 }
 
+                case 'addCOGLayer': {
+                    await ensureDeckGL();
+                    initDeckOverlay();
+
+                    const cogId = kwargs.id || 'cog-' + Date.now();
+                    const geotiff = kwargs.geotiff;
+                    const cogFitBounds = kwargs.fitBounds !== false;
+                    const cogOpacity = kwargs.opacity !== undefined ? kwargs.opacity : 1;
+                    const cogLayer = new COGLayer({
+                        id: cogId,
+                        geotiff,
+                        opacity: cogOpacity,
+                        visible: kwargs.visible !== false,
+                        debug: kwargs.debug || false,
+                        debugOpacity: kwargs.debugOpacity !== undefined ? kwargs.debugOpacity : 0.25,
+                        maxError: kwargs.maxError !== undefined ? kwargs.maxError : 0.125,
+                        geoKeysParser,
+                        onGeoTIFFLoad: (tiff, options) => {
+                            if (cogFitBounds) {
+                                const { west, south, east, north } = options.geographicBounds;
+                                map.fitBounds([[west, south], [east, north]], { padding: 40, duration: 1000 });
+                            }
+                        },
+                    });
+                    deckLayers.set(cogId, cogLayer);
+                    cogLayerNames.set(cogId, kwargs.name || cogId);
+                    updateDeckOverlay();
+
+                    // Notify adapter so layer control picks up the new layer
+                    cogChangeCallbacks.forEach(cb => cb('add', cogId));
+
+                    // If layer control already exists, dynamically register the adapter
+                    if (layerControlInstance && typeof layerControlInstance.registerCustomAdapter === 'function') {
+                        layerControlInstance.registerCustomAdapter(cogLayerAdapter);
+                    }
+                    break;
+                }
+
+                case 'removeCOGLayer': {
+                    const removeCogId = args[0];
+                    deckLayers.delete(removeCogId);
+                    cogLayerNames.delete(removeCogId);
+                    updateDeckOverlay();
+                    cogChangeCallbacks.forEach(cb => cb('remove', removeCogId));
+                    break;
+                }
+
                 default:
                     console.log('Unknown method:', method);
             }
@@ -958,29 +1109,24 @@
             return opacityMap[layerType];
         }
 
+        let layerControlInstance = null;
+
         function createLayerControl(config) {
             const position = config.position || 'top-right';
             const collapsed = config.collapsed !== false;
 
-            // Build layer IDs and states from addedLayers
+            // Build layer IDs from addedLayers (excludes COG layers managed by adapter)
             const layerIds = addedLayers.map(layer => layer.id);
-            const layerStates = {};
-            for (const layer of addedLayers) {
-                layerStates[layer.id] = {
-                    visible: true,
-                    opacity: 1.0,
-                    name: layer.name || layer.id
-                };
-            }
 
-            // Use maplibre-gl-layer-control with explicit layers
-            // Layers not in the array are grouped as "Background"
-            const layerControl = new LayerControl({
+            // Include COG adapter if any COG layers exist
+            const customAdapters = deckLayers.size > 0 ? [cogLayerAdapter] : [];
+
+            layerControlInstance = new LayerControl({
                 collapsed: collapsed,
                 layers: layerIds,
-                // layerStates: layerStates
+                customLayerAdapters: customAdapters.length > 0 ? customAdapters : undefined,
             });
-            map.addControl(layerControl, position);
+            map.addControl(layerControlInstance, position);
         }
 
         function createDrawControl(config) {
