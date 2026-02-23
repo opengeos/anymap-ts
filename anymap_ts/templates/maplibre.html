@@ -57,9 +57,10 @@
 
         async function ensureDeckGL() {
             if (MapboxOverlay) return;
-            // Pin all deck.gl packages to the same version to prevent
-            // esm.sh from resolving different semver ranges to different builds
-            const V = '9.2.9';
+            // Use the deck.gl version already loaded by maplibre-gl-components,
+            // or fall back to 9.2.6. All deck.gl packages must share one version
+            // to avoid the "multiple versions detected" error.
+            const V = (globalThis.deck && globalThis.deck.VERSION) || '9.2.6';
             const [cogModule, deckMapbox, geokeysModule] = await Promise.all([
                 import(`https://esm.sh/@developmentseed/deck.gl-geotiff@0.2.0?deps=@deck.gl/core@${V},@deck.gl/layers@${V},@deck.gl/geo-layers@${V},@deck.gl/mesh-layers@${V},@deck.gl/extensions@${V}`),
                 import(`https://esm.sh/@deck.gl/mapbox@${V}?deps=@deck.gl/core@${V}`),
