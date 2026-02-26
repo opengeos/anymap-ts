@@ -235,13 +235,17 @@ class MapLibreMap(MapWidget):
             The layer ID string, or None.
         """
         import urllib.request
+        import urllib.error
 
         style = self.style
         if isinstance(style, str):
             if style.startswith(("http://", "https://")):
                 req = urllib.request.Request(style, headers={"User-Agent": "anymap-ts"})
-                with urllib.request.urlopen(req) as resp:
-                    style = json.loads(resp.read())
+                try:
+                    with urllib.request.urlopen(req) as resp:
+                        style = json.loads(resp.read())
+                except (urllib.error.URLError, json.JSONDecodeError):
+                    return None
             else:
                 return None
 
