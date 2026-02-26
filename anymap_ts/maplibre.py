@@ -62,6 +62,7 @@ class MapLibreMap(MapWidget):
         bearing: float = 0.0,
         pitch: float = 0.0,
         max_pitch: float = 85.0,
+        max_zoom: float = 25.5,
         projection: str = "mercator",
         controls: Optional[Dict[str, Any]] = None,
         **kwargs,
@@ -77,6 +78,7 @@ class MapLibreMap(MapWidget):
             bearing: Map bearing in degrees.
             pitch: Map pitch in degrees.
             max_pitch: Maximum pitch angle in degrees (default: 85).
+            max_zoom: Maximum zoom level (default: 25.5).
             projection: Map projection. Supported values: 'mercator', 'globe'.
                 Default is 'mercator'.
             controls: Dict of controls to add. If None, defaults to
@@ -100,6 +102,7 @@ class MapLibreMap(MapWidget):
             bearing=bearing,
             pitch=pitch,
             max_pitch=max_pitch,
+            max_zoom=max_zoom,
             projection=projection,
             **kwargs,
         )
@@ -221,34 +224,77 @@ class MapLibreMap(MapWidget):
     # Basemap Methods
     # -------------------------------------------------------------------------
 
+    def get_first_symbol_id(self) -> Optional[str]:
+        """Get the ID of the first symbol layer in the map style.
+
+        Parses the style (fetching it from the URL if necessary) and
+        returns the ``id`` of the first layer whose ``type`` is
+        ``"symbol"``, or ``None`` if no symbol layer exists.
+
+        Returns:
+            The layer ID string, or None.
+        """
+        import urllib.request
+
+        style = self.style
+        if isinstance(style, str):
+            if style.startswith(("http://", "https://")):
+                req = urllib.request.Request(style, headers={"User-Agent": "anymap-ts"})
+                with urllib.request.urlopen(req) as resp:
+                    style = json.loads(resp.read())
+            else:
+                return None
+
+        if isinstance(style, dict):
+            for layer in style.get("layers", []):
+                if layer.get("type") == "symbol":
+                    return layer.get("id")
+        return None
+
     def add_basemap(
         self,
         basemap: str = "OpenStreetMap",
         attribution: Optional[str] = None,
+        before_id: Optional[str] = None,
         **kwargs,
     ) -> None:
         """Add a basemap layer.
 
         Args:
-            basemap: Name of basemap provider (e.g., "OpenStreetMap", "CartoDB.Positron")
-            attribution: Custom attribution text
-            **kwargs: Additional options
+            basemap: Name of a basemap provider (e.g., "OpenStreetMap",
+                "CartoDB.Positron") or a tile URL template containing
+                ``{x}``, ``{y}``, and ``{z}`` placeholders (e.g.,
+                ``"https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"``).
+            attribution: Custom attribution text.
+            before_id: ID of an existing layer to insert the basemap before.
+                If None, the basemap is added on top of existing layers.
+            **kwargs: Additional options.
         """
-        url, default_attribution = get_basemap_url(basemap)
-        self.call_js_method(
-            "addBasemap",
-            url,
+        # Detect raw tile URLs
+        if "/{x}" in basemap or "={x}" in basemap or "{x}" in basemap:
+            url = basemap
+            default_attribution = attribution or ""
+            name = kwargs.pop("name", None) or "custom-basemap"
+        else:
+            url, default_attribution = get_basemap_url(basemap)
+            name = basemap
+
+        js_kwargs: Dict[str, Any] = dict(
             attribution=attribution or default_attribution,
-            name=basemap,
+            name=name,
             **kwargs,
         )
+        if before_id is not None:
+            js_kwargs["beforeId"] = before_id
+
+        self.call_js_method("addBasemap", url, **js_kwargs)
 
         # Track in layer dict
         basemaps = self._layer_dict.get("Basemaps", [])
-        if basemap not in basemaps:
+        if name not in basemaps:
             self._layer_dict = {
                 **self._layer_dict,
-                "Basemaps": basemaps + [basemap],
+                "Basemaps": basemaps + [name],
             }
 
     # -------------------------------------------------------------------------
@@ -3617,6 +3663,165 @@ class MapLibreMap(MapWidget):
             controls = dict(self._controls)
             del controls["print-control"]
             self._controls = controls
+
+    # -------------------------------------------------------------------------
+    # GeoPhoto Control (Street-level imagery viewer)
+    # -------------------------------------------------------------------------
+
+    def add_geophoto_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        title: str = "GeoPhoto",
+        panel_width: int = 360,
+        max_height: int = 500,
+        show_path: bool = True,
+        show_path_direction_arrows: bool = False,
+        path_direction_arrow_spacing: int = 48,
+        path_direction_arrow_size: int = 11,
+        path_direction_arrow_color: Optional[str] = None,
+        preload_url: Optional[str] = None,
+        fit_bounds_on_load: bool = True,
+        fit_bounds_padding: int = 50,
+        show_objects: bool = True,
+        path_color: str = "#4a90d9",
+        point_color: str = "#4a90d9",
+        selected_point_color: str = "#f97316",
+        **kwargs,
+    ) -> None:
+        """Add a GeoPhoto control for visualizing geo-tagged photos and trajectories.
+
+        The GeoPhoto control provides a UI panel for loading and viewing
+        street-level imagery with camera trajectories, supporting local
+        folders, ZIP files, and remote URLs.
+
+        Args:
+            position: Control position ('top-left', 'top-right',
+                'bottom-left', 'bottom-right').
+            collapsed: Whether the panel starts collapsed.
+            title: Title displayed in the panel header.
+            panel_width: Width of the panel in pixels.
+            max_height: Maximum height of the panel in pixels.
+            show_path: Show line connecting camera positions.
+            show_path_direction_arrows: Show directional arrows along the path.
+            path_direction_arrow_spacing: Spacing between arrows in pixels.
+            path_direction_arrow_size: Arrow icon size in pixels.
+            path_direction_arrow_color: Arrow color (defaults to path_color).
+            preload_url: ZIP dataset URL to auto-load when the control is added.
+            fit_bounds_on_load: Auto-fit map to data bounds when loaded.
+            fit_bounds_padding: Padding in pixels for fitBounds.
+            show_objects: Show detected objects layer.
+            path_color: Path line color.
+            point_color: Camera point fill color.
+            selected_point_color: Selected camera point color.
+            **kwargs: Additional GeoPhotoControl options.
+        """
+        self._validate_position(position)
+
+        js_kwargs = dict(
+            position=position,
+            collapsed=collapsed,
+            title=title,
+            panelWidth=panel_width,
+            maxHeight=max_height,
+            showPath=show_path,
+            showPathDirectionArrows=show_path_direction_arrows,
+            pathDirectionArrowSpacing=path_direction_arrow_spacing,
+            pathDirectionArrowSize=path_direction_arrow_size,
+            fitBoundsOnLoad=fit_bounds_on_load,
+            fitBoundsPadding=fit_bounds_padding,
+            showObjects=show_objects,
+            pathColor=path_color,
+            pointColor=point_color,
+            selectedPointColor=selected_point_color,
+        )
+        if path_direction_arrow_color is not None:
+            js_kwargs["pathDirectionArrowColor"] = path_direction_arrow_color
+        if preload_url is not None:
+            js_kwargs["preloadUrl"] = preload_url
+
+        self.call_js_method("addGeoPhotoControl", **js_kwargs, **kwargs)
+        self._controls = {
+            **self._controls,
+            "geophoto-control": {
+                "type": "geophoto-control",
+                "position": position,
+                "collapsed": collapsed,
+            },
+        }
+
+    def remove_geophoto_control(self) -> None:
+        """Remove the GeoPhoto control from the map."""
+        self.call_js_method("removeGeoPhotoControl")
+        if "geophoto-control" in self._controls:
+            controls = dict(self._controls)
+            del controls["geophoto-control"]
+            self._controls = controls
+
+    def load_geophoto_zip(self, url: str) -> None:
+        """Load GeoPhoto data from a ZIP file URL.
+
+        The ZIP file should contain trajectory.geojson (required),
+        trajectory.json (optional), objects.geojson (optional),
+        and image files.
+
+        Args:
+            url: URL to a ZIP file containing GeoPhoto data.
+                The server must allow CORS requests.
+        """
+        self.call_js_method("loadGeoPhotoZip", url=url)
+
+    def load_geophoto_urls(
+        self,
+        trajectory_geojson_url: str,
+        trajectory_json_url: Optional[str] = None,
+        objects_url: Optional[str] = None,
+        image_base_path: Optional[str] = None,
+    ) -> None:
+        """Load GeoPhoto data from individual URLs.
+
+        Args:
+            trajectory_geojson_url: URL to trajectory.geojson file (required).
+            trajectory_json_url: URL to trajectory.json metadata file.
+            objects_url: URL to objects.geojson file with detected objects.
+            image_base_path: Base URL path for resolving image filenames.
+        """
+        js_kwargs: Dict[str, str] = {"trajectoryGeojsonUrl": trajectory_geojson_url}
+        if trajectory_json_url is not None:
+            js_kwargs["trajectoryJsonUrl"] = trajectory_json_url
+        if objects_url is not None:
+            js_kwargs["objectsUrl"] = objects_url
+        if image_base_path is not None:
+            js_kwargs["imageBasePath"] = image_base_path
+        self.call_js_method("loadGeoPhotoUrls", **js_kwargs)
+
+    def geophoto_select_camera(self, index: int) -> None:
+        """Select a specific camera by index in the GeoPhoto viewer.
+
+        Args:
+            index: Zero-based camera index.
+        """
+        self.call_js_method("geoPhotoSelectCamera", index=index)
+
+    def geophoto_next_camera(self) -> None:
+        """Navigate to the next camera in the GeoPhoto viewer."""
+        self.call_js_method("geoPhotoNextCamera")
+
+    def geophoto_prev_camera(self) -> None:
+        """Navigate to the previous camera in the GeoPhoto viewer."""
+        self.call_js_method("geoPhotoPrevCamera")
+
+    def geophoto_play(self) -> None:
+        """Start auto-playing through cameras in the GeoPhoto viewer."""
+        self.call_js_method("geoPhotoPlay")
+
+    def geophoto_stop(self) -> None:
+        """Stop auto-playing in the GeoPhoto viewer."""
+        self.call_js_method("geoPhotoStop")
+
+    def geophoto_clear_data(self) -> None:
+        """Clear all loaded data in the GeoPhoto viewer."""
+        self.call_js_method("geoPhotoClearData")
 
     # -------------------------------------------------------------------------
     # FlatGeobuf Layer

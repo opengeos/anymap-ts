@@ -150,6 +150,7 @@ nav:
           - maplibre/deck_layers.ipynb
           - maplibre/feature_query_filter.ipynb
           - maplibre/flatgeobuf.ipynb
+          - maplibre/geophoto.ipynb
           - maplibre/globe_projection.ipynb
           - maplibre/image_overlay.ipynb
           - maplibre/layer_management.ipynb

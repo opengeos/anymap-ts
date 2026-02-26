@@ -64,6 +64,7 @@ import { LayerControlPlugin } from './plugins/LayerControlPlugin';
 import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter } from './adapters';
 import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
 import type { LidarControlOptions, LidarLayerOptions, LidarColorScheme } from '../types/lidar';
+import { GeoPhotoControl } from 'maplibre-gl-geophoto';
 
 // Import controls from maplibre-gl-components
 import {
@@ -140,6 +141,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   protected searchControl: SearchControl | null = null;
   protected measureControl: MeasureControl | null = null;
   protected printControl: PrintControl | null = null;
+  protected geoPhotoControl: GeoPhotoControl | null = null;
 
   // Route animations
   protected animations: globalThis.Map<string, {
@@ -262,6 +264,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const pitch = this.model.get('pitch') || 0;
     const maxPitchValue = this.model.get('max_pitch');
     const maxPitch = typeof maxPitchValue === 'number' ? maxPitchValue : 85;
+    const maxZoomValue = this.model.get('max_zoom');
+    const maxZoom = typeof maxZoomValue === 'number' ? maxZoomValue : 25.5;
 
     return new MapLibreMap({
       container: this.mapContainer!,
@@ -271,6 +275,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       bearing,
       pitch,
       maxPitch,
+      maxZoom,
       attributionControl: false,
     });
   }
@@ -537,6 +542,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.registerMethod('addPrintControl', this.handleAddPrintControl.bind(this));
     this.registerMethod('removePrintControl', this.handleRemovePrintControl.bind(this));
 
+    // GeoPhoto Control
+    this.registerMethod('addGeoPhotoControl', this.handleAddGeoPhotoControl.bind(this));
+    this.registerMethod('removeGeoPhotoControl', this.handleRemoveGeoPhotoControl.bind(this));
+    this.registerMethod('loadGeoPhotoZip', this.handleLoadGeoPhotoZip.bind(this));
+    this.registerMethod('loadGeoPhotoUrls', this.handleLoadGeoPhotoUrls.bind(this));
+    this.registerMethod('geoPhotoSelectCamera', this.handleGeoPhotoSelectCamera.bind(this));
+    this.registerMethod('geoPhotoNextCamera', this.handleGeoPhotoNextCamera.bind(this));
+    this.registerMethod('geoPhotoPrevCamera', this.handleGeoPhotoPrevCamera.bind(this));
+    this.registerMethod('geoPhotoPlay', this.handleGeoPhotoPlay.bind(this));
+    this.registerMethod('geoPhotoStop', this.handleGeoPhotoStop.bind(this));
+    this.registerMethod('geoPhotoClearData', this.handleGeoPhotoClearData.bind(this));
+
     // FlatGeobuf
     this.registerMethod('addFlatGeobuf', this.handleAddFlatGeobuf.bind(this));
     this.registerMethod('removeFlatGeobuf', this.handleRemoveFlatGeobuf.bind(this));
@@ -724,6 +741,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const [url] = args as [string];
     const name = (kwargs.name as string) || 'basemap';
     const attribution = (kwargs.attribution as string) || '';
+    const beforeId = kwargs.beforeId as string | undefined;
 
     const sourceId = `basemap-${name}`;
     const layerId = `${name}`;
@@ -741,17 +759,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
     }
 
-    // Add layer at bottom (before first layer or first symbol layer)
+    // Add layer, optionally before a specified layer
     if (!this.map.getLayer(layerId)) {
-      const layers = this.map.getStyle().layers || [];
-      const firstSymbolId = layers.find((l) => l.type === 'symbol')?.id;
-
       const layerConfig = {
         id: layerId,
         type: 'raster' as const,
         source: sourceId,
       };
-      this.map.addLayer(layerConfig, firstSymbolId);
+      this.map.addLayer(layerConfig, beforeId);
       // Persist layer state for multi-cell rendering
       this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
     }
@@ -5048,6 +5063,150 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   }
 
   // -------------------------------------------------------------------------
+  // GeoPhoto Control handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddGeoPhotoControl(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+
+    // Remove existing geophoto control
+    if (this.geoPhotoControl) {
+      this.map.removeControl(this.geoPhotoControl as unknown as maplibregl.IControl);
+      this.controlsMap.delete('geophoto-control');
+      this.geoPhotoControl = null;
+    }
+
+    // Build options
+    const options: Record<string, unknown> = {};
+    if (kwargs.collapsed !== undefined) options.collapsed = kwargs.collapsed;
+    if (kwargs.title !== undefined) options.title = kwargs.title;
+    if (kwargs.panelWidth !== undefined) options.panelWidth = kwargs.panelWidth;
+    if (kwargs.maxHeight !== undefined) options.maxHeight = kwargs.maxHeight;
+    if (kwargs.showPath !== undefined) options.showPath = kwargs.showPath;
+    if (kwargs.showPathDirectionArrows !== undefined) options.showPathDirectionArrows = kwargs.showPathDirectionArrows;
+    if (kwargs.pathDirectionArrowSpacing !== undefined) options.pathDirectionArrowSpacing = kwargs.pathDirectionArrowSpacing;
+    if (kwargs.pathDirectionArrowSize !== undefined) options.pathDirectionArrowSize = kwargs.pathDirectionArrowSize;
+    if (kwargs.pathDirectionArrowColor !== undefined) options.pathDirectionArrowColor = kwargs.pathDirectionArrowColor;
+    if (kwargs.preloadUrl !== undefined) options.preloadUrl = kwargs.preloadUrl;
+    if (kwargs.fitBoundsOnLoad !== undefined) options.fitBoundsOnLoad = kwargs.fitBoundsOnLoad;
+    if (kwargs.fitBoundsPadding !== undefined) options.fitBoundsPadding = kwargs.fitBoundsPadding;
+    if (kwargs.showObjects !== undefined) options.showObjects = kwargs.showObjects;
+    if (kwargs.pathColor !== undefined) options.pathColor = kwargs.pathColor;
+    if (kwargs.pointColor !== undefined) options.pointColor = kwargs.pointColor;
+    if (kwargs.selectedPointColor !== undefined) options.selectedPointColor = kwargs.selectedPointColor;
+
+    this.geoPhotoControl = new GeoPhotoControl(options as any);
+
+    // Wire events
+    this.geoPhotoControl.on('cameraselect', (event: any) => {
+      const camera = event.camera;
+      const cameraIndex = event.cameraIndex;
+      this.sendEvent('geophoto:cameraselect', {
+        camera: camera ? {
+          id: camera.id,
+          coordinates: camera.coordinates,
+          elevation: camera.elevation,
+          captureTime: camera.captureTime,
+        } : null,
+        cameraIndex,
+      });
+    });
+
+    this.geoPhotoControl.on('dataloaded', () => {
+      this.sendEvent('geophoto:dataloaded', {
+        cameraCount: this.geoPhotoControl?.getCameras().length || 0,
+      });
+    });
+
+    this.geoPhotoControl.on('datacleared', () => {
+      this.sendEvent('geophoto:datacleared', {});
+    });
+
+    this.map.addControl(this.geoPhotoControl as unknown as maplibregl.IControl, position);
+    this.controlsMap.set('geophoto-control', this.geoPhotoControl as unknown as maplibregl.IControl);
+    this.stateManager.addControl('geophoto-control', 'geophoto-control', position, kwargs);
+  }
+
+  private handleRemoveGeoPhotoControl(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.map || !this.geoPhotoControl) return;
+
+    this.geoPhotoControl.clearData();
+    this.map.removeControl(this.geoPhotoControl as unknown as maplibregl.IControl);
+    this.controlsMap.delete('geophoto-control');
+    this.stateManager.removeControl('geophoto-control');
+    this.geoPhotoControl = null;
+  }
+
+  private async handleLoadGeoPhotoZip(_args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.geoPhotoControl) {
+      console.warn('GeoPhoto control not added. Call addGeoPhotoControl first.');
+      return;
+    }
+    const url = kwargs.url as string;
+    if (!url) {
+      console.error('loadGeoPhotoZip requires a url parameter');
+      return;
+    }
+    await this.geoPhotoControl.loadZipFromUrl(url);
+  }
+
+  private async handleLoadGeoPhotoUrls(_args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+    if (!this.geoPhotoControl) {
+      console.warn('GeoPhoto control not added. Call addGeoPhotoControl first.');
+      return;
+    }
+    const trajectoryGeojsonUrl = kwargs.trajectoryGeojsonUrl as string;
+    if (!trajectoryGeojsonUrl) {
+      console.error('loadGeoPhotoUrls requires a trajectoryGeojsonUrl parameter');
+      return;
+    }
+    const trajectoryJsonUrl = kwargs.trajectoryJsonUrl as string | undefined;
+    const objectsUrl = kwargs.objectsUrl as string | undefined;
+    const imageBasePath = kwargs.imageBasePath as string | undefined;
+    await this.geoPhotoControl.loadFromUrls(
+      trajectoryGeojsonUrl,
+      trajectoryJsonUrl,
+      objectsUrl,
+      imageBasePath,
+    );
+  }
+
+  private handleGeoPhotoSelectCamera(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.geoPhotoControl) return;
+    const index = kwargs.index as number;
+    if (typeof index === 'number') {
+      this.geoPhotoControl.selectCamera(index);
+    }
+  }
+
+  private handleGeoPhotoNextCamera(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.geoPhotoControl) return;
+    this.geoPhotoControl.nextCamera();
+  }
+
+  private handleGeoPhotoPrevCamera(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.geoPhotoControl) return;
+    this.geoPhotoControl.prevCamera();
+  }
+
+  private handleGeoPhotoPlay(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.geoPhotoControl) return;
+    this.geoPhotoControl.play();
+  }
+
+  private handleGeoPhotoStop(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.geoPhotoControl) return;
+    this.geoPhotoControl.stop();
+  }
+
+  private handleGeoPhotoClearData(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.geoPhotoControl) return;
+    this.geoPhotoControl.clearData();
+  }
+
+  // -------------------------------------------------------------------------
   // FlatGeobuf handlers
   // -------------------------------------------------------------------------
 
@@ -5224,6 +5383,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (this.printControl && this.map) {
       this.map.removeControl(this.printControl as unknown as maplibregl.IControl);
       this.printControl = null;
+    }
+
+    // Remove GeoPhoto control
+    if (this.geoPhotoControl && this.map) {
+      this.geoPhotoControl.clearData();
+      this.map.removeControl(this.geoPhotoControl as unknown as maplibregl.IControl);
+      this.geoPhotoControl = null;
     }
 
     // Remove control grid
