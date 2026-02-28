@@ -80,6 +80,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
     // Create deck.gl overlay
     if (this.map) {
       this.deckOverlay = new MapboxOverlay({
+        interleaved: true,
         layers: [],
       });
       this.map.addControl(this.deckOverlay as any);

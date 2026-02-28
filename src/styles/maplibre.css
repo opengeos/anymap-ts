@@ -89,6 +89,11 @@
 /* Marker styling */
 .maplibregl-marker {
   cursor: pointer;
+  z-index: 2;
+}
+
+.maplibregl-popup {
+  z-index: 3;
 }
 
 /* Scale control */

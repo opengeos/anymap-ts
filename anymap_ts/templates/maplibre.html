@@ -82,7 +82,7 @@
 
         function initDeckOverlay() {
             if (deckOverlay) return;
-            deckOverlay = new MapboxOverlay({ layers: [] });
+            deckOverlay = new MapboxOverlay({ interleaved: true, layers: [] });
             map.addControl(deckOverlay);
         }
 
