@@ -116,6 +116,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   protected deckOverlay: MapboxOverlay | null = null;
   protected deckLayers: globalThis.Map<string, unknown> = new globalThis.Map();
 
+  // Sentinel layer ID used as ordering anchor for deck.gl layers in interleaved mode.
+  // Deck.gl layers render below this sentinel; native MapLibre layers render above it.
+  protected static readonly DECK_SENTINEL_ID = '__deck-overlay-anchor';
+  // Track user-added native MapLibre overlay layer IDs (for sentinel positioning)
+  private userOverlayLayerIds: string[] = [];
+
   // Zarr layers
   protected zarrLayers: globalThis.Map<string, ZarrLayer> = new globalThis.Map();
 
@@ -826,6 +832,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
       // Persist layer state for multi-cell rendering
       this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
+      // Track as user overlay layer for deck.gl ordering
+      this.userOverlayLayerIds.push(layerId);
     }
 
     // Fit bounds
@@ -1601,16 +1609,45 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       layers: [],
     });
     this.map.addControl(this.deckOverlay as unknown as maplibregl.IControl);
+
+    // Add a transparent sentinel layer as an ordering anchor.
+    // Deck.gl layers use beforeId to render below this sentinel,
+    // and native MapLibre layers added afterwards render above it.
+    if (!this.map.getLayer(MapLibreRenderer.DECK_SENTINEL_ID)) {
+      const beforeId = this.userOverlayLayerIds.length > 0
+        ? this.userOverlayLayerIds[0]
+        : undefined;
+      this.map.addLayer({
+        id: MapLibreRenderer.DECK_SENTINEL_ID,
+        type: 'background',
+        paint: { 'background-opacity': 0 },
+      }, beforeId);
+    }
   }
 
   /**
    * Update deck.gl overlay with current layers.
+   * Ensures all deck.gl layers have beforeId set to the sentinel layer
+   * so they render below native MapLibre layers in interleaved mode.
    */
   protected updateDeckOverlay(): void {
-    if (this.deckOverlay) {
-      const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
-      this.deckOverlay.setProps({ layers });
+    if (!this.deckOverlay) return;
+
+    const sentinelId = MapLibreRenderer.DECK_SENTINEL_ID;
+    const hasSentinel = this.map?.getLayer(sentinelId);
+
+    // Inject beforeId on deck.gl layers that don't have one
+    if (hasSentinel) {
+      for (const [id, layer] of this.deckLayers) {
+        const typedLayer = layer as { clone?: (props: Record<string, unknown>) => unknown; props?: { beforeId?: string } };
+        if (typedLayer.clone && !typedLayer.props?.beforeId) {
+          this.deckLayers.set(id, typedLayer.clone({ beforeId: sentinelId }));
+        }
+      }
     }
+
+    const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
+    this.deckOverlay.setProps({ layers });
   }
 
   protected handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {
@@ -3719,6 +3756,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
         // Persist layer state for multi-cell rendering
         this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
+        // Track as user overlay layer for deck.gl ordering
+        this.userOverlayLayerIds.push(layerId);
       }
     } catch (error) {
       console.error(`[anymap-ts] Error adding PMTiles layer "${layerId}":`, error);
@@ -5321,6 +5360,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         };
         this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
         this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
+        // Track as user overlay layer for deck.gl ordering
+        this.userOverlayLayerIds.push(layerId);
       }
 
       // Fit bounds

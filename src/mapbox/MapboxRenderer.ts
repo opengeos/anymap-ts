@@ -104,6 +104,10 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   protected deckOverlay: MapboxOverlay | null = null;
   protected deckLayers: globalThis.Map<string, unknown> = new globalThis.Map();
 
+  // Sentinel layer ID used as ordering anchor for deck.gl layers in interleaved mode.
+  private static readonly DECK_SENTINEL_ID = '__deck-overlay-anchor';
+  private userOverlayLayerIds: string[] = [];
+
   // Zarr layers
   protected zarrLayers: globalThis.Map<string, ZarrLayer> = new globalThis.Map();
 
@@ -770,6 +774,8 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
         source: sourceId,
         paint: layerPaint,
       });
+      // Track as user overlay layer for deck.gl ordering
+      this.userOverlayLayerIds.push(layerId);
     }
 
     if (fitBounds && kwargs.bounds) {
@@ -1262,16 +1268,40 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       layers: [],
     });
     this.map.addControl(this.deckOverlay as unknown as mapboxgl.IControl);
+
+    // Add a transparent sentinel layer as an ordering anchor.
+    if (!this.map.getLayer(MapboxRenderer.DECK_SENTINEL_ID)) {
+      const beforeId = this.userOverlayLayerIds.length > 0
+        ? this.userOverlayLayerIds[0]
+        : undefined;
+      this.map.addLayer({
+        id: MapboxRenderer.DECK_SENTINEL_ID,
+        type: 'background',
+        paint: { 'background-opacity': 0 },
+      } as mapboxgl.AnyLayer, beforeId);
+    }
   }
 
   /**
    * Update deck.gl overlay with current layers.
    */
   private updateDeckOverlay(): void {
-    if (this.deckOverlay) {
-      const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
-      this.deckOverlay.setProps({ layers });
+    if (!this.deckOverlay) return;
+
+    const sentinelId = MapboxRenderer.DECK_SENTINEL_ID;
+    const hasSentinel = this.map?.getLayer(sentinelId);
+
+    if (hasSentinel) {
+      for (const [id, layer] of this.deckLayers) {
+        const typedLayer = layer as { clone?: (props: Record<string, unknown>) => unknown; props?: { beforeId?: string } };
+        if (typedLayer.clone && !typedLayer.props?.beforeId) {
+          this.deckLayers.set(id, typedLayer.clone({ beforeId: sentinelId }));
+        }
+      }
     }
+
+    const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
+    this.deckOverlay.setProps({ layers });
   }
 
   private handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {

@@ -80,16 +80,33 @@
             };
         }
 
+        const DECK_SENTINEL_ID = '__deck-overlay-anchor';
+
         function initDeckOverlay() {
             if (deckOverlay) return;
             deckOverlay = new MapboxOverlay({ interleaved: true, layers: [] });
             map.addControl(deckOverlay);
+            // Add transparent sentinel layer as ordering anchor
+            if (!map.getLayer(DECK_SENTINEL_ID)) {
+                map.addLayer({
+                    id: DECK_SENTINEL_ID,
+                    type: 'background',
+                    paint: { 'background-opacity': 0 }
+                });
+            }
         }
 
         function updateDeckOverlay() {
-            if (deckOverlay) {
-                deckOverlay.setProps({ layers: Array.from(deckLayers.values()) });
+            if (!deckOverlay) return;
+            const hasSentinel = map.getLayer(DECK_SENTINEL_ID);
+            if (hasSentinel) {
+                for (const [id, layer] of deckLayers) {
+                    if (layer.clone && (!layer.props || !layer.props.beforeId)) {
+                        deckLayers.set(id, layer.clone({ beforeId: DECK_SENTINEL_ID }));
+                    }
+                }
             }
+            deckOverlay.setProps({ layers: Array.from(deckLayers.values()) });
         }
 
         function setCOGVisibility(layerId, visible) {

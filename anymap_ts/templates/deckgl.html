@@ -35,6 +35,8 @@
         const deckLayers = new Map();
         let deckOverlay = null;
 
+        const DECK_SENTINEL_ID = '__deck-overlay-anchor';
+
         map.on('load', function() {
             // Initialize deck.gl overlay
             deckOverlay = new deck.MapboxOverlay({
@@ -42,6 +44,14 @@
                 layers: []
             });
             map.addControl(deckOverlay);
+            // Add transparent sentinel layer as ordering anchor
+            if (!map.getLayer(DECK_SENTINEL_ID)) {
+                map.addLayer({
+                    id: DECK_SENTINEL_ID,
+                    type: 'background',
+                    paint: { 'background-opacity': 0 }
+                });
+            }
 
             // Replay JS calls
             for (const call of state.js_calls || []) {
@@ -54,10 +64,17 @@
         });
 
         function updateDeckOverlay() {
-            if (deckOverlay) {
-                const layers = Array.from(deckLayers.values());
-                deckOverlay.setProps({ layers });
+            if (!deckOverlay) return;
+            const hasSentinel = map.getLayer(DECK_SENTINEL_ID);
+            if (hasSentinel) {
+                for (const [id, layer] of deckLayers) {
+                    if (layer.clone && (!layer.props || !layer.props.beforeId)) {
+                        deckLayers.set(id, layer.clone({ beforeId: DECK_SENTINEL_ID }));
+                    }
+                }
             }
+            const layers = Array.from(deckLayers.values());
+            deckOverlay.setProps({ layers });
         }
 
         function executeMethod(method, args, kwargs) {
