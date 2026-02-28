@@ -5,3 +5,4 @@
 export { COGLayerAdapter } from './COGLayerAdapter';
 export { ZarrLayerAdapter } from './ZarrLayerAdapter';
 export { DeckLayerAdapter } from './DeckLayerAdapter';
+export { MarkerLayerAdapter } from './MarkerLayerAdapter';

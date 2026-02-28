@@ -61,7 +61,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 
 import { GeoEditorPlugin } from './plugins/GeoEditorPlugin';
 import { LayerControlPlugin } from './plugins/LayerControlPlugin';
-import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter } from './adapters';
+import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter, MarkerLayerAdapter } from './adapters';
 import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
 import type { LidarControlOptions, LidarLayerOptions, LidarColorScheme } from '../types/lidar';
 import { GeoPhotoControl } from 'maplibre-gl-geophoto';
@@ -124,6 +124,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private zarrAdapter: ZarrLayerAdapter | null = null;
   private deckLayerAdapter: DeckLayerAdapter | null = null;
   private lidarAdapter: LidarLayerAdapter | null = null;
+  private markerAdapter: MarkerLayerAdapter | null = null;
+  private markerGroupsMap: globalThis.Map<string, Marker[]> = new globalThis.Map();
 
   // LiDAR control
   protected lidarControl: LidarControl | null = null;
@@ -1082,6 +1084,16 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       customLayerAdapters.push(this.lidarAdapter);
     }
 
+    // Create Marker adapter for DOM-based markers
+    if (this.map) {
+      this.markerAdapter = new MarkerLayerAdapter(this.map);
+      // Register any marker groups added before the layer control
+      this.markerGroupsMap.forEach((markers, groupId) => {
+        this.markerAdapter!.addMarkerGroup(groupId, groupId, markers);
+      });
+      customLayerAdapters.push(this.markerAdapter);
+    }
+
     // Initialize plugin if not already
     if (!this.layerControlPlugin) {
       this.layerControlPlugin = new LayerControlPlugin(this.map);
@@ -1228,14 +1240,44 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     marker.addTo(this.map);
     this.markersMap.set(id, marker);
+    this.markerGroupsMap.set(id, [marker]);
+    if (this.markerAdapter) {
+      this.markerAdapter.addMarkerGroup(id, id, [marker]);
+    }
   }
 
   private handleRemoveMarker(args: unknown[], kwargs: Record<string, unknown>): void {
     const [id] = args as [string];
-    const marker = this.markersMap.get(id);
-    if (marker) {
-      marker.remove();
-      this.markersMap.delete(id);
+
+    // Remove via group tracking (handles both single markers and marker groups)
+    const group = this.markerGroupsMap.get(id);
+    if (group) {
+      for (const m of group) {
+        m.remove();
+      }
+      this.markerGroupsMap.delete(id);
+      // Clean up individual entries from markersMap
+      if (this.markersMap.has(id)) {
+        this.markersMap.delete(id);
+      } else {
+        const prefix = `${id}-`;
+        const toDelete: string[] = [];
+        this.markersMap.forEach((_, key) => {
+          if (key.startsWith(prefix)) toDelete.push(key);
+        });
+        toDelete.forEach(key => this.markersMap.delete(key));
+      }
+    } else {
+      // Fallback: direct marker lookup
+      const marker = this.markersMap.get(id);
+      if (marker) {
+        marker.remove();
+        this.markersMap.delete(id);
+      }
+    }
+
+    if (this.markerAdapter) {
+      this.markerAdapter.removeMarkerGroup(id);
     }
   }
 
@@ -1260,6 +1302,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       console.error('addMarkers requires markers array');
       return;
     }
+
+    const groupMarkers: Marker[] = [];
 
     for (let i = 0; i < markers.length; i++) {
       const markerData = markers[i];
@@ -1312,6 +1356,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
       marker.addTo(this.map);
       this.markersMap.set(markerId, marker);
+      groupMarkers.push(marker);
+    }
+
+    this.markerGroupsMap.set(id, groupMarkers);
+    if (this.markerAdapter) {
+      this.markerAdapter.addMarkerGroup(id, id, groupMarkers);
     }
   }
 
@@ -5443,6 +5493,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // Remove markers
     this.markersMap.forEach((marker) => marker.remove());
     this.markersMap.clear();
+    this.markerGroupsMap.clear();
+    this.markerAdapter = null;
 
     // Remove popups
     this.popupsMap.forEach((popup) => popup.remove());
