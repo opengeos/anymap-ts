@@ -146,6 +146,87 @@
             },
         };
 
+        // Marker layer tracking for layer control
+        const markerGroups = new Map();       // groupId -> Marker[]
+        const markerGroupNames = new Map();   // groupId -> display name
+        const markerGroupVisibility = new Map(); // groupId -> boolean
+        const markerGroupOpacity = new Map(); // groupId -> number
+        const markerChangeCallbacks = [];
+
+        const markerLayerAdapter = {
+            type: 'marker',
+            getLayerIds() {
+                return Array.from(markerGroups.keys());
+            },
+            getLayerState(layerId) {
+                if (!markerGroups.has(layerId)) return null;
+                return {
+                    visible: markerGroupVisibility.get(layerId) ?? true,
+                    opacity: markerGroupOpacity.get(layerId) ?? 1,
+                    name: this.getName(layerId),
+                };
+            },
+            setVisibility(layerId, visible) {
+                const markers = markerGroups.get(layerId);
+                if (!markers) return;
+                markerGroupVisibility.set(layerId, visible);
+                for (const m of markers) {
+                    if (visible) {
+                        m.addTo(map);
+                        const opacity = markerGroupOpacity.get(layerId) ?? 1;
+                        m.getElement().style.opacity = String(opacity);
+                    } else {
+                        m.remove();
+                    }
+                }
+            },
+            setOpacity(layerId, opacity) {
+                const markers = markerGroups.get(layerId);
+                if (!markers) return;
+                markerGroupOpacity.set(layerId, opacity);
+                const visible = markerGroupVisibility.get(layerId) ?? true;
+                if (visible) {
+                    for (const m of markers) {
+                        m.getElement().style.opacity = String(opacity);
+                    }
+                }
+            },
+            getName(layerId) {
+                const name = markerGroupNames.get(layerId);
+                if (name && name !== layerId) return name;
+                if (layerId.startsWith('markers-')) {
+                    const num = parseInt(layerId.slice('markers-'.length), 10);
+                    return isNaN(num) ? layerId : `Markers ${num + 1}`;
+                }
+                if (layerId.startsWith('marker-')) {
+                    const num = parseInt(layerId.slice('marker-'.length), 10);
+                    return isNaN(num) ? layerId : `Marker ${num + 1}`;
+                }
+                return layerId;
+            },
+            getSymbolType() {
+                return 'circle';
+            },
+            removeLayer(layerId) {
+                const markers = markerGroups.get(layerId);
+                if (markers) {
+                    for (const m of markers) m.remove();
+                }
+                markerGroups.delete(layerId);
+                markerGroupNames.delete(layerId);
+                markerGroupVisibility.delete(layerId);
+                markerGroupOpacity.delete(layerId);
+                markerChangeCallbacks.forEach(cb => cb('remove', layerId));
+            },
+            onLayerChange(callback) {
+                markerChangeCallbacks.push(callback);
+                return () => {
+                    const idx = markerChangeCallbacks.indexOf(callback);
+                    if (idx >= 0) markerChangeCallbacks.splice(idx, 1);
+                };
+            },
+        };
+
         // Create map immediately (no imports needed)
         const map = new maplibregl.Map({
             container: 'map',
@@ -340,6 +421,7 @@
 
                 case 'addMarker': {
                     const [lng, lat] = args;
+                    const markerId = kwargs.id || `marker-${Date.now()}`;
                     const color = kwargs.color || '#3388ff';
                     const scale = kwargs.scale || 1.0;
                     const draggable = kwargs.draggable || false;
@@ -366,16 +448,23 @@
                             tooltipPopup.remove();
                         });
                     }
+                    // Track for layer control
+                    markerGroups.set(markerId, [marker]);
+                    markerGroupNames.set(markerId, markerId);
+                    markerGroupVisibility.set(markerId, true);
+                    markerGroupOpacity.set(markerId, 1);
                     break;
                 }
 
                 case 'addMarkers': {
+                    const markersGroupId = kwargs.id || `markers-${Date.now()}`;
                     const markers = kwargs.markers || [];
                     const color = kwargs.color || '#3388ff';
                     const scale = kwargs.scale || 1.0;
                     const draggable = kwargs.draggable || false;
                     const popupMaxWidth = kwargs.popupMaxWidth || '240px';
                     const tooltipMaxWidth = kwargs.tooltipMaxWidth || '240px';
+                    const groupMarkers = [];
 
                     for (const m of markers) {
                         const [lng, lat] = m.lngLat;
@@ -400,7 +489,13 @@
                                 tooltipPopup.remove();
                             });
                         }
+                        groupMarkers.push(marker);
                     }
+                    // Track for layer control
+                    markerGroups.set(markersGroupId, groupMarkers);
+                    markerGroupNames.set(markersGroupId, markersGroupId);
+                    markerGroupVisibility.set(markersGroupId, true);
+                    markerGroupOpacity.set(markersGroupId, 1);
                     break;
                 }
 
@@ -1118,8 +1213,10 @@
             // Build layer IDs from addedLayers (excludes COG layers managed by adapter)
             const layerIds = addedLayers.map(layer => layer.id);
 
-            // Include COG adapter if any COG layers exist
-            const customAdapters = deckLayers.size > 0 ? [cogLayerAdapter] : [];
+            // Include custom adapters for non-native layer types
+            const customAdapters = [];
+            if (deckLayers.size > 0) customAdapters.push(cogLayerAdapter);
+            if (markerGroups.size > 0) customAdapters.push(markerLayerAdapter);
 
             layerControlInstance = new LayerControl({
                 collapsed: collapsed,
