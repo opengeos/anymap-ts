@@ -1258,6 +1258,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     if (this.deckOverlay || !this.map) return;
 
     this.deckOverlay = new MapboxOverlay({
+      interleaved: true,
       layers: [],
     });
     this.map.addControl(this.deckOverlay as unknown as mapboxgl.IControl);

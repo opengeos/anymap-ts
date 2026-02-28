@@ -38,6 +38,7 @@
         map.on('load', function() {
             // Initialize deck.gl overlay
             deckOverlay = new deck.MapboxOverlay({
+                interleaved: true,
                 layers: []
             });
             map.addControl(deckOverlay);

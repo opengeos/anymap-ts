@@ -1597,6 +1597,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (this.deckOverlay || !this.map) return;
 
     this.deckOverlay = new MapboxOverlay({
+      interleaved: true,
       layers: [],
     });
     this.map.addControl(this.deckOverlay as unknown as maplibregl.IControl);
