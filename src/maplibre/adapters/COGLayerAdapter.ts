@@ -16,6 +16,7 @@ export class COGLayerAdapter implements CustomLayerAdapter {
   private map: MapLibreMap;
   private deckOverlay: MapboxOverlay;
   private deckLayers: globalThis.Map<string, unknown>;
+  private managedLayerIds: Set<string> = new Set();
   private changeCallbacks: Array<(event: 'add' | 'remove', layerId: string) => void> = [];
 
   constructor(map: MapLibreMap, deckOverlay: MapboxOverlay, deckLayers: globalThis.Map<string, unknown>) {
@@ -28,7 +29,7 @@ export class COGLayerAdapter implements CustomLayerAdapter {
    * Get all COG layer IDs.
    */
   getLayerIds(): string[] {
-    return Array.from(this.deckLayers.keys());
+    return Array.from(this.managedLayerIds).filter(id => this.deckLayers.has(id));
   }
 
   /**
@@ -94,6 +95,7 @@ export class COGLayerAdapter implements CustomLayerAdapter {
    * Call this from MapLibreRenderer when a COG layer is added.
    */
   notifyLayerAdded(layerId: string): void {
+    this.managedLayerIds.add(layerId);
     this.changeCallbacks.forEach(cb => cb('add', layerId));
   }
 
@@ -102,6 +104,7 @@ export class COGLayerAdapter implements CustomLayerAdapter {
    * Call this from MapLibreRenderer when a COG layer is removed.
    */
   notifyLayerRemoved(layerId: string): void {
+    this.managedLayerIds.delete(layerId);
     this.changeCallbacks.forEach(cb => cb('remove', layerId));
   }
 
