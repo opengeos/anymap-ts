@@ -612,6 +612,13 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       return;
     }
 
+    // Skip if the referenced source doesn't exist yet (it will be created
+    // when the original addGeoJSON / addFlatGeobuf call is replayed)
+    const sourceId = config.source as string | undefined;
+    if (sourceId && typeof sourceId === 'string' && !this.map.getSource(sourceId)) {
+      return;
+    }
+
     const beforeId = kwargs.beforeId as string | undefined;
     this.map.addLayer(config as mapboxgl.AnyLayer, beforeId);
     this.stateManager.addLayer(config.id, config);
