@@ -725,11 +725,23 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     }
 
     if (!this.map.getLayer(layerId)) {
-      // Insert basemap at bottom of layer stack so it always renders under
-      // deck.gl and other overlay layers, regardless of call order.
-      const style = this.map.getStyle();
-      const effectiveBeforeId = style?.layers?.[0]?.id
-        ?? (style.layers || []).find((l: { type: string }) => l.type === 'symbol')?.id;
+      // Insert basemap above background layers but below the deck sentinel
+      // and user overlay layers.
+      let effectiveBeforeId: string | undefined;
+      const sentinel = MapboxRenderer.DECK_SENTINEL_ID;
+      if (this.map.getLayer(sentinel)) {
+        const styleLayers = this.map.getStyle()?.layers || [];
+        const sentinelIdx = styleLayers.findIndex((l: { id: string }) => l.id === sentinel);
+        let insertIdx = sentinelIdx;
+        for (let i = sentinelIdx - 1; i >= 0; i--) {
+          if ((styleLayers[i] as { id: string }).id.startsWith('@@deck.gl')) {
+            insertIdx = i;
+          } else {
+            break;
+          }
+        }
+        effectiveBeforeId = (styleLayers[insertIdx] as { id: string })?.id;
+      }
 
       this.map.addLayer(
         {

@@ -333,11 +333,18 @@
                         });
                     }
                     if (!map.getLayer(sourceId)) {
-                        // Insert basemap at bottom of layer stack so it always
-                        // renders under deck.gl and other overlay layers
-                        const style = map.getStyle();
-                        const effectiveBeforeId = style?.layers?.[0]?.id
-                            || (style.layers || []).find(l => l.type === 'symbol')?.id;
+                        // Insert basemap above background but below deck sentinel
+                        // and user overlay layers
+                        let effectiveBeforeId;
+                        if (map.getLayer(DECK_SENTINEL_ID)) {
+                            const styleLayers = map.getStyle()?.layers || [];
+                            const si = styleLayers.findIndex(l => l.id === DECK_SENTINEL_ID);
+                            let ii = si;
+                            for (let i = si - 1; i >= 0; i--) {
+                                if (styleLayers[i].id.startsWith('@@deck.gl')) { ii = i; } else { break; }
+                            }
+                            effectiveBeforeId = styleLayers[ii]?.id;
+                        }
                         map.addLayer({
                             id: sourceId,
                             type: 'raster',

@@ -783,13 +783,29 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         type: 'raster' as const,
         source: sourceId,
       };
-      // Insert basemap at bottom of layer stack so it always renders under
-      // deck.gl and other overlay layers, regardless of call order.
+      // Insert basemap above background layers but below the deck sentinel
+      // and user overlay layers, so it doesn't cover deck.gl content and
+      // doesn't get hidden beneath the style's background layer.
       let effectiveBeforeId = beforeId;
       if (!effectiveBeforeId) {
-        const style = this.map.getStyle();
-        const firstLayerId = style?.layers?.[0]?.id;
-        effectiveBeforeId = firstLayerId;
+        const sentinel = MapLibreRenderer.DECK_SENTINEL_ID;
+        if (this.map.getLayer(sentinel)) {
+          // Find first deck.gl proxy layer (inserted before sentinel) so the
+          // basemap sits below all deck.gl layers.  If none exist yet the
+          // basemap goes right before the sentinel which is still correct.
+          const styleLayers = this.map.getStyle()?.layers || [];
+          const sentinelIdx = styleLayers.findIndex(l => l.id === sentinel);
+          // Walk backwards from sentinel to find start of deck.gl block
+          let insertIdx = sentinelIdx;
+          for (let i = sentinelIdx - 1; i >= 0; i--) {
+            if (styleLayers[i].id.startsWith('@@deck.gl')) {
+              insertIdx = i;
+            } else {
+              break;
+            }
+          }
+          effectiveBeforeId = styleLayers[insertIdx]?.id;
+        }
       }
       this.map.addLayer(layerConfig, effectiveBeforeId);
       // Persist layer state for multi-cell rendering
