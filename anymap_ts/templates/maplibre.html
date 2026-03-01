@@ -95,8 +95,10 @@
                         data: { type: 'FeatureCollection', features: [] }
                     });
                 }
-                // Insert sentinel below the first user overlay layer if any exist
-                const sentinelBeforeId = addedLayers.length > 0 ? addedLayers[0].id : undefined;
+                // Insert sentinel below the first non-raster user overlay layer
+                // (skip basemap raster layers so COG renders above them)
+                const firstOverlay = addedLayers.find(l => l.type !== 'raster');
+                const sentinelBeforeId = firstOverlay ? firstOverlay.id : undefined;
                 map.addLayer({
                     id: DECK_SENTINEL_ID,
                     type: 'fill',
