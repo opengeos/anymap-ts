@@ -65,7 +65,6 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
   private map: MapLibreMap;
   private deckOverlay: MapboxOverlay;
   private deckLayers: globalThis.Map<string, unknown>;
-  private managedLayerIds: Set<string> = new Set();
   private changeCallbacks: Array<(event: 'add' | 'remove', layerId: string) => void> = [];
 
   constructor(map: MapLibreMap, deckOverlay: MapboxOverlay, deckLayers: globalThis.Map<string, unknown>) {
@@ -78,14 +77,13 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
    * Get all deck.gl layer IDs managed by this adapter.
    */
   getLayerIds(): string[] {
-    return Array.from(this.managedLayerIds).filter(id => this.deckLayers.has(id));
+    return Array.from(this.deckLayers.keys());
   }
 
   /**
    * Get the state of a deck.gl layer.
    */
   getLayerState(layerId: string): LayerState | null {
-    if (!this.managedLayerIds.has(layerId)) return null;
     const layer = this.deckLayers.get(layerId) as { props?: { visible?: boolean; opacity?: number } } | undefined;
     if (!layer || !layer.props) return null;
 
@@ -100,7 +98,6 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
    * Set visibility of a deck.gl layer.
    */
   setVisibility(layerId: string, visible: boolean): void {
-    if (!this.managedLayerIds.has(layerId)) return;
     const layer = this.deckLayers.get(layerId) as { clone?: (props: Record<string, unknown>) => unknown } | undefined;
     if (!layer || typeof layer.clone !== 'function') return;
 
@@ -114,7 +111,6 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
    * Set opacity of a deck.gl layer.
    */
   setOpacity(layerId: string, opacity: number): void {
-    if (!this.managedLayerIds.has(layerId)) return;
     const layer = this.deckLayers.get(layerId) as { clone?: (props: Record<string, unknown>) => unknown } | undefined;
     if (!layer || typeof layer.clone !== 'function') return;
 
@@ -202,7 +198,6 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
    * Call this from MapLibreRenderer when an Arc or PointCloud layer is added.
    */
   notifyLayerAdded(layerId: string): void {
-    this.managedLayerIds.add(layerId);
     this.changeCallbacks.forEach(cb => cb('add', layerId));
   }
 
@@ -211,7 +206,6 @@ export class DeckLayerAdapter implements CustomLayerAdapter {
    * Call this from MapLibreRenderer when an Arc or PointCloud layer is removed.
    */
   notifyLayerRemoved(layerId: string): void {
-    this.managedLayerIds.delete(layerId);
     this.changeCallbacks.forEach(cb => cb('remove', layerId));
   }
 

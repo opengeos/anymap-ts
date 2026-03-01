@@ -139,7 +139,7 @@
         const cogLayerAdapter = {
             type: 'cog',
             getLayerIds() {
-                return Array.from(cogLayerNames.keys()).filter(id => deckLayers.has(id));
+                return Array.from(deckLayers.keys());
             },
             getLayerState(layerId) {
                 const layer = deckLayers.get(layerId);
