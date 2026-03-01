@@ -44,12 +44,20 @@
                 layers: []
             });
             map.addControl(deckOverlay);
-            // Add transparent sentinel layer as ordering anchor
+            // Add invisible sentinel layer as ordering anchor
             if (!map.getLayer(DECK_SENTINEL_ID)) {
+                const sentinelSourceId = DECK_SENTINEL_ID + '-source';
+                if (!map.getSource(sentinelSourceId)) {
+                    map.addSource(sentinelSourceId, {
+                        type: 'geojson',
+                        data: { type: 'FeatureCollection', features: [] }
+                    });
+                }
                 map.addLayer({
                     id: DECK_SENTINEL_ID,
-                    type: 'background',
-                    paint: { 'background-opacity': 0 }
+                    type: 'fill',
+                    source: sentinelSourceId,
+                    paint: { 'fill-opacity': 0 }
                 });
             }
 

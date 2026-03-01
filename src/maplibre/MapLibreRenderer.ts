@@ -767,14 +767,20 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
     }
 
-    // Add layer, optionally before a specified layer
+    // Add layer, optionally before a specified layer.
+    // If the deck.gl sentinel exists and no explicit beforeId, insert the
+    // basemap below the sentinel so it renders under deck.gl layers.
     if (!this.map.getLayer(layerId)) {
       const layerConfig = {
         id: layerId,
         type: 'raster' as const,
         source: sourceId,
       };
-      this.map.addLayer(layerConfig, beforeId);
+      const effectiveBeforeId = beforeId
+        || (this.map.getLayer(MapLibreRenderer.DECK_SENTINEL_ID)
+          ? MapLibreRenderer.DECK_SENTINEL_ID
+          : undefined);
+      this.map.addLayer(layerConfig, effectiveBeforeId);
       // Persist layer state for multi-cell rendering
       this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
     }
@@ -1610,18 +1616,26 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     });
     this.map.addControl(this.deckOverlay as unknown as maplibregl.IControl);
 
-    // Add a transparent sentinel layer as an ordering anchor.
+    // Add an invisible sentinel layer as an ordering anchor.
     // Deck.gl layers use beforeId to render below this sentinel,
     // and native MapLibre layers added afterwards render above it.
     if (!this.map.getLayer(MapLibreRenderer.DECK_SENTINEL_ID)) {
-      const beforeId = this.userOverlayLayerIds.length > 0
+      const sentinelSourceId = `${MapLibreRenderer.DECK_SENTINEL_ID}-source`;
+      if (!this.map.getSource(sentinelSourceId)) {
+        this.map.addSource(sentinelSourceId, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+      }
+      const insertBefore = this.userOverlayLayerIds.length > 0
         ? this.userOverlayLayerIds[0]
         : undefined;
       this.map.addLayer({
         id: MapLibreRenderer.DECK_SENTINEL_ID,
-        type: 'background',
-        paint: { 'background-opacity': 0 },
-      }, beforeId);
+        type: 'fill',
+        source: sentinelSourceId,
+        paint: { 'fill-opacity': 0 },
+      }, insertBefore);
     }
   }
 

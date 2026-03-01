@@ -718,8 +718,11 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     }
 
     if (!this.map.getLayer(layerId)) {
-      const layers = this.map.getStyle().layers || [];
-      const firstSymbolId = layers.find((l) => l.type === 'symbol')?.id;
+      // If the deck.gl sentinel exists, insert basemap below it so it
+      // renders under deck.gl layers. Otherwise fall back to first symbol.
+      const effectiveBeforeId = this.map.getLayer(MapboxRenderer.DECK_SENTINEL_ID)
+        ? MapboxRenderer.DECK_SENTINEL_ID
+        : (this.map.getStyle().layers || []).find((l) => l.type === 'symbol')?.id;
 
       this.map.addLayer(
         {
@@ -727,7 +730,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
           type: 'raster',
           source: sourceId,
         },
-        firstSymbolId
+        effectiveBeforeId
       );
     }
   }
@@ -1269,16 +1272,24 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     });
     this.map.addControl(this.deckOverlay as unknown as mapboxgl.IControl);
 
-    // Add a transparent sentinel layer as an ordering anchor.
+    // Add an invisible sentinel layer as an ordering anchor.
     if (!this.map.getLayer(MapboxRenderer.DECK_SENTINEL_ID)) {
-      const beforeId = this.userOverlayLayerIds.length > 0
+      const sentinelSourceId = `${MapboxRenderer.DECK_SENTINEL_ID}-source`;
+      if (!this.map.getSource(sentinelSourceId)) {
+        this.map.addSource(sentinelSourceId, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+      }
+      const insertBefore = this.userOverlayLayerIds.length > 0
         ? this.userOverlayLayerIds[0]
         : undefined;
       this.map.addLayer({
         id: MapboxRenderer.DECK_SENTINEL_ID,
-        type: 'background',
-        paint: { 'background-opacity': 0 },
-      } as mapboxgl.AnyLayer, beforeId);
+        type: 'fill',
+        source: sentinelSourceId,
+        paint: { 'fill-opacity': 0 },
+      } as mapboxgl.AnyLayer, insertBefore);
     }
   }
 

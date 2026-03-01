@@ -86,12 +86,20 @@
             if (deckOverlay) return;
             deckOverlay = new MapboxOverlay({ interleaved: true, layers: [] });
             map.addControl(deckOverlay);
-            // Add transparent sentinel layer as ordering anchor
+            // Add invisible sentinel layer as ordering anchor
             if (!map.getLayer(DECK_SENTINEL_ID)) {
+                const sentinelSourceId = DECK_SENTINEL_ID + '-source';
+                if (!map.getSource(sentinelSourceId)) {
+                    map.addSource(sentinelSourceId, {
+                        type: 'geojson',
+                        data: { type: 'FeatureCollection', features: [] }
+                    });
+                }
                 map.addLayer({
                     id: DECK_SENTINEL_ID,
-                    type: 'background',
-                    paint: { 'background-opacity': 0 }
+                    type: 'fill',
+                    source: sentinelSourceId,
+                    paint: { 'fill-opacity': 0 }
                 });
             }
         }
@@ -323,13 +331,15 @@
                         });
                     }
                     if (!map.getLayer(sourceId)) {
-                        const layers = map.getStyle().layers || [];
-                        const firstSymbolId = layers.find(l => l.type === 'symbol')?.id;
+                        // If sentinel exists, insert basemap below it
+                        const effectiveBeforeId = map.getLayer(DECK_SENTINEL_ID)
+                            ? DECK_SENTINEL_ID
+                            : (map.getStyle().layers || []).find(l => l.type === 'symbol')?.id;
                         map.addLayer({
                             id: sourceId,
                             type: 'raster',
                             source: sourceId
-                        }, firstSymbolId);
+                        }, effectiveBeforeId);
                         addedLayers.push({ id: sourceId, name: name, type: 'raster' });
                     }
                     break;
