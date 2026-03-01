@@ -5850,6 +5850,7 @@ class MapLibreMap(MapWidget):
             "layers": self._layers,
             "sources": self._sources,
             "controls": self._controls,
+            "max_pitch": self.max_pitch,
             "js_calls": self._js_calls,
         }
 
