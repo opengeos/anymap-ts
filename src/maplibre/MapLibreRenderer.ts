@@ -112,6 +112,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private layerControlPlugin: LayerControlPlugin | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private layerControlOrderSyncTimer: number | null = null;
+  private deckAdaptersRegisteredWithLayerControl = false;
 
   // Deck.gl overlay for COG layers
   protected deckOverlay: MapboxOverlay | null = null;
@@ -1098,13 +1099,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // Create custom layer adapters for deck.gl and Zarr layers
     const customLayerAdapters = [];
 
-    // Always initialize deck overlay so COG adapter can be created
-    // This ensures layer control works regardless of whether COG layers are added before or after
-    this.initializeDeckOverlay();
-
-    // Create COG adapter (deck overlay now always exists)
+    // Only wire deck.gl adapters when a deck overlay already exists.
+    // Eagerly creating an interleaved deck overlay here breaks native terrain.
     if (this.deckOverlay && this.map) {
-      this.cogAdapter = new COGLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+      if (!this.cogAdapter) {
+        this.cogAdapter = new COGLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+      }
       customLayerAdapters.push(this.cogAdapter);
     }
 
@@ -1116,7 +1116,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Create Deck layer adapter for Arc and PointCloud layers
     if (this.deckOverlay && this.map) {
-      this.deckLayerAdapter = new DeckLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+      if (!this.deckLayerAdapter) {
+        this.deckLayerAdapter = new DeckLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+      }
       customLayerAdapters.push(this.deckLayerAdapter);
     }
 
@@ -1140,6 +1142,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (!this.layerControlPlugin) {
       this.layerControlPlugin = new LayerControlPlugin(this.map);
     }
+
+    this.deckAdaptersRegisteredWithLayerControl = this.deckOverlay !== null && this.map !== null;
 
     this.layerControlPlugin.initialize({
       layers,
@@ -1667,6 +1671,31 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         paint: { 'fill-opacity': 0 },
       }, insertBefore);
     }
+
+    this.registerDeckAdaptersWithLayerControl();
+  }
+
+  private registerDeckAdaptersWithLayerControl(): void {
+    if (!this.map || !this.deckOverlay || !this.layerControlPlugin || this.deckAdaptersRegisteredWithLayerControl) {
+      return;
+    }
+
+    const layerControl = this.layerControlPlugin.getControl();
+    if (!layerControl) {
+      return;
+    }
+
+    if (!this.cogAdapter) {
+      this.cogAdapter = new COGLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+    }
+    if (!this.deckLayerAdapter) {
+      this.deckLayerAdapter = new DeckLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+    }
+
+    layerControl.registerCustomAdapter(this.cogAdapter);
+    layerControl.registerCustomAdapter(this.deckLayerAdapter);
+    this.deckAdaptersRegisteredWithLayerControl = true;
+    this.scheduleLayerControlOrderSync();
   }
 
   /**
@@ -5672,6 +5701,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.deckOverlay = null;
     }
     this.deckLayers.clear();
+    this.cogAdapter = null;
+    this.deckLayerAdapter = null;
+    this.deckAdaptersRegisteredWithLayerControl = false;
 
     // Remove LiDAR control and adapter
     if (this.lidarAdapter) {
