@@ -134,17 +134,22 @@
             }
         }
 
-        function updateDeckOverlay() {
+        function updateDeckOverlay(forceReanchor = false) {
             if (!deckOverlay) return;
             const hasSentinel = map.getLayer(DECK_SENTINEL_ID);
             if (hasSentinel) {
                 for (const [id, layer] of deckLayers) {
-                    if (layer.clone && (!layer.props || !layer.props.beforeId)) {
+                    if (layer.clone && (forceReanchor || !layer.props || !layer.props.beforeId)) {
                         deckLayers.set(id, layer.clone({ beforeId: DECK_SENTINEL_ID }));
                     }
                 }
             }
+            if (forceReanchor) {
+                deckOverlay.setProps({ layers: [] });
+            }
             deckOverlay.setProps({ layers: Array.from(deckLayers.values()) });
+            map.triggerRepaint();
+            scheduleLayerControlOrderSync();
         }
 
         function setCOGVisibility(layerId, visible) {
@@ -352,6 +357,7 @@
                     const url = args[0];
                     const name = kwargs.name || 'basemap';
                     const sourceId = 'basemap-' + name;
+                    const layerId = name;
                     if (!map.getSource(sourceId)) {
                         map.addSource(sourceId, {
                             type: 'raster',
@@ -360,7 +366,7 @@
                             attribution: kwargs.attribution || ''
                         });
                     }
-                    if (!map.getLayer(sourceId)) {
+                    if (!map.getLayer(layerId)) {
                         // Insert basemap above background but below deck sentinel
                         // and user overlay layers
                         let effectiveBeforeId;
@@ -374,11 +380,11 @@
                             effectiveBeforeId = styleLayers[ii]?.id;
                         }
                         map.addLayer({
-                            id: sourceId,
+                            id: layerId,
                             type: 'raster',
                             source: sourceId
                         }, effectiveBeforeId);
-                        addedLayers.push({ id: sourceId, name: name, type: 'raster' });
+                        addedLayers.push({ id: layerId, name: name, type: 'raster' });
                     }
                     break;
                 }
@@ -1053,6 +1059,7 @@
                                     const bmUrl = call.args[0];
                                     const bmName = k.name || 'basemap';
                                     const bmSourceId = 'basemap-' + bmName;
+                                    const bmLayerId = bmName;
                                     if (!rightMap.getSource(bmSourceId)) {
                                         rightMap.addSource(bmSourceId, {
                                             type: 'raster',
@@ -1061,9 +1068,9 @@
                                             attribution: k.attribution || ''
                                         });
                                     }
-                                    if (!rightMap.getLayer(bmSourceId)) {
+                                    if (!rightMap.getLayer(bmLayerId)) {
                                         rightMap.addLayer({
-                                            id: bmSourceId,
+                                            id: bmLayerId,
                                             type: 'raster',
                                             source: bmSourceId
                                         });
@@ -1271,6 +1278,162 @@
         }
 
         let layerControlInstance = null;
+        let layerControlOrderSyncTimer = null;
+
+        function reorderDeckLayersFromLayerControl(layerOrder) {
+            if (deckLayers.size <= 1) return;
+
+            const currentLayers = new Map(deckLayers);
+            const orderedDeckIds = layerOrder.filter(layerId => currentLayers.has(layerId));
+            const seen = new Set();
+            const reorderedEntries = [];
+
+            for (const layerId of orderedDeckIds) {
+                if (!currentLayers.has(layerId) || seen.has(layerId)) continue;
+                reorderedEntries.push([layerId, currentLayers.get(layerId)]);
+                seen.add(layerId);
+            }
+
+            for (const [layerId, layer] of currentLayers) {
+                if (seen.has(layerId)) continue;
+                reorderedEntries.push([layerId, layer]);
+            }
+
+            deckLayers.clear();
+            for (const [layerId, layer] of reorderedEntries) {
+                deckLayers.set(layerId, layer);
+            }
+        }
+
+        function getSentinelBeforeIdForLayerControlOrder(layerOrder) {
+            let lastDeckIndex = -1;
+            for (let i = 0; i < layerOrder.length; i++) {
+                if (deckLayers.has(layerOrder[i])) {
+                    lastDeckIndex = i;
+                }
+            }
+
+            if (lastDeckIndex < 0) {
+                return undefined;
+            }
+
+            for (let i = lastDeckIndex + 1; i < layerOrder.length; i++) {
+                const layerId = layerOrder[i];
+                if (layerId !== DECK_SENTINEL_ID && map.getLayer(layerId)) {
+                    return layerId;
+                }
+            }
+
+            return undefined;
+        }
+
+        function handleLayerControlReorder(layerOrder) {
+            if (deckLayers.size === 0) return;
+
+            reorderDeckLayersFromLayerControl(layerOrder);
+
+            if (!map.getLayer(DECK_SENTINEL_ID)) {
+                updateDeckOverlay(true);
+                return;
+            }
+
+            const sentinelBeforeId = getSentinelBeforeIdForLayerControlOrder(layerOrder);
+
+            try {
+                map.moveLayer(DECK_SENTINEL_ID, sentinelBeforeId);
+            } catch (_err) {
+                // Ignore unsupported move failures from custom/non-style layers.
+            }
+
+            updateDeckOverlay(true);
+        }
+
+        function getLayerControlOrder() {
+            const styleLayers = map.getStyle()?.layers || [];
+            const deckLayerIds = Array.from(deckLayers.keys());
+            if (styleLayers.length === 0) {
+                return deckLayerIds;
+            }
+
+            const orderedLayerIds = [];
+            let insertedDeckLayers = false;
+
+            for (const layer of styleLayers) {
+                if (layer.id === DECK_SENTINEL_ID) {
+                    if (!insertedDeckLayers) {
+                        orderedLayerIds.push(...deckLayerIds);
+                        insertedDeckLayers = true;
+                    }
+                    continue;
+                }
+                orderedLayerIds.push(layer.id);
+            }
+
+            if (!insertedDeckLayers) {
+                orderedLayerIds.push(...deckLayerIds);
+            }
+
+            return orderedLayerIds;
+        }
+
+        function syncLayerControlOrder() {
+            if (!layerControlInstance) return;
+
+            const layerStates = layerControlInstance.state && layerControlInstance.state.layerStates;
+            if (!layerStates || typeof layerControlInstance.buildLayerItems !== 'function') {
+                return;
+            }
+
+            const desiredOrder = getLayerControlOrder();
+            if (desiredOrder.length === 0) {
+                return;
+            }
+
+            const currentOrder = Object.keys(layerStates);
+            const hasBackground = currentOrder.includes('Background');
+            const currentLayerIds = currentOrder.filter(layerId => layerId !== 'Background');
+            const currentSet = new Set(currentLayerIds);
+            const desiredSet = new Set(desiredOrder);
+            const reorderedIds = [
+                ...desiredOrder.filter(layerId => currentSet.has(layerId)),
+                ...currentLayerIds.filter(layerId => !desiredSet.has(layerId)),
+            ];
+
+            if (reorderedIds.length === 0) {
+                return;
+            }
+
+            const isSameOrder = reorderedIds.length === currentLayerIds.length
+                && reorderedIds.every((layerId, index) => layerId === currentLayerIds[index]);
+            if (isSameOrder) {
+                return;
+            }
+
+            const reorderedStates = {};
+            if (hasBackground && Object.prototype.hasOwnProperty.call(layerStates, 'Background')) {
+                reorderedStates.Background = layerStates.Background;
+            }
+            reorderedIds.forEach((layerId) => {
+                reorderedStates[layerId] = layerStates[layerId];
+            });
+
+            layerControlInstance.state.layerStates = reorderedStates;
+            layerControlInstance.targetLayers = hasBackground
+                ? ['Background', ...reorderedIds]
+                : [...reorderedIds];
+            layerControlInstance.buildLayerItems();
+        }
+
+        function scheduleLayerControlOrderSync() {
+            if (!layerControlInstance) return;
+            if (layerControlOrderSyncTimer !== null) {
+                window.clearTimeout(layerControlOrderSyncTimer);
+            }
+            layerControlOrderSyncTimer = window.setTimeout(() => {
+                syncLayerControlOrder();
+                layerControlOrderSyncTimer = null;
+            }, 150);
+        }
 
         function createLayerControl(config) {
             const position = config.position || 'top-right';
@@ -1288,8 +1451,11 @@
                 collapsed: collapsed,
                 layers: layerIds,
                 customLayerAdapters: customAdapters.length > 0 ? customAdapters : undefined,
+                onLayerReorder: handleLayerControlReorder,
             });
             map.addControl(layerControlInstance, position);
+            syncLayerControlOrder();
+            scheduleLayerControlOrderSync();
         }
 
         function createDrawControl(config) {

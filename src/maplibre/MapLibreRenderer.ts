@@ -111,6 +111,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private geoEditorPlugin: GeoEditorPlugin | null = null;
   private layerControlPlugin: LayerControlPlugin | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private layerControlOrderSyncTimer: number | null = null;
 
   // Deck.gl overlay for COG layers
   protected deckOverlay: MapboxOverlay | null = null;
@@ -1146,6 +1147,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       collapsed,
       customLayerAdapters: customLayerAdapters.length > 0 ? customLayerAdapters : undefined,
       excludeLayers,
+      resolveLayerOrder: this.getLayerControlOrder.bind(this),
+      onLayerReorder: this.handleLayerControlReorder.bind(this),
     });
 
     this.stateManager.addControl('layer-control', 'layer-control', position, kwargs);
@@ -1671,7 +1674,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
    * Ensures all deck.gl layers have beforeId set to the sentinel layer
    * so they render below native MapLibre layers in interleaved mode.
    */
-  protected updateDeckOverlay(): void {
+  protected updateDeckOverlay(forceReanchor = false): void {
     if (!this.deckOverlay) return;
 
     const sentinelId = MapLibreRenderer.DECK_SENTINEL_ID;
@@ -1681,14 +1684,146 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (hasSentinel) {
       for (const [id, layer] of this.deckLayers) {
         const typedLayer = layer as { clone?: (props: Record<string, unknown>) => unknown; props?: { beforeId?: string } };
-        if (typedLayer.clone && !typedLayer.props?.beforeId) {
+        if (typedLayer.clone && (forceReanchor || !typedLayer.props?.beforeId)) {
           this.deckLayers.set(id, typedLayer.clone({ beforeId: sentinelId }));
         }
       }
     }
 
     const layers = Array.from(this.deckLayers.values()) as (false | null | undefined)[];
+    if (forceReanchor) {
+      this.deckOverlay.setProps({ layers: [] });
+    }
     this.deckOverlay.setProps({ layers });
+    this.map?.triggerRepaint();
+    this.scheduleLayerControlOrderSync();
+  }
+
+  private handleLayerControlReorder(layerOrder: string[]): void {
+    if (!this.map || this.deckLayers.size === 0) {
+      return;
+    }
+
+    this.reorderDeckLayersForLayerControl(layerOrder);
+
+    const sentinelId = MapLibreRenderer.DECK_SENTINEL_ID;
+    if (!this.map.getLayer(sentinelId)) {
+      this.updateDeckOverlay(true);
+      return;
+    }
+
+    const sentinelBeforeId = this.getSentinelBeforeIdForLayerControlOrder(layerOrder);
+
+    try {
+      this.map.moveLayer(sentinelId, sentinelBeforeId);
+    } catch {
+      // Ignore unsupported or transient move failures from custom layers.
+    }
+
+    this.updateDeckOverlay(true);
+  }
+
+  private reorderDeckLayersForLayerControl(layerOrder: string[]): void {
+    if (this.deckLayers.size <= 1) {
+      return;
+    }
+
+    const currentLayers = new globalThis.Map(this.deckLayers);
+    const orderedDeckIds = layerOrder.filter(layerId => currentLayers.has(layerId));
+    const seen = new Set<string>();
+    const reorderedEntries: Array<[string, unknown]> = [];
+
+    for (const layerId of orderedDeckIds) {
+      const layer = currentLayers.get(layerId);
+      if (!layer || seen.has(layerId)) {
+        continue;
+      }
+      reorderedEntries.push([layerId, layer]);
+      seen.add(layerId);
+    }
+
+    for (const [layerId, layer] of currentLayers) {
+      if (seen.has(layerId)) {
+        continue;
+      }
+      reorderedEntries.push([layerId, layer]);
+    }
+
+    this.deckLayers.clear();
+    for (const [layerId, layer] of reorderedEntries) {
+      this.deckLayers.set(layerId, layer);
+    }
+  }
+
+  private getSentinelBeforeIdForLayerControlOrder(layerOrder: string[]): string | undefined {
+    const lastDeckIndex = layerOrder.reduce((lastIndex, layerId, index) => {
+      return this.deckLayers.has(layerId) ? index : lastIndex;
+    }, -1);
+
+    if (lastDeckIndex < 0) {
+      return undefined;
+    }
+
+    for (let i = lastDeckIndex + 1; i < layerOrder.length; i++) {
+      const layerId = layerOrder[i];
+      if (layerId !== MapLibreRenderer.DECK_SENTINEL_ID && this.map?.getLayer(layerId)) {
+        return layerId;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Keep the layer control list aligned with deck.gl's real stack position.
+   * The control library appends custom layers after native layers, but in
+   * interleaved mode deck.gl layers actually render at the sentinel anchor.
+   */
+  private getLayerControlOrder(): string[] {
+    if (!this.map) {
+      return [];
+    }
+
+    const styleLayers = this.map.getStyle()?.layers || [];
+    const deckLayerIds = Array.from(this.deckLayers.keys());
+    if (styleLayers.length === 0) {
+      return deckLayerIds;
+    }
+
+    const orderedLayerIds: string[] = [];
+    let insertedDeckLayers = false;
+
+    for (const layer of styleLayers) {
+      if (layer.id === MapLibreRenderer.DECK_SENTINEL_ID) {
+        if (!insertedDeckLayers) {
+          orderedLayerIds.push(...deckLayerIds);
+          insertedDeckLayers = true;
+        }
+        continue;
+      }
+      orderedLayerIds.push(layer.id);
+    }
+
+    if (!insertedDeckLayers) {
+      orderedLayerIds.push(...deckLayerIds);
+    }
+
+    return orderedLayerIds;
+  }
+
+  private scheduleLayerControlOrderSync(): void {
+    if (!this.layerControlPlugin) {
+      return;
+    }
+
+    if (this.layerControlOrderSyncTimer !== null) {
+      window.clearTimeout(this.layerControlOrderSyncTimer);
+    }
+
+    this.layerControlOrderSyncTimer = window.setTimeout(() => {
+      this.layerControlPlugin?.syncLayerOrder();
+      this.layerControlOrderSyncTimer = null;
+    }, 150);
   }
 
   protected handleAddCOGLayer(args: unknown[], kwargs: Record<string, unknown>): void {

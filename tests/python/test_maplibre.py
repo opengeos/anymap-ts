@@ -404,3 +404,16 @@ class TestMapLibreHtmlExport:
         fpath = tmp_path / "map.html"
         m.to_html(filepath=str(fpath))
         assert fpath.exists()
+
+    def test_to_html_includes_deck_layer_control_order_sync(self):
+        m = MapLibreMap(controls={})
+        html = m.to_html()
+        assert "function handleLayerControlReorder(layerOrder)" in html
+        assert "function syncLayerControlOrder()" in html
+        assert "scheduleLayerControlOrderSync();" in html
+
+    def test_to_html_uses_friendly_basemap_layer_id(self):
+        m = MapLibreMap(controls={})
+        html = m.to_html()
+        assert "const layerId = name;" in html
+        assert "addedLayers.push({ id: layerId, name: name, type: 'raster' });" in html
