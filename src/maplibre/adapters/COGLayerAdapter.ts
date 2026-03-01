@@ -18,6 +18,10 @@ export class COGLayerAdapter implements CustomLayerAdapter {
   private deckLayers: globalThis.Map<string, unknown>;
   private changeCallbacks: Array<(event: 'add' | 'remove', layerId: string) => void> = [];
 
+  // Sentinel layer ID used as ordering anchor for deck.gl layers in interleaved mode.
+  // Must match the value in MapLibreRenderer.
+  private static readonly DECK_SENTINEL_ID = '__deck-overlay-anchor';
+
   constructor(map: MapLibreMap, deckOverlay: MapboxOverlay, deckLayers: globalThis.Map<string, unknown>) {
     this.map = map;
     this.deckOverlay = deckOverlay;
@@ -119,6 +123,20 @@ export class COGLayerAdapter implements CustomLayerAdapter {
   }
 
   private updateOverlay(): void {
+    const sentinelId = COGLayerAdapter.DECK_SENTINEL_ID;
+    const hasSentinel = this.map.getLayer(sentinelId);
+
+    // Inject beforeId on deck.gl layers that don't have one
+    // This ensures proper z-ordering with native MapLibre layers in interleaved mode
+    if (hasSentinel) {
+      for (const [id, layer] of this.deckLayers) {
+        const typedLayer = layer as { clone?: (props: Record<string, unknown>) => unknown; props?: { beforeId?: string } };
+        if (typedLayer.clone && !typedLayer.props?.beforeId) {
+          this.deckLayers.set(id, typedLayer.clone({ beforeId: sentinelId }));
+        }
+      }
+    }
+
     const layers = Array.from(this.deckLayers.values());
     this.deckOverlay.setProps({ layers: layers as any });
     this.map.triggerRepaint();
