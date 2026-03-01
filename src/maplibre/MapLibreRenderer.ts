@@ -126,6 +126,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   protected zarrLayers: globalThis.Map<string, ZarrLayer> = new globalThis.Map();
 
   // Layer control adapters
+  private cogLayerIds: Set<string> = new Set();
   private cogAdapter: COGLayerAdapter | null = null;
   private zarrAdapter: ZarrLayerAdapter | null = null;
   private deckLayerAdapter: DeckLayerAdapter | null = null;
@@ -1077,6 +1078,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // Create COG adapter (deck overlay now always exists)
     if (this.deckOverlay && this.map) {
       this.cogAdapter = new COGLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+      // Register any COG layers added before the layer control
+      this.cogLayerIds.forEach(id => {
+        if (this.deckLayers.has(id)) {
+          this.cogAdapter!.notifyLayerAdded(id);
+        }
+      });
       customLayerAdapters.push(this.cogAdapter);
     }
 
@@ -1089,6 +1096,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // Create Deck layer adapter for Arc and PointCloud layers
     if (this.deckOverlay && this.map) {
       this.deckLayerAdapter = new DeckLayerAdapter(this.map, this.deckOverlay, this.deckLayers);
+      // Register any deck layers added before the layer control
+      this.deckLayers.forEach((_, id) => {
+        if (!this.cogLayerIds.has(id)) {
+          this.deckLayerAdapter!.notifyLayerAdded(id);
+        }
+      });
       customLayerAdapters.push(this.deckLayerAdapter);
     }
 
@@ -1695,6 +1708,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     } as unknown as Record<string, unknown>);
 
     this.deckLayers.set(id, layer);
+    this.cogLayerIds.add(id);
     this.updateDeckOverlay();
 
     // Notify adapter if it exists
@@ -1711,6 +1725,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.cogAdapter.notifyLayerRemoved(id);
     }
 
+    this.cogLayerIds.delete(id);
     this.deckLayers.delete(id);
     this.updateDeckOverlay();
   }
