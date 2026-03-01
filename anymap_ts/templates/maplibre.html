@@ -51,6 +51,7 @@
         // deck.gl COG layer support (lazy-loaded on first use)
         let MapboxOverlay = null;
         let COGLayer = null;
+        let COGLayerWithOpacity = null;
         let geoKeysParser = null;
         let deckOverlay = null;
         const deckLayers = new Map();
@@ -77,6 +78,31 @@
                     parsed: proj.parseCrs(projDef.proj4),
                     coordinatesUnits: projDef.coordinatesUnits,
                 };
+            };
+
+            // Define COGLayerWithOpacity subclass after COGLayer is loaded
+            // This wrapper propagates opacity to sublayers since the base COGLayer
+            // does not pass opacity to its RasterLayer/PathLayer sublayers.
+            COGLayerWithOpacity = class extends COGLayer {
+                _renderSubLayers(...args) {
+                    const layers = super._renderSubLayers(...args);
+                    const opacity = this.props.opacity;
+                    if (opacity === undefined || opacity === null) {
+                        return layers;
+                    }
+                    const clamped = Math.max(0, Math.min(1, opacity));
+                    return this._applyOpacity(layers, clamped);
+                }
+                _applyOpacity(layers, opacity) {
+                    if (!layers) return layers;
+                    if (Array.isArray(layers)) {
+                        return layers.map(layer => this._applyOpacity(layer, opacity));
+                    }
+                    if (typeof layers.clone === 'function') {
+                        return layers.clone({ opacity });
+                    }
+                    return layers;
+                }
             };
         }
 
@@ -1161,7 +1187,8 @@
                     const geotiff = kwargs.geotiff;
                     const cogFitBounds = kwargs.fitBounds !== false;
                     const cogOpacity = kwargs.opacity !== undefined ? kwargs.opacity : 1;
-                    const cogLayer = new COGLayer({
+                    // Use COGLayerWithOpacity to ensure opacity changes propagate to sublayers
+                    const cogLayer = new COGLayerWithOpacity({
                         id: cogId,
                         geotiff,
                         opacity: cogOpacity,
