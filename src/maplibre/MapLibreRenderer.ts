@@ -783,10 +783,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         type: 'raster' as const,
         source: sourceId,
       };
-      const effectiveBeforeId = beforeId
-        || (this.map.getLayer(MapLibreRenderer.DECK_SENTINEL_ID)
-          ? MapLibreRenderer.DECK_SENTINEL_ID
-          : undefined);
+      // Insert basemap at bottom of layer stack so it always renders under
+      // deck.gl and other overlay layers, regardless of call order.
+      let effectiveBeforeId = beforeId;
+      if (!effectiveBeforeId) {
+        const style = this.map.getStyle();
+        const firstLayerId = style?.layers?.[0]?.id;
+        effectiveBeforeId = firstLayerId;
+      }
       this.map.addLayer(layerConfig, effectiveBeforeId);
       // Persist layer state for multi-cell rendering
       this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
@@ -1634,9 +1638,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
           data: { type: 'FeatureCollection', features: [] },
         });
       }
-      const insertBefore = this.userOverlayLayerIds.length > 0
-        ? this.userOverlayLayerIds[0]
-        : undefined;
+      const insertBefore = this.userOverlayLayerIds.find(
+        (id) => this.map && this.map.getLayer(id)
+      );
       this.map.addLayer({
         id: MapLibreRenderer.DECK_SENTINEL_ID,
         type: 'fill',

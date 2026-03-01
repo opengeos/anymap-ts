@@ -95,12 +95,14 @@
                         data: { type: 'FeatureCollection', features: [] }
                     });
                 }
+                // Insert sentinel below the first user overlay layer if any exist
+                const sentinelBeforeId = addedLayers.length > 0 ? addedLayers[0].id : undefined;
                 map.addLayer({
                     id: DECK_SENTINEL_ID,
                     type: 'fill',
                     source: sentinelSourceId,
                     paint: { 'fill-opacity': 0 }
-                });
+                }, sentinelBeforeId);
             }
         }
 
@@ -331,10 +333,11 @@
                         });
                     }
                     if (!map.getLayer(sourceId)) {
-                        // If sentinel exists, insert basemap below it
-                        const effectiveBeforeId = map.getLayer(DECK_SENTINEL_ID)
-                            ? DECK_SENTINEL_ID
-                            : (map.getStyle().layers || []).find(l => l.type === 'symbol')?.id;
+                        // Insert basemap at bottom of layer stack so it always
+                        // renders under deck.gl and other overlay layers
+                        const style = map.getStyle();
+                        const effectiveBeforeId = style?.layers?.[0]?.id
+                            || (style.layers || []).find(l => l.type === 'symbol')?.id;
                         map.addLayer({
                             id: sourceId,
                             type: 'raster',

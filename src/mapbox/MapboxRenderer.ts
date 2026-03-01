@@ -725,11 +725,11 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     }
 
     if (!this.map.getLayer(layerId)) {
-      // If the deck.gl sentinel exists, insert basemap below it so it
-      // renders under deck.gl layers. Otherwise fall back to first symbol.
-      const effectiveBeforeId = this.map.getLayer(MapboxRenderer.DECK_SENTINEL_ID)
-        ? MapboxRenderer.DECK_SENTINEL_ID
-        : (this.map.getStyle().layers || []).find((l) => l.type === 'symbol')?.id;
+      // Insert basemap at bottom of layer stack so it always renders under
+      // deck.gl and other overlay layers, regardless of call order.
+      const style = this.map.getStyle();
+      const effectiveBeforeId = style?.layers?.[0]?.id
+        ?? (style.layers || []).find((l: { type: string }) => l.type === 'symbol')?.id;
 
       this.map.addLayer(
         {
@@ -1288,9 +1288,9 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
           data: { type: 'FeatureCollection', features: [] },
         });
       }
-      const insertBefore = this.userOverlayLayerIds.length > 0
-        ? this.userOverlayLayerIds[0]
-        : undefined;
+      const insertBefore = this.userOverlayLayerIds.find(
+        (id) => this.map?.getLayer(id)
+      );
       this.map.addLayer({
         id: MapboxRenderer.DECK_SENTINEL_ID,
         type: 'fill',
