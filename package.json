@@ -65,7 +65,7 @@
     "pmtiles": "^4.4.0",
     "potree-core": "^2.0.12",
     "shpjs": "^6.2.0",
-    "three": "^0.154.0"
+    "three": "^0.178.0"
   },
   "devDependencies": {
     "@anywidget/types": "^0.2.0",
