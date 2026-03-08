@@ -735,6 +735,7 @@ class MapboxMap(MapWidget):
         fit_bounds: bool = False,
         source_type: str = "vector",
         prefix: str = "",
+        popup: Optional[Union[bool, List[str], str]] = None,
         **kwargs,
     ) -> None:
         """Add a PMTiles layer for efficient vector or raster tile serving.
@@ -756,9 +757,20 @@ class MapboxMap(MapWidget):
             source_type: Source type - "vector" or "raster".
             prefix: Prefix for auto-discovered layer names in the layer
                 control. Defaults to empty string (no prefix).
+            popup: Configure popups on click. Accepts True (all properties),
+                a list of property names, or an HTML template string with
+                {property_name} placeholders. Defaults to None (no popup).
             **kwargs: Additional layer options.
         """
         layer_id = layer_id or f"pmtiles-{len(self._layers)}"
+
+        popup_config: Optional[Dict[str, Any]] = None
+        if popup is True:
+            popup_config = {"enabled": True}
+        elif isinstance(popup, list):
+            popup_config = {"enabled": True, "properties": popup}
+        elif isinstance(popup, str):
+            popup_config = {"enabled": True, "template": popup}
 
         self.call_js_method(
             "addPMTilesLayer",
@@ -770,6 +782,7 @@ class MapboxMap(MapWidget):
             fitBounds=fit_bounds,
             sourceType=source_type,
             prefix=prefix,
+            popup=popup_config,
             name=layer_id,
             **kwargs,
         )

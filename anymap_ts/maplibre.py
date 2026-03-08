@@ -1180,6 +1180,7 @@ class MapLibreMap(MapWidget):
         fit_bounds: bool = False,
         source_type: str = "vector",
         prefix: str = "",
+        popup: Optional[Union[bool, List[str], str]] = None,
         **kwargs,
     ) -> None:
         """Add a PMTiles layer for efficient vector or raster tile serving.
@@ -1212,29 +1213,47 @@ class MapLibreMap(MapWidget):
             source_type: Source type - "vector" or "raster".
             prefix: Prefix for auto-discovered layer names in the layer
                 control. Defaults to empty string (no prefix).
+            popup: Configure popups on click for the layer(s). Accepts:
+                - True: show all feature properties in a table.
+                - List of property names: show only those properties.
+                - str: HTML template with {property_name} placeholders.
+                - None (default): no popup.
             **kwargs: Additional layer options.
 
         Example:
             >>> from anymap_ts import Map
             >>> m = Map()
-            >>> # Auto-discover all layers with distinct colors
+            >>> # Auto-discover with popups showing all properties
             >>> m.add_pmtiles_layer(
             ...     url="https://example.com/data.pmtiles",
             ...     fit_bounds=True,
+            ...     popup=True,
             ... )
-            >>> # Explicit style for a single layer
+            >>> # Popup with specific properties
             >>> m.add_pmtiles_layer(
-            ...     url="https://example.com/countries.pmtiles",
-            ...     layer_id="countries",
-            ...     style={
-            ...         "type": "fill",
-            ...         "source-layer": "countries",
-            ...         "fill-color": "#3388ff",
-            ...         "fill-opacity": 0.6
-            ...     }
+            ...     url="https://example.com/buildings.pmtiles",
+            ...     style={"type": "fill", "source-layer": "building",
+            ...         "fill-color": "#ff6b6b"},
+            ...     popup=["name", "height"],
+            ... )
+            >>> # Popup with HTML template
+            >>> m.add_pmtiles_layer(
+            ...     url="https://example.com/buildings.pmtiles",
+            ...     style={"type": "fill", "source-layer": "building",
+            ...         "fill-color": "#ff6b6b"},
+            ...     popup="<h3>{name}</h3><p>Height: {height}m</p>",
             ... )
         """
         layer_id = layer_id or f"pmtiles-{len(self._layers)}"
+
+        # Normalize popup config to pass to JS
+        popup_config: Optional[Dict[str, Any]] = None
+        if popup is True:
+            popup_config = {"enabled": True}
+        elif isinstance(popup, list):
+            popup_config = {"enabled": True, "properties": popup}
+        elif isinstance(popup, str):
+            popup_config = {"enabled": True, "template": popup}
 
         self.call_js_method(
             "addPMTilesLayer",
@@ -1246,6 +1265,7 @@ class MapLibreMap(MapWidget):
             fitBounds=fit_bounds,
             sourceType=source_type,
             prefix=prefix,
+            popup=popup_config,
             name=layer_id,
             **kwargs,
         )

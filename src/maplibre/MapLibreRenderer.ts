@@ -3959,10 +3959,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
       const hasUserStyle = Object.keys(style).length > 0;
 
+      const popupConfig = kwargs.popup as Record<string, unknown> | null;
+
       if (sourceType === 'vector' && !hasUserStyle) {
         // Auto-discovery mode: fetch metadata and add layers for each source layer
         const prefix = (kwargs.prefix as string) ?? '';
-        await this.autoDiscoverPMTilesLayers(url, layerId, sourceId, opacity, visible, fitBounds, prefix);
+        await this.autoDiscoverPMTilesLayers(url, layerId, sourceId, opacity, visible, fitBounds, prefix, popupConfig);
       } else if (!this.map.getLayer(layerId)) {
         // Explicit style mode (existing behavior)
         let layerConfig: Record<string, unknown>;
@@ -4035,6 +4037,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         // Track as user overlay layer for deck.gl ordering
         this.userOverlayLayerIds.push(layerId);
 
+        // Register popup if configured
+        if (popupConfig?.enabled && sourceType === 'vector') {
+          this.registerPMTilesPopup(layerId, popupConfig);
+        }
+
         // Fit bounds if requested
         if (fitBounds) {
           const pmtiles = new PMTiles(url);
@@ -4069,8 +4076,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       return { 'line-color': color, 'line-width': 2, 'line-opacity': opacity };
     }
     return {
-      'circle-color': color, 'circle-radius': 2, 'circle-opacity': opacity,
-      'circle-stroke-color': color, 'circle-stroke-width': 0.5,
+      'circle-color': color, 'circle-radius': 3, 'circle-opacity': opacity,
+      'circle-stroke-color': color, 'circle-stroke-width': 1,
     };
   }
 
@@ -4087,6 +4094,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     visible: boolean,
     fitBounds: boolean,
     prefix: string,
+    popupConfig?: Record<string, unknown> | null,
   ): Promise<void> {
     if (!this.map) return;
 
@@ -4150,6 +4158,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // Track sub-layers for removal
     this.pmtilesSubLayers.set(layerId, subLayerIds);
 
+    // Register popups for all sub-layers
+    if (popupConfig?.enabled) {
+      for (const subId of subLayerIds) {
+        this.registerPMTilesPopup(subId, popupConfig);
+      }
+    }
+
     // Fit bounds from header
     if (fitBounds && this.map) {
       this.map.fitBounds(
@@ -4202,6 +4217,68 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.map.removeSource(sourceId);
       this.stateManager.removeSource(sourceId);
     }
+  }
+
+  /**
+   * Register a click popup for a PMTiles layer.
+   */
+  private registerPMTilesPopup(
+    targetLayerId: string,
+    config: Record<string, unknown>,
+  ): void {
+    if (!this.map) return;
+
+    const properties = config.properties as string[] | undefined;
+    const template = config.template as string | undefined;
+
+    this.map.on('click', targetLayerId, (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const feature = e.features[0];
+      const props = feature.properties || {};
+
+      const tableStyle = 'border-collapse: collapse; font-size: 13px; color: #333;';
+      const cellStyle = 'padding: 4px 8px; border-bottom: 1px solid #ddd; color: #333;';
+      const keyStyle = 'font-weight: 600; color: #222;';
+      const valueStyle = 'color: #444;';
+      const containerStyle = 'font-size: 13px; color: #333; line-height: 1.4;';
+      const templateStyles = `
+        <style>
+          .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
+          .anymap-popup p { color: #444; margin: 4px 0; }
+        </style>
+      `;
+
+      let content: string;
+      if (template) {
+        const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
+          return props[key] !== undefined ? String(props[key]) : match;
+        });
+        content = `${templateStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
+      } else if (properties) {
+        const rows = properties
+          .filter((key) => props[key] !== undefined)
+          .map((key) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${props[key]}</td></tr>`)
+          .join('');
+        content = `<table style="${tableStyle}">${rows}</table>`;
+      } else {
+        const rows = Object.entries(props)
+          .map(([key, value]) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${value}</td></tr>`)
+          .join('');
+        content = `<table style="${tableStyle}">${rows}</table>`;
+      }
+
+      new Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(content)
+        .addTo(this.map!);
+    });
+
+    this.map.on('mouseenter', targetLayerId, () => {
+      if (this.map) this.map.getCanvas().style.cursor = 'pointer';
+    });
+    this.map.on('mouseleave', targetLayerId, () => {
+      if (this.map) this.map.getCanvas().style.cursor = '';
+    });
   }
 
   // -------------------------------------------------------------------------
