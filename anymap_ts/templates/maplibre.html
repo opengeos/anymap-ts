@@ -10,9 +10,9 @@
     <!-- PMTiles -->
     <script src="https://unpkg.com/pmtiles@3.0.8/dist/pmtiles.js"></script>
     <!-- maplibre-gl-layer-control CSS -->
-    <link href="https://unpkg.com/maplibre-gl-layer-control@0.13.0/dist/maplibre-gl-layer-control.css" rel="stylesheet" />
+    <link href="https://unpkg.com/maplibre-gl-layer-control@0.14.1/dist/maplibre-gl-layer-control.css" rel="stylesheet" />
     <!-- maplibre-gl-components CSS -->
-    <link href="https://unpkg.com/maplibre-gl-components@0.14.0/dist/maplibre-gl-components.css" rel="stylesheet" />
+    <link href="https://unpkg.com/maplibre-gl-components@0.16.2/dist/maplibre-gl-components.css" rel="stylesheet" />
     <!-- Geoman for drawing -->
     <script src="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.umd.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.css" rel="stylesheet" />
@@ -40,11 +40,11 @@
         let LayerControl = null;
         let addControlGridFn = null;
 
-        const lcPromise = import('https://esm.sh/maplibre-gl-layer-control@0.13.0')
+        const lcPromise = import('https://esm.sh/maplibre-gl-layer-control@0.14.1')
             .then(mod => { LayerControl = mod.LayerControl; })
             .catch(() => console.warn('LayerControl library unavailable — layer control will be skipped'));
 
-        const cgPromise = import('https://esm.sh/maplibre-gl-components@0.14.0')
+        const cgPromise = import('https://esm.sh/maplibre-gl-components@0.16.2')
             .then(mod => { addControlGridFn = mod.addControlGrid; })
             .catch(() => console.warn('ControlGrid library unavailable — control grid will be skipped'));
 
@@ -338,7 +338,11 @@
                         exclude: config.exclude,
                         rows: config.rows,
                         columns: config.columns,
-                        collapsed: config.collapsed !== false
+                        collapsed: config.collapsed !== false,
+                        title: config.title,
+                        basemapStyleUrl: config.basemapStyleUrl,
+                        excludeLayers: config.excludeLayers,
+                        bookmarkOptions: config.bookmarkOptions
                     });
                     controlGridAdded = true;
                 } else {

@@ -3822,6 +3822,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     if (kwargs.excludeLayers !== undefined && kwargs.excludeLayers !== null) {
       options.excludeLayers = kwargs.excludeLayers;
     }
+    if (kwargs.bookmarkOptions !== undefined && kwargs.bookmarkOptions !== null) {
+      options.bookmarkOptions = kwargs.bookmarkOptions;
+    }
 
     this.controlGrid = addControlGrid(this.map, options as Parameters<typeof addControlGrid>[1]);
     this.controlsMap.set('control-grid', this.controlGrid as unknown as maplibregl.IControl);

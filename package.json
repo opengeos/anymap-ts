@@ -56,7 +56,7 @@
     "leaflet.heat": "^0.2.0",
     "mapbox-gl": "^3.18.1",
     "maplibre-gl": ">=5.14.0",
-    "maplibre-gl-components": "^0.16.1",
+    "maplibre-gl-components": "^0.16.2",
     "maplibre-gl-geo-editor": "^0.7.3",
     "maplibre-gl-geophoto": "^0.2.0",
     "maplibre-gl-layer-control": "^0.14.1",

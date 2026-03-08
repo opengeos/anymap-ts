@@ -3235,6 +3235,7 @@ class MapLibreMap(MapWidget):
         gap: int = 2,
         basemap_style_url: Optional[str] = None,
         exclude_layers: Optional[List[str]] = None,
+        bookmark_options: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         """Add a ControlGrid with all default tools or a custom subset.
@@ -3268,6 +3269,11 @@ class MapLibreMap(MapWidget):
             exclude_layers: Layer ID patterns to exclude from SwipeControl
                 (e.g., 'measure-*', 'gl-draw-*'). If None, sensible defaults
                 are applied.
+            bookmark_options: Options for the bookmark control, such as
+                preloaded bookmarks. Keys use camelCase to match the JS API.
+                Example: ``{"bookmarks": [{"id": "nyc", "name": "New York",
+                "lng": -74.006, "lat": 40.7128, "zoom": 12, "pitch": 0,
+                "bearing": 0, "createdAt": 0}]}``.
             **kwargs: Additional ControlGrid options.
 
         Example:
@@ -3302,6 +3308,8 @@ class MapLibreMap(MapWidget):
             js_kwargs["basemapStyleUrl"] = basemap_style_url
         if exclude_layers is not None:
             js_kwargs["excludeLayers"] = exclude_layers
+        if bookmark_options is not None:
+            js_kwargs["bookmarkOptions"] = bookmark_options
 
         self.call_js_method("addControlGrid", **js_kwargs)
         # Save full config for HTML export
@@ -3318,6 +3326,14 @@ class MapLibreMap(MapWidget):
             control_config["rows"] = rows
         if columns is not None:
             control_config["columns"] = columns
+        if title:
+            control_config["title"] = title
+        if basemap_style_url is not None:
+            control_config["basemapStyleUrl"] = basemap_style_url
+        if exclude_layers is not None:
+            control_config["excludeLayers"] = exclude_layers
+        if bookmark_options is not None:
+            control_config["bookmarkOptions"] = bookmark_options
         self._controls = {
             **self._controls,
             "control-grid": control_config,
