@@ -71,6 +71,7 @@ import {
 } from 'maplibre-gl-components';
 import type { ControlGrid } from 'maplibre-gl-components';
 import 'maplibre-gl-components/style.css';
+import { PMTiles } from 'pmtiles';
 import { geojson as flatgeobuf } from 'flatgeobuf';
 
 /**
@@ -113,6 +114,9 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
 
   // Draw control (Mapbox Draw)
   private mapboxDraw: MapboxDraw | null = null;
+
+  // PMTiles sub-layer tracking for auto-discovery removal
+  private pmtilesSubLayers: globalThis.Map<string, string[]> = new globalThis.Map();
 
   // maplibre-gl-components controls
   protected pmtilesLayerControl: PMTilesLayerControl | null = null;
@@ -2317,34 +2321,249 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   // PMTiles, maplibre-gl-components, clustering, choropleth, 3D buildings
   // -------------------------------------------------------------------------
 
-  private handleAddPMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  /**
+   * Generate visually distinct colors using evenly spaced HSL hues.
+   */
+  private generateDistinctColors(count: number): string[] {
+    const colors: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const hue = (i * 360 / count) % 360;
+      const saturation = 65 + (i % 3) * 10;
+      const lightness = 45 + (i % 2) * 10;
+      colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+    }
+    return colors;
+  }
+
+  /**
+   * Map geometry type string to Mapbox layer type.
+   */
+  private geometryToLayerType(geometryType: string): 'fill' | 'line' | 'circle' {
+    const lower = geometryType.toLowerCase();
+    if (lower.includes('polygon')) return 'fill';
+    if (lower.includes('line')) return 'line';
+    if (lower.includes('point')) return 'circle';
+    return 'fill';
+  }
+
+  /**
+   * Infer layer type from a source layer name when geometry_type is missing.
+   */
+  private inferLayerTypeFromName(layerName: string): 'fill' | 'line' | 'circle' {
+    const lower = layerName.toLowerCase();
+    const linePatterns = [
+      'road', 'street', 'highway', 'path', 'route', 'rail',
+      'transit', 'boundary', 'boundaries', 'border',
+      'river', 'stream', 'canal', 'waterway',
+      'line', 'edge', 'track', 'ferry', 'bridge', 'tunnel',
+      'physical_line', 'transportation',
+    ];
+    const pointPatterns = [
+      'poi', 'pois', 'point', 'place', 'places', 'marker',
+      'stop', 'station', 'node', 'peak', 'city', 'town',
+      'village', 'label', 'symbol', 'icon', 'address',
+      'physical_point', 'mountain_peak',
+    ];
+    for (const pattern of linePatterns) {
+      if (lower === pattern || lower.includes(pattern)) return 'line';
+    }
+    for (const pattern of pointPatterns) {
+      if (lower === pattern || lower.includes(pattern)) return 'circle';
+    }
+    return 'fill';
+  }
+
+  private async handleAddPMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
     const url = kwargs.url as string;
     const layerId = (kwargs.id as string) || `pmtiles-${Date.now()}`;
     const sourceType = (kwargs.sourceType as string) || 'vector';
     const opacity = (kwargs.opacity as number) ?? 1;
+    const visible = kwargs.visible !== false;
+    const style = (kwargs.style as Record<string, unknown>) || {};
+    const fitBounds = kwargs.fitBounds === true;
     const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
     const sourceId = `${layerId}-source`;
 
-    if (!this.map.getSource(sourceId)) {
-      this.map.addSource(sourceId, { type: sourceType as 'vector' | 'raster', url: pmtilesUrl });
-    }
-    if (!this.map.getLayer(layerId)) {
-      const layerConfig: Record<string, unknown> = {
-        id: layerId,
-        type: sourceType === 'vector' ? 'fill' : 'raster',
-        source: sourceId,
-        paint: sourceType === 'vector' ? { 'fill-color': '#3388ff', 'fill-opacity': opacity } : { 'raster-opacity': opacity },
-      };
-      this.map.addLayer(layerConfig as mapboxgl.AnyLayer);
+    try {
+      if (!this.map.getSource(sourceId)) {
+        this.map.addSource(sourceId, { type: sourceType as 'vector' | 'raster', url: pmtilesUrl });
+      }
+
+      const hasUserStyle = Object.keys(style).length > 0;
+
+      if (sourceType === 'vector' && !hasUserStyle) {
+        // Auto-discovery mode
+        const prefix = (kwargs.prefix as string) ?? '';
+        await this.autoDiscoverPMTilesLayers(url, layerId, sourceId, opacity, visible, fitBounds, prefix);
+      } else if (!this.map.getLayer(layerId)) {
+        const layerConfig: Record<string, unknown> = {
+          id: layerId,
+          type: sourceType === 'vector' ? ((style.type as string) || 'fill') : 'raster',
+          source: sourceId,
+          layout: { visibility: visible ? 'visible' : 'none' },
+          paint: sourceType === 'vector'
+            ? { 'fill-color': '#3388ff', 'fill-opacity': opacity, ...this.extractPaintFromStyle(style) }
+            : { 'raster-opacity': opacity },
+        };
+        if (style['source-layer']) {
+          layerConfig['source-layer'] = style['source-layer'];
+        }
+        this.map.addLayer(layerConfig as mapboxgl.AnyLayer);
+
+        if (fitBounds) {
+          const pmtiles = new PMTiles(url);
+          pmtiles.getHeader().then(header => {
+            if (this.map) {
+              this.map.fitBounds(
+                [[header.minLon, header.minLat], [header.maxLon, header.maxLat]],
+                { padding: 50, duration: 1000 },
+              );
+            }
+          }).catch(err => {
+            console.warn(`[anymap-ts] Could not fetch PMTiles header for fitBounds:`, err);
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`[anymap-ts] Error adding PMTiles layer "${layerId}":`, error);
     }
   }
 
+  private extractPaintFromStyle(style: Record<string, unknown>): Record<string, unknown> {
+    const paint: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(style)) {
+      if (key !== 'type' && key !== 'source-layer') {
+        paint[key] = value;
+      }
+    }
+    return paint;
+  }
+
+  /**
+   * Build paint properties for a given layer type.
+   */
+  private buildPMTilesPaint(
+    layerType: 'fill' | 'line' | 'circle',
+    color: string,
+    opacity: number,
+  ): Record<string, unknown> {
+    if (layerType === 'fill') {
+      return { 'fill-color': color, 'fill-opacity': opacity * 0.6, 'fill-outline-color': color };
+    } else if (layerType === 'line') {
+      return { 'line-color': color, 'line-width': 2, 'line-opacity': opacity };
+    }
+    return {
+      'circle-color': color, 'circle-radius': 5, 'circle-opacity': opacity,
+      'circle-stroke-color': color, 'circle-stroke-width': 1,
+    };
+  }
+
+  /**
+   * Auto-discover source layers from PMTiles metadata and add a layer
+   * for each one with a distinct color. When geometry_type is unknown,
+   * adds fill + line + circle sub-layers so all geometries render.
+   */
+  private async autoDiscoverPMTilesLayers(
+    url: string,
+    layerId: string,
+    sourceId: string,
+    opacity: number,
+    visible: boolean,
+    fitBounds: boolean,
+    prefix: string,
+  ): Promise<void> {
+    if (!this.map) return;
+
+    const pmtiles = new PMTiles(url);
+    const header = await pmtiles.getHeader();
+    const metadata = await pmtiles.getMetadata() as Record<string, unknown>;
+
+    const tilestats = metadata.tilestats as Record<string, unknown> | undefined;
+    const vectorLayers = (
+      metadata.vector_layers ||
+      (tilestats && tilestats.layers) ||
+      []
+    ) as Array<{ id: string; geometry_type?: string }>;
+
+    if (vectorLayers.length === 0) {
+      console.warn(`[anymap-ts] No vector_layers found in PMTiles metadata for "${layerId}"`);
+      return;
+    }
+
+    const colors = this.generateDistinctColors(vectorLayers.length);
+
+    // Determine layer type for each source layer. When geometry_type is
+    // known, use it; otherwise infer from the layer name.
+    const layerEntries = vectorLayers.map((vl, i) => ({
+      vl,
+      color: colors[i],
+      mlType: vl.geometry_type
+        ? this.geometryToLayerType(vl.geometry_type)
+        : this.inferLayerTypeFromName(vl.id),
+    }));
+
+    // Sort so fill renders first, then line, then circle (points on top)
+    const renderOrder: Record<string, number> = { fill: 0, line: 1, circle: 2 };
+    layerEntries.sort((a, b) => (renderOrder[a.mlType] ?? 0) - (renderOrder[b.mlType] ?? 0));
+
+    const subLayerIds: string[] = [];
+
+    for (const { vl, color, mlType } of layerEntries) {
+      const subLayerId = prefix ? `${prefix}-${vl.id}` : vl.id;
+
+      if (!this.map.getLayer(subLayerId)) {
+        this.map.addLayer({
+          id: subLayerId,
+          type: mlType,
+          source: sourceId,
+          'source-layer': vl.id,
+          layout: { visibility: visible ? 'visible' : 'none' },
+          paint: this.buildPMTilesPaint(mlType, color, opacity),
+        } as mapboxgl.AnyLayer);
+        subLayerIds.push(subLayerId);
+      }
+    }
+
+    this.pmtilesSubLayers.set(layerId, subLayerIds);
+
+    if (fitBounds && this.map) {
+      this.map.fitBounds(
+        [[header.minLon, header.minLat], [header.maxLon, header.maxLat]],
+        { padding: 50, duration: 1000 },
+      );
+    }
+
+    this.sendEvent('pmtiles_layers_discovered', {
+      layerId,
+      subLayers: vectorLayers.map((vl, i) => {
+        const idBase = prefix ? `${prefix}-${vl.id}` : vl.id;
+        return {
+          id: idBase,
+          sourceLayer: vl.id,
+          geometryType: vl.geometry_type || 'unknown',
+          color: colors[i],
+        };
+      }),
+    });
+  }
+
   private handleRemovePMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
     const [layerId] = args as [string];
     const sourceId = `${layerId}-source`;
-    if (this.map?.getLayer(layerId)) this.map.removeLayer(layerId);
-    if (this.map?.getSource(sourceId)) this.map.removeSource(sourceId);
+
+    const subLayerIds = this.pmtilesSubLayers.get(layerId);
+    if (subLayerIds) {
+      for (const subId of subLayerIds) {
+        if (this.map.getLayer(subId)) this.map.removeLayer(subId);
+      }
+      this.pmtilesSubLayers.delete(layerId);
+    } else {
+      if (this.map.getLayer(layerId)) this.map.removeLayer(layerId);
+    }
+
+    if (this.map.getSource(sourceId)) this.map.removeSource(sourceId);
   }
 
   private handleAddPMTilesControl(args: unknown[], kwargs: Record<string, unknown>): void {

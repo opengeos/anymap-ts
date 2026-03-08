@@ -734,9 +734,30 @@ class MapboxMap(MapWidget):
         visible: bool = True,
         fit_bounds: bool = False,
         source_type: str = "vector",
+        prefix: str = "",
         **kwargs,
     ) -> None:
-        """Add a PMTiles layer for efficient vector or raster tile serving."""
+        """Add a PMTiles layer for efficient vector or raster tile serving.
+
+        When no style is provided for vector PMTiles, the method automatically
+        discovers all source layers from the PMTiles metadata and renders each
+        one with a distinct color. Geometry types from the metadata determine
+        the layer type: Polygon becomes fill, LineString becomes line, and
+        Point becomes circle.
+
+        Args:
+            url: URL to the PMTiles file.
+            layer_id: Layer identifier. If None, auto-generated.
+            style: Layer style configuration. If None and source_type is
+                "vector", auto-discovers all source layers with distinct colors.
+            opacity: Layer opacity (0-1).
+            visible: Whether layer is initially visible.
+            fit_bounds: Whether to fit map to layer bounds after loading.
+            source_type: Source type - "vector" or "raster".
+            prefix: Prefix for auto-discovered layer names in the layer
+                control. Defaults to empty string (no prefix).
+            **kwargs: Additional layer options.
+        """
         layer_id = layer_id or f"pmtiles-{len(self._layers)}"
 
         self.call_js_method(
@@ -748,6 +769,7 @@ class MapboxMap(MapWidget):
             visible=visible,
             fitBounds=fit_bounds,
             sourceType=source_type,
+            prefix=prefix,
             name=layer_id,
             **kwargs,
         )

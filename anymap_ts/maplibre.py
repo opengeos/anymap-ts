@@ -1179,6 +1179,7 @@ class MapLibreMap(MapWidget):
         visible: bool = True,
         fit_bounds: bool = False,
         source_type: str = "vector",
+        prefix: str = "",
         **kwargs,
     ) -> None:
         """Add a PMTiles layer for efficient vector or raster tile serving.
@@ -1187,26 +1188,41 @@ class MapLibreMap(MapWidget):
         It enables efficient web-native map serving without requiring a
         separate tile server infrastructure.
 
+        When no style is provided for vector PMTiles, the method automatically
+        discovers all source layers from the PMTiles metadata and renders each
+        one with a distinct color. Geometry types from the metadata determine
+        the layer type: Polygon becomes fill, LineString becomes line, and
+        Point becomes circle. This is similar to what https://pmtiles.io/
+        provides for visualizing PMTiles files.
+
         Args:
             url: URL to the PMTiles file (e.g., "https://example.com/data.pmtiles").
             layer_id: Layer identifier. If None, auto-generated.
-            style: Layer style configuration for vector tiles.
-                For vector PMTiles, can include:
+            style: Layer style configuration for vector tiles. If None and
+                source_type is "vector", auto-discovers all source layers and
+                assigns distinct colors. For explicit styling, can include:
                 - type: Layer type ('fill', 'line', 'circle', 'symbol')
                 - source-layer: Source layer name from vector tiles
                 - paint properties (e.g., 'fill-color', 'line-width')
-                - layout properties (e.g., 'visibility')
-                Example: {"type": "line", "source-layer": "roads", "line-color": "#ff0000"}
+                Example: {"type": "line", "source-layer": "roads",
+                    "line-color": "#ff0000"}
             opacity: Layer opacity (0-1).
             visible: Whether layer is initially visible.
             fit_bounds: Whether to fit map to layer bounds after loading.
-            source_type: Source type - "vector" for vector PMTiles, "raster" for raster PMTiles.
+            source_type: Source type - "vector" or "raster".
+            prefix: Prefix for auto-discovered layer names in the layer
+                control. Defaults to empty string (no prefix).
             **kwargs: Additional layer options.
 
         Example:
             >>> from anymap_ts import Map
             >>> m = Map()
-            >>> # Add vector PMTiles
+            >>> # Auto-discover all layers with distinct colors
+            >>> m.add_pmtiles_layer(
+            ...     url="https://example.com/data.pmtiles",
+            ...     fit_bounds=True,
+            ... )
+            >>> # Explicit style for a single layer
             >>> m.add_pmtiles_layer(
             ...     url="https://example.com/countries.pmtiles",
             ...     layer_id="countries",
@@ -1216,13 +1232,6 @@ class MapLibreMap(MapWidget):
             ...         "fill-color": "#3388ff",
             ...         "fill-opacity": 0.6
             ...     }
-            ... )
-            >>> # Add raster PMTiles
-            >>> m.add_pmtiles_layer(
-            ...     url="https://example.com/satellite.pmtiles",
-            ...     layer_id="satellite",
-            ...     source_type="raster",
-            ...     opacity=0.8
             ... )
         """
         layer_id = layer_id or f"pmtiles-{len(self._layers)}"
@@ -1236,6 +1245,7 @@ class MapLibreMap(MapWidget):
             visible=visible,
             fitBounds=fit_bounds,
             sourceType=source_type,
+            prefix=prefix,
             name=layer_id,
             **kwargs,
         )
