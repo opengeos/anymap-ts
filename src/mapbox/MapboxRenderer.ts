@@ -2533,11 +2533,9 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
 
     this.pmtilesSubLayers.set(layerId, subLayerIds);
 
-    // Register popups for all sub-layers
+    // Register a single grouped popup for all sub-layers
     if (popupConfig?.enabled) {
-      for (const subId of subLayerIds) {
-        this.registerPMTilesPopup(subId, popupConfig);
-      }
+      this.registerPMTilesGroupPopup(subLayerIds, popupConfig);
     }
 
     if (fitBounds && this.map) {
@@ -2582,52 +2580,60 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   /**
    * Register a click popup for a PMTiles layer.
    */
+  private buildPMTilesPopupHTML(
+    props: Record<string, unknown>,
+    config: Record<string, unknown>,
+  ): string {
+    const properties = config.properties as string[] | undefined;
+    const template = config.template as string | undefined;
+
+    const tableStyle = 'border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed;';
+    const cellStyle = 'padding: 4px 8px; border-bottom: 1px solid #ddd; color: #333; word-break: break-word; overflow-wrap: break-word;';
+    const keyStyle = 'font-weight: 600; color: #222; white-space: nowrap; width: 40%;';
+    const valueStyle = 'color: #444; width: 60%;';
+    const containerStyle = 'font-size: 13px; color: #333; line-height: 1.4; word-break: break-word; overflow-wrap: break-word;';
+    const templateStyles = `
+      <style>
+        .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
+        .anymap-popup p { color: #444; margin: 4px 0; }
+      </style>
+    `;
+
+    if (template) {
+      const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
+        return props[key] !== undefined ? String(props[key]) : match;
+      });
+      return `${templateStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
+    } else if (properties) {
+      const rows = properties
+        .filter((key) => props[key] !== undefined)
+        .map((key) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${props[key]}</td></tr>`)
+        .join('');
+      return `<table style="${tableStyle}">${rows}</table>`;
+    } else {
+      const rows = Object.entries(props)
+        .map(([key, value]) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${value}</td></tr>`)
+        .join('');
+      return `<table style="${tableStyle}">${rows}</table>`;
+    }
+  }
+
+  /**
+   * Register a click popup for a single PMTiles layer (non-auto-discovery).
+   */
   private registerPMTilesPopup(
     targetLayerId: string,
     config: Record<string, unknown>,
   ): void {
     if (!this.map) return;
 
-    const properties = config.properties as string[] | undefined;
-    const template = config.template as string | undefined;
-
     this.map.on('click', targetLayerId, (e: mapboxgl.MapLayerMouseEvent) => {
       if (!e.features || e.features.length === 0) return;
       const feature = e.features[0];
       const props = feature.properties || {};
+      const content = this.buildPMTilesPopupHTML(props, config);
 
-      const tableStyle = 'border-collapse: collapse; font-size: 13px; color: #333;';
-      const cellStyle = 'padding: 4px 8px; border-bottom: 1px solid #ddd; color: #333;';
-      const keyStyle = 'font-weight: 600; color: #222;';
-      const valueStyle = 'color: #444;';
-      const containerStyle = 'font-size: 13px; color: #333; line-height: 1.4;';
-      const templateStyles = `
-        <style>
-          .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
-          .anymap-popup p { color: #444; margin: 4px 0; }
-        </style>
-      `;
-
-      let content: string;
-      if (template) {
-        const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
-          return props[key] !== undefined ? String(props[key]) : match;
-        });
-        content = `${templateStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
-      } else if (properties) {
-        const rows = properties
-          .filter((key) => props[key] !== undefined)
-          .map((key) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${props[key]}</td></tr>`)
-          .join('');
-        content = `<table style="${tableStyle}">${rows}</table>`;
-      } else {
-        const rows = Object.entries(props)
-          .map(([key, value]) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${value}</td></tr>`)
-          .join('');
-        content = `<table style="${tableStyle}">${rows}</table>`;
-      }
-
-      new mapboxgl.Popup()
+      new mapboxgl.Popup({ maxWidth: '320px' })
         .setLngLat(e.lngLat)
         .setHTML(content)
         .addTo(this.map!);
@@ -2639,6 +2645,64 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     this.map.on('mouseleave', targetLayerId, () => {
       if (this.map) this.map.getCanvas().style.cursor = '';
     });
+  }
+
+  /**
+   * Register a single click handler for a group of PMTiles sub-layers.
+   * Queries all sub-layers at the click point and combines results into
+   * one popup, avoiding stacked popups when layers overlap.
+   */
+  private registerPMTilesGroupPopup(
+    subLayerIds: string[],
+    config: Record<string, unknown>,
+  ): void {
+    if (!this.map) return;
+
+    this.map.on('click', (e: mapboxgl.MapMouseEvent) => {
+      if (!this.map) return;
+
+      const allFeatures: Array<{ layer: string; props: Record<string, unknown> }> = [];
+      for (const subId of subLayerIds) {
+        if (!this.map.getLayer(subId)) continue;
+        const features = this.map.queryRenderedFeatures(e.point, { layers: [subId] });
+        if (features.length > 0) {
+          allFeatures.push({
+            layer: (features[0] as any).sourceLayer || subId,
+            props: features[0].properties || {},
+          });
+        }
+      }
+
+      if (allFeatures.length === 0) return;
+
+      const sections: string[] = [];
+      const sectionHeaderStyle = 'font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 2px 8px; text-transform: capitalize;';
+
+      for (const { layer, props } of allFeatures) {
+        const friendlyName = layer.replace(/[-_]/g, ' ');
+        if (allFeatures.length > 1) {
+          sections.push(`<div style="${sectionHeaderStyle}">${friendlyName}</div>`);
+        }
+        sections.push(this.buildPMTilesPopupHTML(props, config));
+      }
+
+      const wrapperStyle = 'max-height: 300px; overflow-y: auto;';
+      const content = `<div style="${wrapperStyle}">${sections.join('')}</div>`;
+
+      new mapboxgl.Popup({ maxWidth: '320px' })
+        .setLngLat(e.lngLat)
+        .setHTML(content)
+        .addTo(this.map!);
+    });
+
+    for (const subId of subLayerIds) {
+      this.map.on('mouseenter', subId, () => {
+        if (this.map) this.map.getCanvas().style.cursor = 'pointer';
+      });
+      this.map.on('mouseleave', subId, () => {
+        if (this.map) this.map.getCanvas().style.cursor = '';
+      });
+    }
   }
 
   private handleAddPMTilesControl(args: unknown[], kwargs: Record<string, unknown>): void {
