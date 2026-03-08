@@ -10913,6 +10913,7 @@ full bidirectional communication through anywidget.</p>
         <span class="n">gap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
         <span class="n">basemap_style_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">exclude_layers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bookmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a ControlGrid with all default tools or a custom subset.</span>
@@ -10946,6 +10947,11 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">            exclude_layers: Layer ID patterns to exclude from SwipeControl</span>
 <span class="sd">                (e.g., &#39;measure-*&#39;, &#39;gl-draw-*&#39;). If None, sensible defaults</span>
 <span class="sd">                are applied.</span>
+<span class="sd">            bookmark_options: Options for the bookmark control, such as</span>
+<span class="sd">                preloaded bookmarks. Keys use camelCase to match the JS API.</span>
+<span class="sd">                Example: ``{&quot;bookmarks&quot;: [{&quot;id&quot;: &quot;nyc&quot;, &quot;name&quot;: &quot;New York&quot;,</span>
+<span class="sd">                &quot;lng&quot;: -74.006, &quot;lat&quot;: 40.7128, &quot;zoom&quot;: 12, &quot;pitch&quot;: 0,</span>
+<span class="sd">                &quot;bearing&quot;: 0, &quot;createdAt&quot;: 0}]}``.</span>
 <span class="sd">            **kwargs: Additional ControlGrid options.</span>
 
 <span class="sd">        Example:</span>
@@ -10980,6 +10986,8 @@ full bidirectional communication through anywidget.</p>
             <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;basemapStyleUrl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemap_style_url</span>
         <span class="k">if</span> <span class="n">exclude_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;excludeLayers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude_layers</span>
+        <span class="k">if</span> <span class="n">bookmark_options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;bookmarkOptions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bookmark_options</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addControlGrid&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">js_kwargs</span><span class="p">)</span>
         <span class="c1"># Save full config for HTML export</span>
@@ -10996,6 +11004,14 @@ full bidirectional communication through anywidget.</p>
             <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span>
         <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
+        <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+            <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="k">if</span> <span class="n">basemap_style_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;basemapStyleUrl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemap_style_url</span>
+        <span class="k">if</span> <span class="n">exclude_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;excludeLayers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude_layers</span>
+        <span class="k">if</span> <span class="n">bookmark_options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;bookmarkOptions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bookmark_options</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
             <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="n">control_config</span><span class="p">,</span>
@@ -16200,7 +16216,7 @@ ideal for density visualization and topographic-style maps.</p>
 
 
 <h3 id="anymap_ts.maplibre.MapLibreMap.add_control_grid" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_control_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">default_controls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">collapsible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">show_row_column_controls</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gap</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">basemap_style_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exclude_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_control_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">default_controls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">collapsible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">show_row_column_controls</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gap</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">basemap_style_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exclude_layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bookmark_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.maplibre.MapLibreMap.add_control_grid" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -16308,6 +16324,16 @@ are applied.</p></td>
         <td><code>None</code></td>
       </tr>
       <tr>
+        <td><code>bookmark_options</code></td>
+        <td><code>Optional[Dict[str, Any]]</code></td>
+        <td><p>Options for the bookmark control, such as
+preloaded bookmarks. Keys use camelCase to match the JS API.
+Example: <code>{"bookmarks": [{"id": "nyc", "name": "New York",
+"lng": -74.006, "lat": 40.7128, "zoom": 12, "pitch": 0,
+"bearing": 0, "createdAt": 0}]}</code>.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
         <td><code>**kwargs</code></td>
         <td></td>
         <td><p>Additional ControlGrid options.</p></td>
@@ -16342,6 +16368,7 @@ are applied.</p></td>
     <span class="n">gap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
     <span class="n">basemap_style_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">exclude_layers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">bookmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a ControlGrid with all default tools or a custom subset.</span>
@@ -16375,6 +16402,11 @@ are applied.</p></td>
 <span class="sd">        exclude_layers: Layer ID patterns to exclude from SwipeControl</span>
 <span class="sd">            (e.g., &#39;measure-*&#39;, &#39;gl-draw-*&#39;). If None, sensible defaults</span>
 <span class="sd">            are applied.</span>
+<span class="sd">        bookmark_options: Options for the bookmark control, such as</span>
+<span class="sd">            preloaded bookmarks. Keys use camelCase to match the JS API.</span>
+<span class="sd">            Example: ``{&quot;bookmarks&quot;: [{&quot;id&quot;: &quot;nyc&quot;, &quot;name&quot;: &quot;New York&quot;,</span>
+<span class="sd">            &quot;lng&quot;: -74.006, &quot;lat&quot;: 40.7128, &quot;zoom&quot;: 12, &quot;pitch&quot;: 0,</span>
+<span class="sd">            &quot;bearing&quot;: 0, &quot;createdAt&quot;: 0}]}``.</span>
 <span class="sd">        **kwargs: Additional ControlGrid options.</span>
 
 <span class="sd">    Example:</span>
@@ -16409,6 +16441,8 @@ are applied.</p></td>
         <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;basemapStyleUrl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemap_style_url</span>
     <span class="k">if</span> <span class="n">exclude_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;excludeLayers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude_layers</span>
+    <span class="k">if</span> <span class="n">bookmark_options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;bookmarkOptions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bookmark_options</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addControlGrid&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">js_kwargs</span><span class="p">)</span>
     <span class="c1"># Save full config for HTML export</span>
@@ -16425,6 +16459,14 @@ are applied.</p></td>
         <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span>
     <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
+    <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+        <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+    <span class="k">if</span> <span class="n">basemap_style_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;basemapStyleUrl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemap_style_url</span>
+    <span class="k">if</span> <span class="n">exclude_layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;excludeLayers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclude_layers</span>
+    <span class="k">if</span> <span class="n">bookmark_options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">control_config</span><span class="p">[</span><span class="s2">&quot;bookmarkOptions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bookmark_options</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
         <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span> <span class="n">control_config</span><span class="p">,</span>
