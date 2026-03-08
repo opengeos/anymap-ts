@@ -4069,8 +4069,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       return { 'line-color': color, 'line-width': 2, 'line-opacity': opacity };
     }
     return {
-      'circle-color': color, 'circle-radius': 5, 'circle-opacity': opacity,
-      'circle-stroke-color': color, 'circle-stroke-width': 1,
+      'circle-color': color, 'circle-radius': 2, 'circle-opacity': opacity,
+      'circle-stroke-color': color, 'circle-stroke-width': 0.5,
     };
   }
 
