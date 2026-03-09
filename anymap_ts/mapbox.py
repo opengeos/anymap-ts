@@ -117,6 +117,9 @@ class MapboxMap(MapWidget):
         # Initialize layer dictionary
         self._layer_dict = {"Background": []}
 
+        # Storage for auto-discovered PMTiles layer styles
+        self._pmtiles_styles: Dict[str, List[Dict[str, Any]]] = {}
+
         # Add default controls
         if controls is None:
             controls = {"navigation": True, "fullscreen": True}
@@ -787,6 +790,15 @@ class MapboxMap(MapWidget):
             **kwargs,
         )
 
+        # Listen for auto-discovered styles from JS
+        if style is None and source_type == "vector":
+
+            def _on_discovered(data: Dict[str, Any]) -> None:
+                discovered_id = data.get("layerId", layer_id)
+                self._pmtiles_styles[discovered_id] = data.get("subLayers", [])
+
+            self.on_map_event("pmtiles_layers_discovered", _on_discovered)
+
         self._layers = {
             **self._layers,
             layer_id: {
@@ -799,9 +811,23 @@ class MapboxMap(MapWidget):
         category = "Vector" if source_type == "vector" else "Raster"
         self._add_to_layer_dict(layer_id, category)
 
+    @property
+    def pmtiles_styles(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Get auto-discovered PMTiles layer styles.
+
+        Returns a dict keyed by layer_id, where each value is a list of
+        sub-layer dicts containing: id, sourceLayer, geometryType, color,
+        type, and paint.
+
+        Returns:
+            Dict mapping layer IDs to lists of sub-layer style dicts.
+        """
+        return dict(self._pmtiles_styles)
+
     def remove_pmtiles_layer(self, layer_id: str) -> None:
         """Remove a PMTiles layer."""
         self._remove_layer_internal(layer_id, "removePMTilesLayer")
+        self._pmtiles_styles.pop(layer_id, None)
 
     # -------------------------------------------------------------------------
     # Arc Layer (deck.gl)

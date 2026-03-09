@@ -4171,16 +4171,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       );
     }
 
-    // Send discovered layer info back to Python
+    // Send discovered layer info (including full style) back to Python
     this.sendEvent('pmtiles_layers_discovered', {
       layerId,
-      subLayers: vectorLayers.map((vl, i) => {
+      subLayers: layerEntries.map(({ vl, color, mlType }) => {
         const idBase = prefix ? `${prefix}-${vl.id}` : vl.id;
         return {
           id: idBase,
           sourceLayer: vl.id,
           geometryType: vl.geometry_type || 'unknown',
-          color: colors[i],
+          color,
+          type: mlType,
+          paint: this.buildPMTilesPaint(mlType, color, opacity),
         };
       }),
     });
