@@ -81,6 +81,9 @@ import {
 import type { ControlGrid } from 'maplibre-gl-components';
 import 'maplibre-gl-components/style.css';
 
+// PMTiles for metadata fetching
+import { PMTiles } from 'pmtiles';
+
 // FlatGeobuf for streaming cloud-native vector data
 import { geojson as flatgeobuf } from 'flatgeobuf';
 
@@ -138,6 +141,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // LiDAR control
   protected lidarControl: LidarControl | null = null;
   protected lidarLayers: globalThis.Map<string, string> = new globalThis.Map(); // id -> source mapping
+
+  // PMTiles sub-layer tracking for auto-discovery removal
+  private pmtilesSubLayers: globalThis.Map<string, string[]> = new globalThis.Map();
 
   // maplibre-gl-components controls
   protected pmtilesLayerControl: PMTilesLayerControl | null = null;
@@ -3869,7 +3875,62 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // PMTiles layer handlers
   // -------------------------------------------------------------------------
 
-  private handleAddPMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  /**
+   * Generate visually distinct colors using evenly spaced HSL hues.
+   */
+  private generateDistinctColors(count: number): string[] {
+    const colors: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const hue = (i * 360 / count) % 360;
+      const saturation = 65 + (i % 3) * 10;
+      const lightness = 45 + (i % 2) * 10;
+      colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+    }
+    return colors;
+  }
+
+  /**
+   * Map geometry type string to MapLibre layer type.
+   */
+  private geometryToLayerType(geometryType: string): 'fill' | 'line' | 'circle' {
+    const lower = geometryType.toLowerCase();
+    if (lower.includes('polygon')) return 'fill';
+    if (lower.includes('line')) return 'line';
+    if (lower.includes('point')) return 'circle';
+    return 'fill';
+  }
+
+  /**
+   * Infer MapLibre layer type from a source layer name when geometry_type
+   * is not available in the PMTiles metadata.
+   */
+  private inferLayerTypeFromName(layerName: string): 'fill' | 'line' | 'circle' {
+    const lower = layerName.toLowerCase();
+    // Names that typically represent line geometries
+    const linePatterns = [
+      'road', 'street', 'highway', 'path', 'route', 'rail',
+      'transit', 'boundary', 'boundaries', 'border',
+      'river', 'stream', 'canal', 'waterway',
+      'line', 'edge', 'track', 'ferry', 'bridge', 'tunnel',
+      'physical_line', 'transportation',
+    ];
+    // Names that typically represent point geometries
+    const pointPatterns = [
+      'poi', 'pois', 'point', 'place', 'places', 'marker',
+      'stop', 'station', 'node', 'peak', 'city', 'town',
+      'village', 'label', 'symbol', 'icon', 'address',
+      'physical_point', 'mountain_peak',
+    ];
+    for (const pattern of linePatterns) {
+      if (lower === pattern || lower.includes(pattern)) return 'line';
+    }
+    for (const pattern of pointPatterns) {
+      if (lower === pattern || lower.includes(pattern)) return 'circle';
+    }
+    return 'fill';
+  }
+
+  private async handleAddPMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.map) return;
 
     const url = kwargs.url as string;
@@ -3878,6 +3939,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const opacity = (kwargs.opacity as number) ?? 1.0;
     const visible = kwargs.visible !== false;
     const style = (kwargs.style as Record<string, unknown>) || {};
+    const fitBounds = kwargs.fitBounds === true;
 
     // Ensure pmtiles:// protocol prefix
     const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
@@ -3895,8 +3957,16 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         this.stateManager.addSource(sourceId, sourceConfig as unknown as SourceConfig);
       }
 
-      // Add layer
-      if (!this.map.getLayer(layerId)) {
+      const hasUserStyle = Object.keys(style).length > 0;
+
+      const popupConfig = kwargs.popup as Record<string, unknown> | null;
+
+      if (sourceType === 'vector' && !hasUserStyle) {
+        // Auto-discovery mode: fetch metadata and add layers for each source layer
+        const prefix = (kwargs.prefix as string) ?? '';
+        await this.autoDiscoverPMTilesLayers(url, layerId, sourceId, opacity, visible, fitBounds, prefix, popupConfig);
+      } else if (!this.map.getLayer(layerId)) {
+        // Explicit style mode (existing behavior)
         let layerConfig: Record<string, unknown>;
 
         if (sourceType === 'vector') {
@@ -3966,10 +4036,156 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         this.stateManager.addLayer(layerId, layerConfig as unknown as LayerConfig);
         // Track as user overlay layer for deck.gl ordering
         this.userOverlayLayerIds.push(layerId);
+
+        // Register popup if configured
+        if (popupConfig?.enabled && sourceType === 'vector') {
+          this.registerPMTilesPopup(layerId, popupConfig);
+        }
+
+        // Fit bounds if requested
+        if (fitBounds) {
+          const pmtiles = new PMTiles(url);
+          pmtiles.getHeader().then(header => {
+            if (this.map) {
+              this.map.fitBounds(
+                [[header.minLon, header.minLat], [header.maxLon, header.maxLat]],
+                { padding: 50, duration: 1000 },
+              );
+            }
+          }).catch(err => {
+            console.warn(`[anymap-ts] Could not fetch PMTiles header for fitBounds:`, err);
+          });
+        }
       }
     } catch (error) {
       console.error(`[anymap-ts] Error adding PMTiles layer "${layerId}":`, error);
     }
+  }
+
+  /**
+   * Build paint properties for a given MapLibre layer type.
+   */
+  private buildPMTilesPaint(
+    layerType: 'fill' | 'line' | 'circle',
+    color: string,
+    opacity: number,
+  ): Record<string, unknown> {
+    if (layerType === 'fill') {
+      return { 'fill-color': color, 'fill-opacity': opacity * 0.6, 'fill-outline-color': color };
+    } else if (layerType === 'line') {
+      return { 'line-color': color, 'line-width': 2, 'line-opacity': opacity };
+    }
+    return {
+      'circle-color': color, 'circle-radius': 3, 'circle-opacity': opacity,
+      'circle-stroke-color': color, 'circle-stroke-width': 1,
+    };
+  }
+
+  /**
+   * Auto-discover source layers from PMTiles metadata and add MapLibre
+   * layers for each one with a distinct color. When geometry_type is
+   * unknown, adds fill + line + circle sub-layers so all geometries render.
+   */
+  private async autoDiscoverPMTilesLayers(
+    url: string,
+    layerId: string,
+    sourceId: string,
+    opacity: number,
+    visible: boolean,
+    fitBounds: boolean,
+    prefix: string,
+    popupConfig?: Record<string, unknown> | null,
+  ): Promise<void> {
+    if (!this.map) return;
+
+    const pmtiles = new PMTiles(url);
+    const header = await pmtiles.getHeader();
+    const metadata = await pmtiles.getMetadata() as Record<string, unknown>;
+
+    // Extract vector_layers from TileJSON metadata
+    const tilestats = metadata.tilestats as Record<string, unknown> | undefined;
+    const vectorLayers = (
+      metadata.vector_layers ||
+      (tilestats && tilestats.layers) ||
+      []
+    ) as Array<{ id: string; geometry_type?: string }>;
+
+    if (vectorLayers.length === 0) {
+      console.warn(`[anymap-ts] No vector_layers found in PMTiles metadata for "${layerId}"`);
+      return;
+    }
+
+    // Generate distinct colors (one per source layer)
+    const colors = this.generateDistinctColors(vectorLayers.length);
+
+    // Determine layer type for each source layer. When geometry_type is
+    // known, use it; otherwise infer from the layer name.
+    const layerEntries = vectorLayers.map((vl, i) => ({
+      vl,
+      color: colors[i],
+      mlType: vl.geometry_type
+        ? this.geometryToLayerType(vl.geometry_type)
+        : this.inferLayerTypeFromName(vl.id),
+    }));
+
+    // Sort so fill renders first, then line, then circle (points on top)
+    const renderOrder: Record<string, number> = { fill: 0, line: 1, circle: 2 };
+    layerEntries.sort((a, b) => (renderOrder[a.mlType] ?? 0) - (renderOrder[b.mlType] ?? 0));
+
+    const subLayerIds: string[] = [];
+
+    for (const { vl, color, mlType } of layerEntries) {
+      const idBase = prefix ? `${prefix}-${vl.id}` : vl.id;
+      const subLayerId = idBase;
+
+      const layerConfig: Record<string, unknown> = {
+        id: subLayerId,
+        type: mlType,
+        source: sourceId,
+        'source-layer': vl.id,
+        layout: { visibility: visible ? 'visible' : 'none' },
+        paint: this.buildPMTilesPaint(mlType, color, opacity),
+      };
+
+      if (!this.map.getLayer(subLayerId)) {
+        this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
+        this.stateManager.addLayer(subLayerId, layerConfig as unknown as LayerConfig);
+        this.userOverlayLayerIds.push(subLayerId);
+        subLayerIds.push(subLayerId);
+      }
+    }
+
+    // Track sub-layers for removal
+    this.pmtilesSubLayers.set(layerId, subLayerIds);
+
+    // Register a single grouped popup for all sub-layers
+    if (popupConfig?.enabled) {
+      this.registerPMTilesGroupPopup(subLayerIds, popupConfig);
+    }
+
+    // Fit bounds from header
+    if (fitBounds && this.map) {
+      this.map.fitBounds(
+        [[header.minLon, header.minLat], [header.maxLon, header.maxLat]],
+        { padding: 50, duration: 1000 },
+      );
+    }
+
+    // Send discovered layer info (including full style) back to Python
+    this.sendEvent('pmtiles_layers_discovered', {
+      layerId,
+      subLayers: layerEntries.map(({ vl, color, mlType }) => {
+        const idBase = prefix ? `${prefix}-${vl.id}` : vl.id;
+        return {
+          id: idBase,
+          sourceLayer: vl.id,
+          geometryType: vl.geometry_type || 'unknown',
+          color,
+          type: mlType,
+          paint: this.buildPMTilesPaint(mlType, color, opacity),
+        };
+      }),
+    });
   }
 
   private handleRemovePMTilesLayer(args: unknown[], kwargs: Record<string, unknown>): void {
@@ -3977,11 +4193,163 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const [layerId] = args as [string];
     const sourceId = `${layerId}-source`;
 
-    if (this.map.getLayer(layerId)) {
-      this.map.removeLayer(layerId);
+    // Check if this was an auto-discovered multi-layer
+    const subLayerIds = this.pmtilesSubLayers.get(layerId);
+    if (subLayerIds) {
+      for (const subId of subLayerIds) {
+        if (this.map.getLayer(subId)) {
+          this.map.removeLayer(subId);
+          this.stateManager.removeLayer(subId);
+        }
+        const idx = this.userOverlayLayerIds.indexOf(subId);
+        if (idx >= 0) this.userOverlayLayerIds.splice(idx, 1);
+      }
+      this.pmtilesSubLayers.delete(layerId);
+    } else {
+      // Single layer (existing behavior)
+      if (this.map.getLayer(layerId)) {
+        this.map.removeLayer(layerId);
+        this.stateManager.removeLayer(layerId);
+      }
     }
+
     if (this.map.getSource(sourceId)) {
       this.map.removeSource(sourceId);
+      this.stateManager.removeSource(sourceId);
+    }
+  }
+
+  /**
+   * Register a click popup for a PMTiles layer.
+   */
+  private buildPMTilesPopupHTML(
+    props: Record<string, unknown>,
+    config: Record<string, unknown>,
+  ): string {
+    const properties = config.properties as string[] | undefined;
+    const template = config.template as string | undefined;
+
+    const popupStyles = `
+      <style>
+        .anymap-pmtiles-popup table { border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed; background: #fff !important; border: none !important; margin: 0 !important; }
+        .anymap-pmtiles-popup tr { background: #fff !important; }
+        .anymap-pmtiles-popup td { padding: 4px 8px !important; border: none !important; border-bottom: 1px solid #eee !important; color: #333 !important; word-break: break-word; overflow-wrap: break-word; background: #fff !important; }
+        .anymap-pmtiles-popup tr:last-child td { border-bottom: none !important; }
+        .anymap-pmtiles-popup td:first-child { font-weight: 600; color: #222 !important; white-space: nowrap; width: 40%; }
+        .anymap-pmtiles-popup td:last-child { color: #444 !important; width: 60%; }
+        .anymap-pmtiles-popup .section-header { font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0 !important; border-bottom: 1px solid #ddd; }
+        .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
+        .anymap-popup p { color: #444; margin: 4px 0; }
+      </style>
+    `;
+
+    const containerStyle = 'font-size: 13px; color: #333; line-height: 1.4; word-break: break-word; overflow-wrap: break-word;';
+
+    if (template) {
+      const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
+        return props[key] !== undefined ? String(props[key]) : match;
+      });
+      return `${popupStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
+    } else if (properties) {
+      const rows = properties
+        .filter((key) => props[key] !== undefined)
+        .map((key) => `<tr><td>${key}</td><td>${props[key]}</td></tr>`)
+        .join('');
+      return `${popupStyles}<div class="anymap-pmtiles-popup"><table>${rows}</table></div>`;
+    } else {
+      const rows = Object.entries(props)
+        .map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`)
+        .join('');
+      return `${popupStyles}<div class="anymap-pmtiles-popup"><table>${rows}</table></div>`;
+    }
+  }
+
+  /**
+   * Register a click popup for a single PMTiles layer (non-auto-discovery).
+   */
+  private registerPMTilesPopup(
+    targetLayerId: string,
+    config: Record<string, unknown>,
+  ): void {
+    if (!this.map) return;
+
+    this.map.on('click', targetLayerId, (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const feature = e.features[0];
+      const props = feature.properties || {};
+      const content = this.buildPMTilesPopupHTML(props, config);
+
+      new Popup({ maxWidth: '320px' })
+        .setLngLat(e.lngLat)
+        .setHTML(content)
+        .addTo(this.map!);
+    });
+
+    this.map.on('mouseenter', targetLayerId, () => {
+      if (this.map) this.map.getCanvas().style.cursor = 'pointer';
+    });
+    this.map.on('mouseleave', targetLayerId, () => {
+      if (this.map) this.map.getCanvas().style.cursor = '';
+    });
+  }
+
+  /**
+   * Register a single click handler for a group of PMTiles sub-layers.
+   * Queries all sub-layers at the click point and combines results into
+   * one popup, avoiding stacked popups when layers overlap.
+   */
+  private registerPMTilesGroupPopup(
+    subLayerIds: string[],
+    config: Record<string, unknown>,
+  ): void {
+    if (!this.map) return;
+
+    this.map.on('click', (e) => {
+      if (!this.map) return;
+
+      // Query all sub-layers at the click point
+      const allFeatures: Array<{ layer: string; props: Record<string, unknown> }> = [];
+      for (const subId of subLayerIds) {
+        if (!this.map.getLayer(subId)) continue;
+        const features = this.map.queryRenderedFeatures(e.point, { layers: [subId] });
+        if (features.length > 0) {
+          allFeatures.push({
+            layer: features[0].sourceLayer || subId,
+            props: features[0].properties || {},
+          });
+        }
+      }
+
+      if (allFeatures.length === 0) return;
+
+      // Build combined popup content
+      const sections: string[] = [];
+
+      for (const { layer, props } of allFeatures) {
+        const friendlyName = layer.replace(/[-_]/g, ' ');
+        if (allFeatures.length > 1) {
+          sections.push(`<div class="section-header">${friendlyName}</div>`);
+        }
+        sections.push(this.buildPMTilesPopupHTML(props, config));
+      }
+
+      const wrapperStyle = 'max-height: 300px; overflow-y: auto;';
+      const content = `<div class="anymap-pmtiles-popup" style="${wrapperStyle}">${sections.join('')}</div>`;
+
+      new Popup({ maxWidth: '320px' })
+        .setLngLat(e.lngLat)
+        .setHTML(content)
+        .addTo(this.map!);
+    });
+
+    // Cursor changes for all sub-layers
+    for (const subId of subLayerIds) {
+      this.map.on('mouseenter', subId, () => {
+        if (this.map) this.map.getCanvas().style.cursor = 'pointer';
+      });
+      this.map.on('mouseleave', subId, () => {
+        if (this.map) this.map.getCanvas().style.cursor = '';
+      });
     }
   }
 

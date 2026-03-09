@@ -117,6 +117,9 @@ class MapboxMap(MapWidget):
         # Initialize layer dictionary
         self._layer_dict = {"Background": []}
 
+        # Storage for auto-discovered PMTiles layer styles
+        self._pmtiles_styles: Dict[str, List[Dict[str, Any]]] = {}
+
         # Add default controls
         if controls is None:
             controls = {"navigation": True, "fullscreen": True}
@@ -734,10 +737,43 @@ class MapboxMap(MapWidget):
         visible: bool = True,
         fit_bounds: bool = False,
         source_type: str = "vector",
+        prefix: str = "",
+        popup: Optional[Union[bool, List[str], str]] = None,
         **kwargs,
     ) -> None:
-        """Add a PMTiles layer for efficient vector or raster tile serving."""
+        """Add a PMTiles layer for efficient vector or raster tile serving.
+
+        When no style is provided for vector PMTiles, the method automatically
+        discovers all source layers from the PMTiles metadata and renders each
+        one with a distinct color. Geometry types from the metadata determine
+        the layer type: Polygon becomes fill, LineString becomes line, and
+        Point becomes circle.
+
+        Args:
+            url: URL to the PMTiles file.
+            layer_id: Layer identifier. If None, auto-generated.
+            style: Layer style configuration. If None and source_type is
+                "vector", auto-discovers all source layers with distinct colors.
+            opacity: Layer opacity (0-1).
+            visible: Whether layer is initially visible.
+            fit_bounds: Whether to fit map to layer bounds after loading.
+            source_type: Source type - "vector" or "raster".
+            prefix: Prefix for auto-discovered layer names in the layer
+                control. Defaults to empty string (no prefix).
+            popup: Configure popups on click. Accepts True (all properties),
+                a list of property names, or an HTML template string with
+                {property_name} placeholders. Defaults to None (no popup).
+            **kwargs: Additional layer options.
+        """
         layer_id = layer_id or f"pmtiles-{len(self._layers)}"
+
+        popup_config: Optional[Dict[str, Any]] = None
+        if popup is True:
+            popup_config = {"enabled": True}
+        elif isinstance(popup, list):
+            popup_config = {"enabled": True, "properties": popup}
+        elif isinstance(popup, str):
+            popup_config = {"enabled": True, "template": popup}
 
         self.call_js_method(
             "addPMTilesLayer",
@@ -748,9 +784,20 @@ class MapboxMap(MapWidget):
             visible=visible,
             fitBounds=fit_bounds,
             sourceType=source_type,
+            prefix=prefix,
+            popup=popup_config,
             name=layer_id,
             **kwargs,
         )
+
+        # Listen for auto-discovered styles from JS
+        if style is None and source_type == "vector":
+
+            def _on_discovered(data: Dict[str, Any]) -> None:
+                discovered_id = data.get("layerId", layer_id)
+                self._pmtiles_styles[discovered_id] = data.get("subLayers", [])
+
+            self.on_map_event("pmtiles_layers_discovered", _on_discovered)
 
         self._layers = {
             **self._layers,
@@ -764,9 +811,23 @@ class MapboxMap(MapWidget):
         category = "Vector" if source_type == "vector" else "Raster"
         self._add_to_layer_dict(layer_id, category)
 
+    @property
+    def pmtiles_styles(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Get auto-discovered PMTiles layer styles.
+
+        Returns a dict keyed by layer_id, where each value is a list of
+        sub-layer dicts containing: id, sourceLayer, geometryType, color,
+        type, and paint.
+
+        Returns:
+            Dict mapping layer IDs to lists of sub-layer style dicts.
+        """
+        return dict(self._pmtiles_styles)
+
     def remove_pmtiles_layer(self, layer_id: str) -> None:
         """Remove a PMTiles layer."""
         self._remove_layer_internal(layer_id, "removePMTilesLayer")
+        self._pmtiles_styles.pop(layer_id, None)
 
     # -------------------------------------------------------------------------
     # Arc Layer (deck.gl)

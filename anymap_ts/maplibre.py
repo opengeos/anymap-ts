@@ -110,6 +110,9 @@ class MapLibreMap(MapWidget):
         # Initialize layer dictionary
         self._layer_dict = {"Background": []}
 
+        # Storage for auto-discovered PMTiles layer styles
+        self._pmtiles_styles: Dict[str, List[Dict[str, Any]]] = {}
+
         # Add default controls
         if controls is None:
             controls = {
@@ -1179,6 +1182,8 @@ class MapLibreMap(MapWidget):
         visible: bool = True,
         fit_bounds: bool = False,
         source_type: str = "vector",
+        prefix: str = "PMTiles",
+        popup: Optional[Union[bool, List[str], str]] = None,
         **kwargs,
     ) -> None:
         """Add a PMTiles layer for efficient vector or raster tile serving.
@@ -1187,45 +1192,71 @@ class MapLibreMap(MapWidget):
         It enables efficient web-native map serving without requiring a
         separate tile server infrastructure.
 
+        When no style is provided for vector PMTiles, the method automatically
+        discovers all source layers from the PMTiles metadata and renders each
+        one with a distinct color. Geometry types from the metadata determine
+        the layer type: Polygon becomes fill, LineString becomes line, and
+        Point becomes circle. This is similar to what https://pmtiles.io/
+        provides for visualizing PMTiles files.
+
         Args:
             url: URL to the PMTiles file (e.g., "https://example.com/data.pmtiles").
             layer_id: Layer identifier. If None, auto-generated.
-            style: Layer style configuration for vector tiles.
-                For vector PMTiles, can include:
+            style: Layer style configuration for vector tiles. If None and
+                source_type is "vector", auto-discovers all source layers and
+                assigns distinct colors. For explicit styling, can include:
                 - type: Layer type ('fill', 'line', 'circle', 'symbol')
                 - source-layer: Source layer name from vector tiles
                 - paint properties (e.g., 'fill-color', 'line-width')
-                - layout properties (e.g., 'visibility')
-                Example: {"type": "line", "source-layer": "roads", "line-color": "#ff0000"}
+                Example: {"type": "line", "source-layer": "roads",
+                    "line-color": "#ff0000"}
             opacity: Layer opacity (0-1).
             visible: Whether layer is initially visible.
             fit_bounds: Whether to fit map to layer bounds after loading.
-            source_type: Source type - "vector" for vector PMTiles, "raster" for raster PMTiles.
+            source_type: Source type - "vector" or "raster".
+            prefix: Prefix for auto-discovered layer names in the layer
+                control. Defaults to "PMTiles".
+            popup: Configure popups on click for the layer(s). Accepts:
+                - True: show all feature properties in a table.
+                - List of property names: show only those properties.
+                - str: HTML template with {property_name} placeholders.
+                - None (default): no popup.
             **kwargs: Additional layer options.
 
         Example:
             >>> from anymap_ts import Map
             >>> m = Map()
-            >>> # Add vector PMTiles
+            >>> # Auto-discover with popups showing all properties
             >>> m.add_pmtiles_layer(
-            ...     url="https://example.com/countries.pmtiles",
-            ...     layer_id="countries",
-            ...     style={
-            ...         "type": "fill",
-            ...         "source-layer": "countries",
-            ...         "fill-color": "#3388ff",
-            ...         "fill-opacity": 0.6
-            ...     }
+            ...     url="https://example.com/data.pmtiles",
+            ...     fit_bounds=True,
+            ...     popup=True,
             ... )
-            >>> # Add raster PMTiles
+            >>> # Popup with specific properties
             >>> m.add_pmtiles_layer(
-            ...     url="https://example.com/satellite.pmtiles",
-            ...     layer_id="satellite",
-            ...     source_type="raster",
-            ...     opacity=0.8
+            ...     url="https://example.com/buildings.pmtiles",
+            ...     style={"type": "fill", "source-layer": "building",
+            ...         "fill-color": "#ff6b6b"},
+            ...     popup=["name", "height"],
+            ... )
+            >>> # Popup with HTML template
+            >>> m.add_pmtiles_layer(
+            ...     url="https://example.com/buildings.pmtiles",
+            ...     style={"type": "fill", "source-layer": "building",
+            ...         "fill-color": "#ff6b6b"},
+            ...     popup="<h3>{name}</h3><p>Height: {height}m</p>",
             ... )
         """
         layer_id = layer_id or f"pmtiles-{len(self._layers)}"
+
+        # Normalize popup config to pass to JS
+        popup_config: Optional[Dict[str, Any]] = None
+        if popup is True:
+            popup_config = {"enabled": True}
+        elif isinstance(popup, list):
+            popup_config = {"enabled": True, "properties": popup}
+        elif isinstance(popup, str):
+            popup_config = {"enabled": True, "template": popup}
 
         self.call_js_method(
             "addPMTilesLayer",
@@ -1236,9 +1267,20 @@ class MapLibreMap(MapWidget):
             visible=visible,
             fitBounds=fit_bounds,
             sourceType=source_type,
+            prefix=prefix,
+            popup=popup_config,
             name=layer_id,
             **kwargs,
         )
+
+        # Listen for auto-discovered styles from JS
+        if style is None and source_type == "vector":
+
+            def _on_discovered(data: Dict[str, Any]) -> None:
+                discovered_id = data.get("layerId", layer_id)
+                self._pmtiles_styles[discovered_id] = data.get("subLayers", [])
+
+            self.on_map_event("pmtiles_layers_discovered", _on_discovered)
 
         self._layers = {
             **self._layers,
@@ -1252,6 +1294,31 @@ class MapLibreMap(MapWidget):
         category = "Vector" if source_type == "vector" else "Raster"
         self._add_to_layer_dict(layer_id, category)
 
+    @property
+    def pmtiles_styles(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Get auto-discovered PMTiles layer styles.
+
+        Returns a dict keyed by layer_id, where each value is a list of
+        sub-layer dicts containing: id, sourceLayer, geometryType, color,
+        type, and paint.
+
+        Returns:
+            Dict mapping layer IDs to lists of sub-layer style dicts.
+
+        Example:
+            >>> m.add_pmtiles_layer(url="https://example.com/data.pmtiles")
+            >>> # After the layer loads, styles are available:
+            >>> m.pmtiles_styles
+            {'pmtiles-0': [
+                {'id': 'building', 'sourceLayer': 'building',
+                 'geometryType': 'Polygon', 'color': '#e6194b',
+                 'type': 'fill',
+                 'paint': {'fill-color': '#e6194b', 'fill-opacity': 0.6}},
+                ...
+            ]}
+        """
+        return dict(self._pmtiles_styles)
+
     def remove_pmtiles_layer(self, layer_id: str) -> None:
         """Remove a PMTiles layer.
 
@@ -1259,6 +1326,7 @@ class MapLibreMap(MapWidget):
             layer_id: Layer identifier to remove.
         """
         self._remove_layer_internal(layer_id, "removePMTilesLayer")
+        self._pmtiles_styles.pop(layer_id, None)
 
     # -------------------------------------------------------------------------
     # Arc Layer (deck.gl)

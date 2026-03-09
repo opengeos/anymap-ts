@@ -7,8 +7,7 @@
     <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
-    <!-- PMTiles -->
-    <script src="https://unpkg.com/pmtiles@3.0.8/dist/pmtiles.js"></script>
+    <!-- PMTiles (loaded via ESM import below) -->
     <!-- maplibre-gl-layer-control CSS -->
     <link href="https://unpkg.com/maplibre-gl-layer-control@0.14.1/dist/maplibre-gl-layer-control.css" rel="stylesheet" />
     <!-- maplibre-gl-components CSS -->
@@ -298,11 +297,11 @@
             maxPitch: state.max_pitch || 85
         });
 
-        // Initialize PMTiles protocol
-        if (typeof pmtiles !== 'undefined') {
-            const protocol = new pmtiles.Protocol();
-            maplibregl.addProtocol("pmtiles", protocol.tile);
-        }
+        // Initialize PMTiles protocol (ESM import of v4)
+        const pmtilesModule = await import('https://esm.sh/pmtiles@4.4.0');
+        const pmtilesProtocol = new pmtilesModule.Protocol();
+        maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
+        const PMTiles = pmtilesModule.PMTiles;
 
         map.on('load', async function() {
             // 1. Replay ALL js_calls first (markers, legends, GeoJSON, etc.)
@@ -788,6 +787,9 @@
                     const opacity = kwargs.opacity || 1.0;
                     const visible = kwargs.visible !== false;
                     const style = kwargs.style || {};
+                    const prefix = kwargs.prefix || '';
+                    const popupConfig = kwargs.popup || null;
+                    const hasStyle = style && Object.keys(style).length > 0;
 
                     // Prepare PMTiles URL with protocol
                     const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
@@ -801,94 +803,206 @@
                         });
                     }
 
-                    // Add layer(s)
-                    if (!map.getLayer(layerId)) {
+                    // Auto-discovery for vector PMTiles without explicit style
+                    if (sourceType === 'vector' && !hasStyle) {
+                        try {
+                            const pm = new PMTiles(url);
+                            const header = await pm.getHeader();
+                            const metadata = await pm.getMetadata();
+                            const vectorLayers = metadata.vector_layers || (metadata.tilestats && metadata.tilestats.layers) || [];
+
+                            if (vectorLayers.length > 0) {
+                                // Generate distinct colors
+                                const colors = vectorLayers.map((_, i) => {
+                                    const hue = (i * 137.508) % 360;
+                                    return `hsl(${hue}, 70%, 50%)`;
+                                });
+
+                                // Map geometry type to MapLibre layer type
+                                function geoToType(gt) {
+                                    if (!gt) return null;
+                                    const lower = gt.toLowerCase();
+                                    if (lower.includes('polygon')) return 'fill';
+                                    if (lower.includes('line')) return 'line';
+                                    if (lower.includes('point')) return 'circle';
+                                    return 'fill';
+                                }
+
+                                // Infer layer type from name when geometry_type is missing
+                                function inferFromName(name) {
+                                    const lower = name.toLowerCase();
+                                    const linePatterns = ['road','street','highway','path','route','rail','transit','boundary','boundaries','border','river','stream','canal','waterway','line','edge','track','ferry','bridge','tunnel','physical_line','transportation'];
+                                    const pointPatterns = ['poi','pois','point','place','places','marker','stop','station','node','peak','city','town','village','label','symbol','icon','address','physical_point','mountain_peak'];
+                                    for (const p of linePatterns) { if (lower === p || lower.includes(p)) return 'line'; }
+                                    for (const p of pointPatterns) { if (lower === p || lower.includes(p)) return 'circle'; }
+                                    return 'fill';
+                                }
+
+                                // Build paint for layer type
+                                function buildPaint(mlType, color, op) {
+                                    if (mlType === 'fill') return { 'fill-color': color, 'fill-opacity': op * 0.6, 'fill-outline-color': color };
+                                    if (mlType === 'line') return { 'line-color': color, 'line-width': 2, 'line-opacity': op };
+                                    return { 'circle-color': color, 'circle-radius': 2, 'circle-opacity': op, 'circle-stroke-color': color, 'circle-stroke-width': 0.5 };
+                                }
+
+                                const entries = vectorLayers.map((vl, i) => ({
+                                    vl,
+                                    color: colors[i],
+                                    mlType: vl.geometry_type ? geoToType(vl.geometry_type) : inferFromName(vl.id),
+                                }));
+
+                                // Sort: fill first, then line, then circle
+                                const order = { fill: 0, line: 1, circle: 2 };
+                                entries.sort((a, b) => (order[a.mlType] || 0) - (order[b.mlType] || 0));
+
+                                const subLayerIds = [];
+                                for (const { vl, color, mlType } of entries) {
+                                    const subId = prefix ? `${prefix}-${vl.id}` : vl.id;
+                                    if (!map.getLayer(subId)) {
+                                        map.addLayer({
+                                            id: subId,
+                                            type: mlType,
+                                            source: sourceId,
+                                            'source-layer': vl.id,
+                                            layout: { visibility: visible ? 'visible' : 'none' },
+                                            paint: buildPaint(mlType, color, opacity),
+                                        });
+                                        addedLayers.push({ id: subId, name: subId, type: mlType });
+                                        subLayerIds.push(subId);
+                                    }
+                                }
+
+                                // Register grouped popup
+                                if (popupConfig && popupConfig.enabled && subLayerIds.length > 0) {
+                                    const props = popupConfig.properties;
+                                    const tmpl = popupConfig.template;
+                                    map.on('click', (e) => {
+                                        const allFeatures = [];
+                                        for (const sid of subLayerIds) {
+                                            if (!map.getLayer(sid)) continue;
+                                            const feats = map.queryRenderedFeatures(e.point, { layers: [sid] });
+                                            if (feats.length > 0) {
+                                                allFeatures.push({ layer: feats[0].sourceLayer || sid, props: feats[0].properties || {} });
+                                            }
+                                        }
+                                        if (allFeatures.length === 0) return;
+
+                                        const popupCSS = `<style>
+                                            .anymap-pmtiles-popup table { border-collapse:collapse;font-size:13px;color:#333;width:100%;table-layout:fixed;background:#fff; }
+                                            .anymap-pmtiles-popup td { padding:4px 8px;border-bottom:1px solid #eee;color:#333;word-break:break-word;overflow-wrap:break-word; }
+                                            .anymap-pmtiles-popup tr:last-child td { border-bottom:none; }
+                                            .anymap-pmtiles-popup td:first-child { font-weight:600;color:#222;white-space:nowrap;width:40%; }
+                                            .anymap-pmtiles-popup td:last-child { color:#444;width:60%; }
+                                            .anymap-pmtiles-popup .section-header { font-weight:700;font-size:13px;color:#111;padding:6px 8px 4px 8px;text-transform:capitalize;background:#f0f0f0;border-bottom:1px solid #ddd; }
+                                        </style>`;
+
+                                        function buildHTML(p) {
+                                            if (tmpl) {
+                                                const replaced = tmpl.replace(/\{(\w+)\}/g, (m, k) => p[k] !== undefined ? String(p[k]) : m);
+                                                return `<div style="font-size:13px;color:#333;line-height:1.4;word-break:break-word;padding:4px 0;">${replaced}</div>`;
+                                            }
+                                            const keys = props || Object.keys(p);
+                                            const rows = keys.filter(k => p[k] !== undefined).map(k => `<tr><td>${k}</td><td>${p[k]}</td></tr>`).join('');
+                                            return `<table>${rows}</table>`;
+                                        }
+
+                                        const sections = [];
+                                        for (const { layer, props: fp } of allFeatures) {
+                                            if (allFeatures.length > 1) sections.push(`<div class="section-header">${layer.replace(/[-_]/g, ' ')}</div>`);
+                                            sections.push(buildHTML(fp));
+                                        }
+                                        new maplibregl.Popup({ maxWidth: '320px' })
+                                            .setLngLat(e.lngLat)
+                                            .setHTML(`${popupCSS}<div class="anymap-pmtiles-popup" style="max-height:300px;overflow-y:auto;">${sections.join('')}</div>`)
+                                            .addTo(map);
+                                    });
+                                    for (const sid of subLayerIds) {
+                                        map.on('mouseenter', sid, () => { map.getCanvas().style.cursor = 'pointer'; });
+                                        map.on('mouseleave', sid, () => { map.getCanvas().style.cursor = ''; });
+                                    }
+                                }
+
+                                // Fit bounds from header
+                                if (kwargs.fitBounds) {
+                                    map.fitBounds(
+                                        [[header.minLon, header.minLat], [header.maxLon, header.maxLat]],
+                                        { padding: 50, duration: 1000 }
+                                    );
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('[anymap-ts] PMTiles auto-discovery failed:', err);
+                        }
+                    } else if (!map.getLayer(layerId)) {
+                        // Explicit style or raster
                         if (sourceType === 'vector') {
-                            // For vector PMTiles, we might need to add multiple layers
-                            // Use provided style or create default
                             const layerStyle = {
                                 id: layerId,
                                 source: sourceId,
-                                type: 'fill',
-                                layout: {
-                                    visibility: visible ? 'visible' : 'none'
-                                },
-                                paint: {
-                                    'fill-opacity': opacity,
-                                    'fill-color': '#3388ff',
-                                    ...style
-                                }
+                                type: style.type || 'fill',
+                                layout: { visibility: visible ? 'visible' : 'none' },
+                                paint: {},
                             };
+                            if (style['source-layer']) layerStyle['source-layer'] = style['source-layer'];
 
-                            if (style.type) {
-                                layerStyle.type = style.type;
-                                if (style.type === 'line') {
-                                    layerStyle.paint = {
-                                        'line-opacity': opacity,
-                                        'line-color': '#3388ff',
-                                        'line-width': 2,
-                                        ...style
-                                    };
-                                } else if (style.type === 'circle') {
-                                    layerStyle.paint = {
-                                        'circle-opacity': opacity,
-                                        'circle-color': '#3388ff',
-                                        'circle-radius': 5,
-                                        ...style
-                                    };
-                                }
+                            if (style.type === 'line') {
+                                layerStyle.paint = { 'line-opacity': opacity, 'line-color': '#3388ff', 'line-width': 2, ...style };
+                            } else if (style.type === 'circle') {
+                                layerStyle.paint = { 'circle-opacity': opacity, 'circle-color': '#3388ff', 'circle-radius': 5, ...style };
+                            } else {
+                                layerStyle.paint = { 'fill-opacity': opacity, 'fill-color': '#3388ff', ...style };
                             }
-
-                            if (style['source-layer']) {
-                                layerStyle['source-layer'] = style['source-layer'];
-                            }
+                            delete layerStyle.paint.type;
+                            delete layerStyle.paint['source-layer'];
 
                             map.addLayer(layerStyle);
                         } else {
-                            // For raster PMTiles
                             map.addLayer({
                                 id: layerId,
                                 type: 'raster',
                                 source: sourceId,
-                                layout: {
-                                    visibility: visible ? 'visible' : 'none'
-                                },
-                                paint: {
-                                    'raster-opacity': opacity
-                                }
+                                layout: { visibility: visible ? 'visible' : 'none' },
+                                paint: { 'raster-opacity': opacity }
                             });
                         }
-
                         addedLayers.push({
                             id: layerId,
                             name: kwargs.name || layerId,
                             type: sourceType === 'vector' ? (style.type || 'fill') : 'raster'
                         });
-                    }
 
-                    // Fit bounds if requested
-                    if (kwargs.fitBounds) {
-                        // For PMTiles, we could try to get metadata and fit to bounds
-                        // This is optional and complex, so we'll skip for now
+                        if (kwargs.fitBounds) {
+                            try {
+                                const pm = new PMTiles(url);
+                                const header = await pm.getHeader();
+                                map.fitBounds(
+                                    [[header.minLon, header.minLat], [header.maxLon, header.maxLat]],
+                                    { padding: 50, duration: 1000 }
+                                );
+                            } catch (err) {
+                                console.warn('[anymap-ts] PMTiles fitBounds failed:', err);
+                            }
+                        }
                     }
 
                     break;
                 }
 
                 case 'removePMTilesLayer': {
-                    const layerId = args[0];
-                    if (map.getLayer(layerId)) {
-                        map.removeLayer(layerId);
+                    const rmLayerId = args[0];
+                    const rmSourceId = `${rmLayerId}-source`;
+                    // Remove all layers using this source (handles auto-discovered sub-layers)
+                    for (const layer of map.getStyle().layers || []) {
+                        if (layer.source === rmSourceId && map.getLayer(layer.id)) {
+                            map.removeLayer(layer.id);
+                            const idx = addedLayers.findIndex(l => l.id === layer.id);
+                            if (idx > -1) addedLayers.splice(idx, 1);
+                        }
                     }
-                    const sourceId = `${layerId}-source`;
-                    if (map.getSource(sourceId)) {
-                        map.removeSource(sourceId);
-                    }
-                    // Remove from addedLayers
-                    const index = addedLayers.findIndex(l => l.id === layerId);
-                    if (index > -1) {
-                        addedLayers.splice(index, 1);
-                    }
+                    if (map.getLayer(rmLayerId)) map.removeLayer(rmLayerId);
+                    if (map.getSource(rmSourceId)) map.removeSource(rmSourceId);
+                    const rmIdx = addedLayers.findIndex(l => l.id === rmLayerId);
+                    if (rmIdx > -1) addedLayers.splice(rmIdx, 1);
                     break;
                 }
 
