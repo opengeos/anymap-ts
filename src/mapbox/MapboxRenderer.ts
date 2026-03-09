@@ -2678,7 +2678,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       if (allFeatures.length === 0) return;
 
       const sections: string[] = [];
-      const sectionHeaderStyle = 'font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 2px 8px; text-transform: capitalize;';
+      const sectionHeaderStyle = 'font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0; border-top: 1px solid #ddd; margin-top: 4px;';
 
       for (const { layer, props } of allFeatures) {
         const friendlyName = layer.replace(/[-_]/g, ' ');

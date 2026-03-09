@@ -891,12 +891,12 @@
                                         const cellStyle = 'padding:4px 8px;border-bottom:1px solid #ddd;color:#333;word-break:break-word;overflow-wrap:break-word;';
                                         const keyStyle = 'font-weight:600;color:#222;white-space:nowrap;width:40%;';
                                         const valStyle = 'color:#444;width:60%;';
-                                        const headerStyle = 'font-weight:700;font-size:13px;color:#111;padding:6px 8px 2px 8px;text-transform:capitalize;';
+                                        const headerStyle = 'font-weight:700;font-size:13px;color:#111;padding:6px 8px 4px 8px;text-transform:capitalize;background:#f0f0f0;border-top:1px solid #ddd;margin-top:4px;';
 
                                         function buildHTML(p) {
                                             if (tmpl) {
                                                 const replaced = tmpl.replace(/\{(\w+)\}/g, (m, k) => p[k] !== undefined ? String(p[k]) : m);
-                                                return `<div style="font-size:13px;color:#333;line-height:1.4;word-break:break-word;">${replaced}</div>`;
+                                                return `<div style="font-size:13px;color:#333;line-height:1.4;word-break:break-word;padding:4px 0;">${replaced}</div>`;
                                             }
                                             const keys = props || Object.keys(p);
                                             const rows = keys.filter(k => p[k] !== undefined).map(k => `<tr><td style="${cellStyle}${keyStyle}">${k}</td><td style="${cellStyle}${valStyle}">${p[k]}</td></tr>`).join('');
