@@ -1099,6 +1099,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       'inspect-highlight-*',
       'lidar-*',
       'usgs-lidar-*',
+      MapLibreRenderer.DECK_SENTINEL_ID,
     ];
     const excludeLayers = (kwargs.excludeLayers as string[] | undefined) ?? defaultExclude;
 
