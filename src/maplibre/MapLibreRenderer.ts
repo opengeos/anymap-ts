@@ -4231,12 +4231,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     const popupStyles = `
       <style>
-        .anymap-pmtiles-popup table { border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed; background: #fff; }
-        .anymap-pmtiles-popup td { padding: 4px 8px; border-bottom: 1px solid #eee; color: #333; word-break: break-word; overflow-wrap: break-word; }
-        .anymap-pmtiles-popup tr:last-child td { border-bottom: none; }
-        .anymap-pmtiles-popup td:first-child { font-weight: 600; color: #222; white-space: nowrap; width: 40%; }
-        .anymap-pmtiles-popup td:last-child { color: #444; width: 60%; }
-        .anymap-pmtiles-popup .section-header { font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0; border-bottom: 1px solid #ddd; }
+        .anymap-pmtiles-popup table { border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed; background: #fff !important; border: none !important; margin: 0 !important; }
+        .anymap-pmtiles-popup tr { background: #fff !important; }
+        .anymap-pmtiles-popup td { padding: 4px 8px !important; border: none !important; border-bottom: 1px solid #eee !important; color: #333 !important; word-break: break-word; overflow-wrap: break-word; background: #fff !important; }
+        .anymap-pmtiles-popup tr:last-child td { border-bottom: none !important; }
+        .anymap-pmtiles-popup td:first-child { font-weight: 600; color: #222 !important; white-space: nowrap; width: 40%; }
+        .anymap-pmtiles-popup td:last-child { color: #444 !important; width: 60%; }
+        .anymap-pmtiles-popup .section-header { font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0 !important; border-bottom: 1px solid #ddd; }
         .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
         .anymap-popup p { color: #444; margin: 4px 0; }
       </style>
