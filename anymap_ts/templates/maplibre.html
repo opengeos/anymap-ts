@@ -887,11 +887,14 @@
                                         }
                                         if (allFeatures.length === 0) return;
 
-                                        const tableStyle = 'border-collapse:collapse;font-size:13px;color:#333;width:100%;table-layout:fixed;background:#fff;';
-                                        const cellStyle = 'padding:4px 8px;border-bottom:1px solid #eee;color:#333;word-break:break-word;overflow-wrap:break-word;';
-                                        const keyStyle = 'font-weight:600;color:#222;white-space:nowrap;width:40%;';
-                                        const valStyle = 'color:#444;width:60%;';
-                                        const headerStyle = 'font-weight:700;font-size:13px;color:#111;padding:6px 8px 4px 8px;text-transform:capitalize;background:#f0f0f0;border-bottom:1px solid #ddd;';
+                                        const popupCSS = `<style>
+                                            .anymap-pmtiles-popup table { border-collapse:collapse;font-size:13px;color:#333;width:100%;table-layout:fixed;background:#fff; }
+                                            .anymap-pmtiles-popup td { padding:4px 8px;border-bottom:1px solid #eee;color:#333;word-break:break-word;overflow-wrap:break-word; }
+                                            .anymap-pmtiles-popup tr:last-child td { border-bottom:none; }
+                                            .anymap-pmtiles-popup td:first-child { font-weight:600;color:#222;white-space:nowrap;width:40%; }
+                                            .anymap-pmtiles-popup td:last-child { color:#444;width:60%; }
+                                            .anymap-pmtiles-popup .section-header { font-weight:700;font-size:13px;color:#111;padding:6px 8px 4px 8px;text-transform:capitalize;background:#f0f0f0;border-bottom:1px solid #ddd; }
+                                        </style>`;
 
                                         function buildHTML(p) {
                                             if (tmpl) {
@@ -899,18 +902,18 @@
                                                 return `<div style="font-size:13px;color:#333;line-height:1.4;word-break:break-word;padding:4px 0;">${replaced}</div>`;
                                             }
                                             const keys = props || Object.keys(p);
-                                            const rows = keys.filter(k => p[k] !== undefined).map(k => `<tr><td style="${cellStyle}${keyStyle}">${k}</td><td style="${cellStyle}${valStyle}">${p[k]}</td></tr>`).join('');
-                                            return `<table style="${tableStyle}">${rows}</table>`;
+                                            const rows = keys.filter(k => p[k] !== undefined).map(k => `<tr><td>${k}</td><td>${p[k]}</td></tr>`).join('');
+                                            return `<table>${rows}</table>`;
                                         }
 
                                         const sections = [];
                                         for (const { layer, props: fp } of allFeatures) {
-                                            if (allFeatures.length > 1) sections.push(`<div style="${headerStyle}">${layer.replace(/[-_]/g, ' ')}</div>`);
+                                            if (allFeatures.length > 1) sections.push(`<div class="section-header">${layer.replace(/[-_]/g, ' ')}</div>`);
                                             sections.push(buildHTML(fp));
                                         }
                                         new maplibregl.Popup({ maxWidth: '320px' })
                                             .setLngLat(e.lngLat)
-                                            .setHTML(`<div style="max-height:300px;overflow-y:auto;">${sections.join('')}</div>`)
+                                            .setHTML(`${popupCSS}<div class="anymap-pmtiles-popup" style="max-height:300px;overflow-y:auto;">${sections.join('')}</div>`)
                                             .addTo(map);
                                     });
                                     for (const sid of subLayerIds) {

@@ -4229,34 +4229,37 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const properties = config.properties as string[] | undefined;
     const template = config.template as string | undefined;
 
-    const tableStyle = 'border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed; background: #fff;';
-    const cellStyle = 'padding: 4px 8px; border-bottom: 1px solid #eee; color: #333; word-break: break-word; overflow-wrap: break-word;';
-    const keyStyle = 'font-weight: 600; color: #222; white-space: nowrap; width: 40%;';
-    const valueStyle = 'color: #444; width: 60%;';
-    const containerStyle = 'font-size: 13px; color: #333; line-height: 1.4; word-break: break-word; overflow-wrap: break-word;';
-    const templateStyles = `
+    const popupStyles = `
       <style>
+        .anymap-pmtiles-popup table { border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed; background: #fff; }
+        .anymap-pmtiles-popup td { padding: 4px 8px; border-bottom: 1px solid #eee; color: #333; word-break: break-word; overflow-wrap: break-word; }
+        .anymap-pmtiles-popup tr:last-child td { border-bottom: none; }
+        .anymap-pmtiles-popup td:first-child { font-weight: 600; color: #222; white-space: nowrap; width: 40%; }
+        .anymap-pmtiles-popup td:last-child { color: #444; width: 60%; }
+        .anymap-pmtiles-popup .section-header { font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0; border-bottom: 1px solid #ddd; }
         .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
         .anymap-popup p { color: #444; margin: 4px 0; }
       </style>
     `;
 
+    const containerStyle = 'font-size: 13px; color: #333; line-height: 1.4; word-break: break-word; overflow-wrap: break-word;';
+
     if (template) {
       const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
         return props[key] !== undefined ? String(props[key]) : match;
       });
-      return `${templateStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
+      return `${popupStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
     } else if (properties) {
       const rows = properties
         .filter((key) => props[key] !== undefined)
-        .map((key) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${props[key]}</td></tr>`)
+        .map((key) => `<tr><td>${key}</td><td>${props[key]}</td></tr>`)
         .join('');
-      return `<table style="${tableStyle}">${rows}</table>`;
+      return `${popupStyles}<div class="anymap-pmtiles-popup"><table>${rows}</table></div>`;
     } else {
       const rows = Object.entries(props)
-        .map(([key, value]) => `<tr><td style="${cellStyle} ${keyStyle}">${key}</td><td style="${cellStyle} ${valueStyle}">${value}</td></tr>`)
+        .map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`)
         .join('');
-      return `<table style="${tableStyle}">${rows}</table>`;
+      return `${popupStyles}<div class="anymap-pmtiles-popup"><table>${rows}</table></div>`;
     }
   }
 
@@ -4320,18 +4323,17 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
       // Build combined popup content
       const sections: string[] = [];
-      const sectionHeaderStyle = 'font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0; border-bottom: 1px solid #ddd;';
 
       for (const { layer, props } of allFeatures) {
         const friendlyName = layer.replace(/[-_]/g, ' ');
         if (allFeatures.length > 1) {
-          sections.push(`<div style="${sectionHeaderStyle}">${friendlyName}</div>`);
+          sections.push(`<div class="section-header">${friendlyName}</div>`);
         }
         sections.push(this.buildPMTilesPopupHTML(props, config));
       }
 
       const wrapperStyle = 'max-height: 300px; overflow-y: auto;';
-      const content = `<div style="${wrapperStyle}">${sections.join('')}</div>`;
+      const content = `<div class="anymap-pmtiles-popup" style="${wrapperStyle}">${sections.join('')}</div>`;
 
       new Popup({ maxWidth: '320px' })
         .setLngLat(e.lngLat)
