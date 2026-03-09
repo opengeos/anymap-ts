@@ -2850,10 +2850,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-1-vector-pmtiles-world-countries" class="md-nav__link">
+  <a href="#example-1-auto-discovery-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example 1: Vector PMTiles - World Countries
+        Example 1: Auto-Discovery Mode
       
     </span>
   </a>
@@ -2861,10 +2861,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-2-different-layer-types" class="md-nav__link">
+  <a href="#example-2-explicit-styling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example 2: Different Layer Types
+        Example 2: Explicit Styling
       
     </span>
   </a>
@@ -4663,10 +4663,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-1-vector-pmtiles-world-countries" class="md-nav__link">
+  <a href="#example-1-auto-discovery-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example 1: Vector PMTiles - World Countries
+        Example 1: Auto-Discovery Mode
       
     </span>
   </a>
@@ -4674,10 +4674,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-2-different-layer-types" class="md-nav__link">
+  <a href="#example-2-explicit-styling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example 2: Different Layer Types
+        Example 2: Explicit Styling
       
     </span>
   </a>
@@ -5609,7 +5609,9 @@ efficient web-native map serving without requiring a separate tile server.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="example-1-vector-pmtiles-world-countries">Example 1: Vector PMTiles - World Countries<a class="anchor-link" href="#example-1-vector-pmtiles-world-countries">¶</a></h2><p>Let's start with a vector PMTiles file showing world countries from Natural Earth data.</p>
+<h2 id="example-1-auto-discovery-mode">Example 1: Auto-Discovery Mode<a class="anchor-link" href="#example-1-auto-discovery-mode">¶</a></h2><p>The simplest way to visualize a PMTiles file -- just provide the URL. All source
+layers are automatically discovered from the metadata and rendered with distinct
+colors, similar to <a href="https://pmtiles.io/">https://pmtiles.io/</a>.</p>
 </div>
 </div>
 </div>
@@ -5632,68 +5634,37 @@ efficient web-native map serving without requiring a separate tile server.</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Create a map centered on the world</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span>
-    <span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span>
-    <span class="n">zoom</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span>
+    <span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mf">11.2558</span><span class="p">,</span> <span class="mf">43.7696</span><span class="p">],</span>
+    <span class="n">zoom</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># Add a vector PMTiles layer with custom styling</span>
+<span class="c1"># Auto-discover all layers with distinct colors and popups on click</span>
 <span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_layer</span><span class="p">(</span>
+    <span class="c1"># url="https://overturemaps-tiles-us-west-2-beta.s3.amazonaws.com/2026-01-21/buildings.pmtiles",</span>
     <span class="n">url</span><span class="o">=</span><span class="s2">"https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles"</span><span class="p">,</span>
-    <span class="n">layer_id</span><span class="o">=</span><span class="s2">"firenze"</span><span class="p">,</span>
-    <span class="n">style</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"fill"</span><span class="p">,</span>
-        <span class="s2">"source-layer"</span><span class="p">:</span> <span class="s2">"buildings"</span><span class="p">,</span>
-        <span class="s2">"fill-color"</span><span class="p">:</span> <span class="s2">"#ff6b6b"</span><span class="p">,</span>
-        <span class="s2">"fill-opacity"</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
-        <span class="s2">"fill-outline-color"</span><span class="p">:</span> <span class="s2">"#ffffff"</span><span class="p">,</span>
-    <span class="p">},</span>
-    <span class="n">opacity</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">fit_bounds</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">popup</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
-
-<span class="c1"># Add layer control</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_layer_control</span><span class="p">()</span>
-
+<span class="n">m</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="s2">"pmtiles.html"</span><span class="p">)</span>
 <span class="n">m</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3"># Create a map centered on the world
-m = Map(
-    center=[0, 20],
-    zoom=2,
+<div class="clipboard-copy-txt" id="cell-3">m = Map(
+    center=[11.2558, 43.7696],
+    zoom=14,
 )
 
-# Add a vector PMTiles layer with custom styling
+# Auto-discover all layers with distinct colors and popups on click
 m.add_pmtiles_layer(
+    # url="https://overturemaps-tiles-us-west-2-beta.s3.amazonaws.com/2026-01-21/buildings.pmtiles",
     url="https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles",
-    layer_id="firenze",
-    style={
-        "type": "fill",
-        "source-layer": "buildings",
-        "fill-color": "#ff6b6b",
-        "fill-opacity": 0.6,
-        "fill-outline-color": "#ffffff",
-    },
-    opacity=0.8,
+    fit_bounds=True,
+    popup=True,
 )
-
-# Add layer control
-m.add_layer_control()
-
+m.to_html("pmtiles.html")
 m</div>
 </div>
 </div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="example-2-different-layer-types">Example 2: Different Layer Types<a class="anchor-link" href="#example-2-different-layer-types">¶</a></h2><p>PMTiles vector data can be styled using different layer types (fill, line, circle, symbol).</p>
 </div>
 </div>
 </div>
@@ -5707,6 +5678,44 @@ m</div>
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-4">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">pmtiles_styles</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-4">m.pmtiles_styles</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="example-2-explicit-styling">Example 2: Explicit Styling<a class="anchor-link" href="#example-2-explicit-styling">¶</a></h2><p>For more control, provide a style dict with specific source-layer, type, and paint properties.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-5">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -5765,12 +5774,9 @@ m</div>
     <span class="p">},</span>
 <span class="p">)</span>
 
-<span class="c1"># Add layer control</span>
-<span class="n">m2</span><span class="o">.</span><span class="n">add_layer_control</span><span class="p">()</span>
-
 <span class="n">m2</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4"># Create a map focused on Firenze (Florence), Italy
+<div class="clipboard-copy-txt" id="cell-5"># Create a map focused on Firenze (Florence), Italy
 m2 = Map(
     center=[11.2558, 43.7696],  # Florence coordinates
     zoom=12,
@@ -5819,9 +5825,6 @@ m2.add_pmtiles_layer(
     },
 )
 
-# Add layer control
-m2.add_layer_control()
-
 m2</div>
 </div>
 </div>
@@ -5848,7 +5851,7 @@ m2</div>
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-5">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-6">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -5881,7 +5884,7 @@ m2</div>
 
 <span class="n">m3</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-5"># Note: This is a placeholder example as we don't have a public raster PMTiles URL
+<div class="clipboard-copy-txt" id="cell-6"># Note: This is a placeholder example as we don't have a public raster PMTiles URL
 # In practice, you would use your own raster PMTiles file
 
 m3 = Map(
@@ -5928,7 +5931,7 @@ m3</div>
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-6">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -5952,7 +5955,7 @@ m3</div>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"- set_visibility(layer_id, visible)"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"- set_opacity(layer_id, opacity)"</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-6"># Remove a layer
+<div class="clipboard-copy-txt" id="cell-7"># Remove a layer
 # m2.remove_pmtiles_layer("roads")
 
 # Set layer visibility
@@ -6012,280 +6015,6 @@ print("- set_opacity(layer_id, opacity)")</div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=13">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="CodeMirror cm-s-jupyter">
-<div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
-<div>
-<span class="notice" hidden="">Copied!</span>
-<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
-<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-</clipboard-copy>
-</div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">Map</span>
-
-<span class="c1"># Use Example 2 which is centered on Florence at the right zoom</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span>
-    <span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mf">11.2558</span><span class="p">,</span> <span class="mf">43.7696</span><span class="p">],</span>
-    <span class="n">zoom</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
-    <span class="n">style</span><span class="o">=</span><span class="s2">"https://demotiles.maplibre.org/style.json"</span><span class="p">,</span>
-    <span class="n">height</span><span class="o">=</span><span class="s2">"500px"</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_layer</span><span class="p">(</span>
-    <span class="n">url</span><span class="o">=</span><span class="s2">"https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles"</span><span class="p">,</span>
-    <span class="n">layer_id</span><span class="o">=</span><span class="s2">"buildings"</span><span class="p">,</span>
-    <span class="n">style</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"fill"</span><span class="p">,</span>
-        <span class="s2">"source-layer"</span><span class="p">:</span> <span class="s2">"buildings"</span><span class="p">,</span>
-        <span class="s2">"fill-color"</span><span class="p">:</span> <span class="s2">"#e74c3c"</span><span class="p">,</span>
-        <span class="s2">"fill-opacity"</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
-        <span class="s2">"fill-outline-color"</span><span class="p">:</span> <span class="s2">"#c0392b"</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-
-<span class="n">m</span>
-</pre></div>
-<div class="clipboard-copy-txt" id="cell-7">from anymap_ts import Map
-
-# Use Example 2 which is centered on Florence at the right zoom
-m = Map(
-    center=[11.2558, 43.7696],
-    zoom=14,
-    style="https://demotiles.maplibre.org/style.json",
-    height="500px",
-)
-
-m.add_pmtiles_layer(
-    url="https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles",
-    layer_id="buildings",
-    style={
-        "type": "fill",
-        "source-layer": "buildings",
-        "fill-color": "#e74c3c",
-        "fill-opacity": 0.7,
-        "fill-outline-color": "#c0392b",
-    },
-)
-
-m</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=14">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="CodeMirror cm-s-jupyter">
-<div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-8">
-<div>
-<span class="notice" hidden="">Copied!</span>
-<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
-<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-</clipboard-copy>
-</div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">Map</span>
-
-<span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span>
-    <span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mf">11.2558</span><span class="p">,</span> <span class="mf">43.7696</span><span class="p">],</span>
-    <span class="n">zoom</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
-    <span class="n">style</span><span class="o">=</span><span class="s2">"https://demotiles.maplibre.org/style.json"</span><span class="p">,</span>
-    <span class="n">height</span><span class="o">=</span><span class="s2">"500px"</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_layer</span><span class="p">(</span>
-    <span class="n">url</span><span class="o">=</span><span class="s2">"https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles"</span><span class="p">,</span>
-    <span class="n">layer_id</span><span class="o">=</span><span class="s2">"buildings_test"</span><span class="p">,</span>
-    <span class="n">style</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"fill"</span><span class="p">,</span>
-        <span class="s2">"source-layer"</span><span class="p">:</span> <span class="s2">"buildings"</span><span class="p">,</span>
-        <span class="s2">"fill-color"</span><span class="p">:</span> <span class="s2">"#e74c3c"</span><span class="p">,</span>
-        <span class="s2">"fill-opacity"</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
-        <span class="s2">"fill-outline-color"</span><span class="p">:</span> <span class="s2">"#c0392b"</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-
-<span class="n">m</span>
-</pre></div>
-<div class="clipboard-copy-txt" id="cell-8">from anymap_ts import Map
-
-m = Map(
-    center=[11.2558, 43.7696],
-    zoom=14,
-    style="https://demotiles.maplibre.org/style.json",
-    height="500px",
-)
-
-m.add_pmtiles_layer(
-    url="https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles",
-    layer_id="buildings_test",
-    style={
-        "type": "fill",
-        "source-layer": "buildings",
-        "fill-color": "#e74c3c",
-        "fill-opacity": 0.7,
-        "fill-outline-color": "#c0392b",
-    },
-)
-
-m</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=15">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="CodeMirror cm-s-jupyter">
-<div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-9">
-<div>
-<span class="notice" hidden="">Copied!</span>
-<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
-<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-</clipboard-copy>
-</div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">Map</span>
-
-<span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span>
-    <span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="mf">11.2558</span><span class="p">,</span> <span class="mf">43.7696</span><span class="p">],</span>
-    <span class="n">zoom</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
-    <span class="n">style</span><span class="o">=</span><span class="s2">"https://demotiles.maplibre.org/style.json"</span><span class="p">,</span>
-    <span class="n">height</span><span class="o">=</span><span class="s2">"500px"</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_layer</span><span class="p">(</span>
-    <span class="n">url</span><span class="o">=</span><span class="s2">"https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles"</span><span class="p">,</span>
-    <span class="n">layer_id</span><span class="o">=</span><span class="s2">"buildings_v3"</span><span class="p">,</span>
-    <span class="n">style</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"fill"</span><span class="p">,</span>
-        <span class="s2">"source-layer"</span><span class="p">:</span> <span class="s2">"buildings"</span><span class="p">,</span>
-        <span class="s2">"fill-color"</span><span class="p">:</span> <span class="s2">"#e74c3c"</span><span class="p">,</span>
-        <span class="s2">"fill-opacity"</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
-        <span class="s2">"fill-outline-color"</span><span class="p">:</span> <span class="s2">"#c0392b"</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-
-<span class="n">m</span>
-</pre></div>
-<div class="clipboard-copy-txt" id="cell-9">from anymap_ts import Map
-
-m = Map(
-    center=[11.2558, 43.7696],
-    zoom=14,
-    style="https://demotiles.maplibre.org/style.json",
-    height="500px",
-)
-
-m.add_pmtiles_layer(
-    url="https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles",
-    layer_id="buildings_v3",
-    style={
-        "type": "fill",
-        "source-layer": "buildings",
-        "fill-color": "#e74c3c",
-        "fill-opacity": 0.7,
-        "fill-outline-color": "#c0392b",
-    },
-)
-
-m</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=16">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="CodeMirror cm-s-jupyter">
-<div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-10">
-<div>
-<span class="notice" hidden="">Copied!</span>
-<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
-<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-</clipboard-copy>
-</div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Check if the ESM content includes the PMTiles handler</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">Map</span>
-
-<span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">()</span>
-<span class="n">esm_content</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">_esm</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">_esm</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">_esm</span><span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Bundle size:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">esm_content</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Has addPMTilesLayer:"</span><span class="p">,</span> <span class="s2">"addPMTilesLayer"</span> <span class="ow">in</span> <span class="n">esm_content</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Has pmtiles://:"</span><span class="p">,</span> <span class="s2">"pmtiles://"</span> <span class="ow">in</span> <span class="n">esm_content</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">"Has PMTilesProtocol:"</span><span class="p">,</span>
-    <span class="s2">"PMTilesProtocol"</span> <span class="ow">in</span> <span class="n">esm_content</span> <span class="ow">or</span> <span class="s2">"Protocol"</span> <span class="ow">in</span> <span class="n">esm_content</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Has addProtocol:"</span><span class="p">,</span> <span class="s2">"addProtocol"</span> <span class="ow">in</span> <span class="n">esm_content</span><span class="p">)</span>
-
-<span class="c1"># Check the specific call pattern</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-
-<span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">".{0,40}addProtocol.{0,60}"</span><span class="p">,</span> <span class="n">esm_content</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Found:"</span><span class="p">,</span> <span class="n">match</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-</pre></div>
-<div class="clipboard-copy-txt" id="cell-10"># Check if the ESM content includes the PMTiles handler
-from anymap_ts import Map
-
-m = Map()
-esm_content = m._esm if isinstance(m._esm, str) else open(str(m._esm)).read()
-print("Bundle size:", len(esm_content))
-print("Has addPMTilesLayer:", "addPMTilesLayer" in esm_content)
-print("Has pmtiles://:", "pmtiles://" in esm_content)
-print(
-    "Has PMTilesProtocol:",
-    "PMTilesProtocol" in esm_content or "Protocol" in esm_content,
-)
-print("Has addProtocol:", "addProtocol" in esm_content)
-
-# Check the specific call pattern
-import re
-
-matches = re.findall(r".{0,40}addProtocol.{0,60}", esm_content)
-for match in matches[:5]:
-    print("Found:", match.strip())</div>
-</div>
-</div>
-</div>
-</div>
-</div>
 </div>
 </div> <!-- jp-Notebook -->
 </div> <!-- jupyter-wrapper -->
@@ -6316,7 +6045,7 @@ for match in matches[:5]:
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 22, 2026 14:32:56 UTC"><span class="timeago" datetime="2026-02-22T14:32:56+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 22, 2026 14:32:56 UTC">2026-02-22</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 9, 2026 01:30:27 UTC"><span class="timeago" datetime="2026-03-09T01:30:27+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 9, 2026 01:30:27 UTC">2026-03-09</span>
   </span>
 
     

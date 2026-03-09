@@ -4310,6 +4310,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.mapbox.MapboxMap.pmtiles_styles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pmtiles_styles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.mapbox.MapboxMap.queried_features" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6028,6 +6039,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.mapbox.MapboxMap.pmtiles_styles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pmtiles_styles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.mapbox.MapboxMap.queried_features" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7636,6 +7658,9 @@ variable or pass directly to the constructor.</p>
         <span class="c1"># Initialize layer dictionary</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_layer_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Background&quot;</span><span class="p">:</span> <span class="p">[]}</span>
 
+        <span class="c1"># Storage for auto-discovered PMTiles layer styles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pmtiles_styles</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+
         <span class="c1"># Add default controls</span>
         <span class="k">if</span> <span class="n">controls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;navigation&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;fullscreen&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
@@ -8253,10 +8278,43 @@ variable or pass directly to the constructor.</p>
         <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">fit_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">source_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;vector&quot;</span><span class="p">,</span>
+        <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">popup</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a PMTiles layer for efficient vector or raster tile serving.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a PMTiles layer for efficient vector or raster tile serving.</span>
+
+<span class="sd">        When no style is provided for vector PMTiles, the method automatically</span>
+<span class="sd">        discovers all source layers from the PMTiles metadata and renders each</span>
+<span class="sd">        one with a distinct color. Geometry types from the metadata determine</span>
+<span class="sd">        the layer type: Polygon becomes fill, LineString becomes line, and</span>
+<span class="sd">        Point becomes circle.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            url: URL to the PMTiles file.</span>
+<span class="sd">            layer_id: Layer identifier. If None, auto-generated.</span>
+<span class="sd">            style: Layer style configuration. If None and source_type is</span>
+<span class="sd">                &quot;vector&quot;, auto-discovers all source layers with distinct colors.</span>
+<span class="sd">            opacity: Layer opacity (0-1).</span>
+<span class="sd">            visible: Whether layer is initially visible.</span>
+<span class="sd">            fit_bounds: Whether to fit map to layer bounds after loading.</span>
+<span class="sd">            source_type: Source type - &quot;vector&quot; or &quot;raster&quot;.</span>
+<span class="sd">            prefix: Prefix for auto-discovered layer names in the layer</span>
+<span class="sd">                control. Defaults to empty string (no prefix).</span>
+<span class="sd">            popup: Configure popups on click. Accepts True (all properties),</span>
+<span class="sd">                a list of property names, or an HTML template string with</span>
+<span class="sd">                {property_name} placeholders. Defaults to None (no popup).</span>
+<span class="sd">            **kwargs: Additional layer options.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">layer_id</span> <span class="o">=</span> <span class="n">layer_id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;pmtiles-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">popup_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">popup</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;template&quot;</span><span class="p">:</span> <span class="n">popup</span><span class="p">}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
             <span class="s2">&quot;addPMTilesLayer&quot;</span><span class="p">,</span>
@@ -8267,9 +8325,20 @@ variable or pass directly to the constructor.</p>
             <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
             <span class="n">fitBounds</span><span class="o">=</span><span class="n">fit_bounds</span><span class="p">,</span>
             <span class="n">sourceType</span><span class="o">=</span><span class="n">source_type</span><span class="p">,</span>
+            <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">,</span>
+            <span class="n">popup</span><span class="o">=</span><span class="n">popup_config</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="c1"># Listen for auto-discovered styles from JS</span>
+        <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">source_type</span> <span class="o">==</span> <span class="s2">&quot;vector&quot;</span><span class="p">:</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">_on_discovered</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">discovered_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;layerId&quot;</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pmtiles_styles</span><span class="p">[</span><span class="n">discovered_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subLayers&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">on_map_event</span><span class="p">(</span><span class="s2">&quot;pmtiles_layers_discovered&quot;</span><span class="p">,</span> <span class="n">_on_discovered</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
@@ -8283,9 +8352,23 @@ variable or pass directly to the constructor.</p>
         <span class="n">category</span> <span class="o">=</span> <span class="s2">&quot;Vector&quot;</span> <span class="k">if</span> <span class="n">source_type</span> <span class="o">==</span> <span class="s2">&quot;vector&quot;</span> <span class="k">else</span> <span class="s2">&quot;Raster&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="n">category</span><span class="p">)</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pmtiles_styles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get auto-discovered PMTiles layer styles.</span>
+
+<span class="sd">        Returns a dict keyed by layer_id, where each value is a list of</span>
+<span class="sd">        sub-layer dicts containing: id, sourceLayer, geometryType, color,</span>
+<span class="sd">        type, and paint.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict mapping layer IDs to lists of sub-layer style dicts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pmtiles_styles</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_pmtiles_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a PMTiles layer.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_remove_layer_internal</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;removePMTilesLayer&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pmtiles_styles</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># Arc Layer (deck.gl)</span>
@@ -11314,6 +11397,47 @@ variable or pass directly to the constructor.</p>
 
 
 
+<h3 id="anymap_ts.mapbox.MapboxMap.pmtiles_styles" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">pmtiles_styles</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+<a href="#anymap_ts.mapbox.MapboxMap.pmtiles_styles" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Get auto-discovered PMTiles layer styles.</p>
+<p>Returns a dict keyed by layer_id, where each value is a list of
+sub-layer dicts containing: id, sourceLayer, geometryType, color,
+type, and paint.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Dict[str, List[Dict[str, Any]]]</code></td>
+      <td><p>Dict mapping layer IDs to lists of sub-layer style dicts.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
 <h3 id="anymap_ts.mapbox.MapboxMap.queried_features" class="doc doc-heading">
 <code class="highlight language-python"><span class="n">queried_features</span><span class="p">:</span> <span class="n">Dict</span></code>
 
@@ -11486,6 +11610,9 @@ variable or pass directly to the constructor.</p>
 
     <span class="c1"># Initialize layer dictionary</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_layer_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Background&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+
+    <span class="c1"># Storage for auto-discovered PMTiles layer styles</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_pmtiles_styles</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="c1"># Add default controls</span>
     <span class="k">if</span> <span class="n">controls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -14763,7 +14890,7 @@ For URLs, the data is loaded directly via streaming when possible.</p>
 
 
 <h3 id="anymap_ts.mapbox.MapboxMap.add_pmtiles_layer" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_pmtiles_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">layer_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fit_bounds</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">source_type</span><span class="o">=</span><span class="s1">&#39;vector&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_pmtiles_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">layer_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fit_bounds</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">source_type</span><span class="o">=</span><span class="s1">&#39;vector&#39;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">popup</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.mapbox.MapboxMap.add_pmtiles_layer" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -14771,7 +14898,89 @@ For URLs, the data is loaded directly via streaming when possible.</p>
     <div class="doc doc-contents ">
 
       <p>Add a PMTiles layer for efficient vector or raster tile serving.</p>
+<p>When no style is provided for vector PMTiles, the method automatically
+discovers all source layers from the PMTiles metadata and renders each
+one with a distinct color. Geometry types from the metadata determine
+the layer type: Polygon becomes fill, LineString becomes line, and
+Point becomes circle.</p>
 
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>url</code></td>
+        <td><code>str</code></td>
+        <td><p>URL to the PMTiles file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>layer_id</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Layer identifier. If None, auto-generated.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>style</code></td>
+        <td><code>Optional[Dict[str, Any]]</code></td>
+        <td><p>Layer style configuration. If None and source_type is
+"vector", auto-discovers all source layers with distinct colors.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>opacity</code></td>
+        <td><code>float</code></td>
+        <td><p>Layer opacity (0-1).</p></td>
+        <td><code>1.0</code></td>
+      </tr>
+      <tr>
+        <td><code>visible</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether layer is initially visible.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>fit_bounds</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to fit map to layer bounds after loading.</p></td>
+        <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>source_type</code></td>
+        <td><code>str</code></td>
+        <td><p>Source type - "vector" or "raster".</p></td>
+        <td><code>&#39;vector&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>prefix</code></td>
+        <td><code>str</code></td>
+        <td><p>Prefix for auto-discovered layer names in the layer
+control. Defaults to empty string (no prefix).</p></td>
+        <td><code>&#39;&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>popup</code></td>
+        <td><code>Optional[Union[bool, List[str], str]]</code></td>
+        <td><p>Configure popups on click. Accepts True (all properties),
+a list of property names, or an HTML template string with
+{property_name} placeholders. Defaults to None (no popup).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td></td>
+        <td><p>Additional layer options.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/mapbox.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_pmtiles_layer</span><span class="p">(</span>
@@ -14783,10 +14992,43 @@ For URLs, the data is loaded directly via streaming when possible.</p>
     <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">fit_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">source_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;vector&quot;</span><span class="p">,</span>
+    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">popup</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a PMTiles layer for efficient vector or raster tile serving.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a PMTiles layer for efficient vector or raster tile serving.</span>
+
+<span class="sd">    When no style is provided for vector PMTiles, the method automatically</span>
+<span class="sd">    discovers all source layers from the PMTiles metadata and renders each</span>
+<span class="sd">    one with a distinct color. Geometry types from the metadata determine</span>
+<span class="sd">    the layer type: Polygon becomes fill, LineString becomes line, and</span>
+<span class="sd">    Point becomes circle.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        url: URL to the PMTiles file.</span>
+<span class="sd">        layer_id: Layer identifier. If None, auto-generated.</span>
+<span class="sd">        style: Layer style configuration. If None and source_type is</span>
+<span class="sd">            &quot;vector&quot;, auto-discovers all source layers with distinct colors.</span>
+<span class="sd">        opacity: Layer opacity (0-1).</span>
+<span class="sd">        visible: Whether layer is initially visible.</span>
+<span class="sd">        fit_bounds: Whether to fit map to layer bounds after loading.</span>
+<span class="sd">        source_type: Source type - &quot;vector&quot; or &quot;raster&quot;.</span>
+<span class="sd">        prefix: Prefix for auto-discovered layer names in the layer</span>
+<span class="sd">            control. Defaults to empty string (no prefix).</span>
+<span class="sd">        popup: Configure popups on click. Accepts True (all properties),</span>
+<span class="sd">            a list of property names, or an HTML template string with</span>
+<span class="sd">            {property_name} placeholders. Defaults to None (no popup).</span>
+<span class="sd">        **kwargs: Additional layer options.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">layer_id</span> <span class="o">=</span> <span class="n">layer_id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;pmtiles-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="n">popup_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">popup</span><span class="p">}</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;template&quot;</span><span class="p">:</span> <span class="n">popup</span><span class="p">}</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
         <span class="s2">&quot;addPMTilesLayer&quot;</span><span class="p">,</span>
@@ -14797,9 +15039,20 @@ For URLs, the data is loaded directly via streaming when possible.</p>
         <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
         <span class="n">fitBounds</span><span class="o">=</span><span class="n">fit_bounds</span><span class="p">,</span>
         <span class="n">sourceType</span><span class="o">=</span><span class="n">source_type</span><span class="p">,</span>
+        <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">,</span>
+        <span class="n">popup</span><span class="o">=</span><span class="n">popup_config</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span>
+
+    <span class="c1"># Listen for auto-discovered styles from JS</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">source_type</span> <span class="o">==</span> <span class="s2">&quot;vector&quot;</span><span class="p">:</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_on_discovered</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">discovered_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;layerId&quot;</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pmtiles_styles</span><span class="p">[</span><span class="n">discovered_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subLayers&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_map_event</span><span class="p">(</span><span class="s2">&quot;pmtiles_layers_discovered&quot;</span><span class="p">,</span> <span class="n">_on_discovered</span><span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
@@ -17445,6 +17698,7 @@ Default: [0, 0, 1] (pointing up).</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_pmtiles_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a PMTiles layer.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_remove_layer_internal</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;removePMTilesLayer&quot;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_pmtiles_styles</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
