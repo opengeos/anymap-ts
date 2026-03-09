@@ -40,7 +40,7 @@
   padding: 10px 15px;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: #fff !important;
   color: #333 !important;
 }
 
@@ -57,7 +57,7 @@
 
 /* Tooltip styling */
 .anymap-tooltip .maplibregl-popup-content {
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: #fff !important;
   color: #333 !important;
   padding: 6px 10px;
   font-size: 12px;
@@ -75,7 +75,7 @@
 .anymap-time-slider,
 .anymap-style-switcher,
 .anymap-coordinates {
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: #fff !important;
   color: #333 !important;
 }
 
