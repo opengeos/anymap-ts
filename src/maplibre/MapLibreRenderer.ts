@@ -4229,8 +4229,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const properties = config.properties as string[] | undefined;
     const template = config.template as string | undefined;
 
-    const tableStyle = 'border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed;';
-    const cellStyle = 'padding: 4px 8px; border-bottom: 1px solid #ddd; color: #333; word-break: break-word; overflow-wrap: break-word;';
+    const tableStyle = 'border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed; background: #fff;';
+    const cellStyle = 'padding: 4px 8px; border-bottom: 1px solid #eee; color: #333; word-break: break-word; overflow-wrap: break-word;';
     const keyStyle = 'font-weight: 600; color: #222; white-space: nowrap; width: 40%;';
     const valueStyle = 'color: #444; width: 60%;';
     const containerStyle = 'font-size: 13px; color: #333; line-height: 1.4; word-break: break-word; overflow-wrap: break-word;';
@@ -4320,7 +4320,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
       // Build combined popup content
       const sections: string[] = [];
-      const sectionHeaderStyle = 'font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0; border-top: 1px solid #ddd; margin-top: 4px;';
+      const sectionHeaderStyle = 'font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0; border-bottom: 1px solid #ddd;';
 
       for (const { layer, props } of allFeatures) {
         const friendlyName = layer.replace(/[-_]/g, ' ');
