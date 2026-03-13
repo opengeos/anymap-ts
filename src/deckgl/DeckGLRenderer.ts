@@ -77,13 +77,16 @@ export class DeckGLRenderer extends MapLibreRenderer {
   async initialize(): Promise<void> {
     await super.initialize();
 
-    // Create deck.gl overlay
     if (this.map) {
-      this.deckOverlay = new MapboxOverlay({
-        interleaved: true,
-        layers: [],
-      });
-      this.map.addControl(this.deckOverlay as any);
+      // Use parent's initializeDeckOverlay which creates the overlay with
+      // interleaved: true, adds the sentinel layer, and registers deck adapters
+      // with the layer control (if add_layer_control was called).
+      // It is idempotent — no-op if overlay was already created by a handler
+      // (e.g., handleAddTripsLayer) during processPendingCalls.
+      this.initializeDeckOverlay();
+      // Push any layers that were added to deckLayers during processPendingCalls
+      // before the overlay was created (fixes race condition for text/other layers).
+      this.updateDeckOverlay();
     }
   }
 
