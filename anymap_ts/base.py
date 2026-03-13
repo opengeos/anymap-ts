@@ -44,7 +44,7 @@ class MapWidget(anywidget.AnyWidget):
     current_center = traitlets.List([]).tag(sync=True)
     current_zoom = traitlets.Float(0.0).tag(sync=True)
 
-    # Plugin registry: {name: {js_url, css_url, module, init_function, config}}
+    # Plugin registry: {name: {name, js_url, js_code, css_url, css_code, module, init_function, config}}
     _plugins = traitlets.Dict({}).tag(sync=True)
 
     # Drawing data

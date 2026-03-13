@@ -6024,11 +6024,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       return;
     }
 
-    // Skip if already loaded
+    // Skip if already loaded (including in-flight loads)
     if (this.pluginInstances.has(name)) {
       console.warn(`Plugin "${name}" is already loaded`);
       return;
     }
+
+    // Set a placeholder immediately to prevent concurrent duplicate loads
+    this.pluginInstances.set(name, null);
 
     const loadAndInit = async () => {
       try {
@@ -6091,6 +6094,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         }
       } catch (error) {
         console.error(`Failed to load plugin "${name}":`, error);
+        // Clean up any injected DOM elements and the placeholder entry on failure
+        this.removePluginDomElements(name);
+        this.pluginInstances.delete(name);
       }
     };
 
@@ -6109,9 +6115,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       }
     }
     this.pluginInstances.delete(name);
+    this.removePluginDomElements(name);
+  }
 
-    // Remove injected script/CSS tags
-    document.querySelectorAll(`[data-plugin="${name}"]`).forEach(el => el.remove());
+  private removePluginDomElements(name: string): void {
+    // Filter by dataset property to avoid CSS-selector injection issues with special characters in name
+    document.querySelectorAll('[data-plugin]').forEach(el => {
+      if ((el as HTMLElement).dataset.plugin === name) el.remove();
+    });
   }
 
   private handleCallPluginMethod(args: unknown[], kwargs: Record<string, unknown>): void {

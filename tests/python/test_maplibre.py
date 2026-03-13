@@ -417,3 +417,67 @@ class TestMapLibreHtmlExport:
         html = m.to_html()
         assert "const layerId = name;" in html
         assert "addedLayers.push({ id: layerId, name: name, type: 'raster' });" in html
+
+
+class TestPrivatePlugins:
+    """Tests for add_plugin / remove_plugin / call_plugin_method."""
+
+    def test_add_plugin_via_js_url(self):
+        m = MapLibreMap(controls={})
+        m.add_plugin(name="p1", js_url="https://example.com/plugin.js")
+        assert "p1" in m._plugins
+        assert m._plugins["p1"]["js_url"] == "https://example.com/plugin.js"
+        calls = [c for c in m._js_calls if c["method"] == "loadPlugin"]
+        assert len(calls) == 1
+        assert calls[0]["kwargs"]["name"] == "p1"
+
+    def test_add_plugin_via_js_code(self):
+        m = MapLibreMap(controls={})
+        m.add_plugin(name="p2", js_code="export function init() {}")
+        assert "p2" in m._plugins
+        assert m._plugins["p2"]["js_code"] == "export function init() {}"
+        calls = [c for c in m._js_calls if c["method"] == "loadPlugin"]
+        assert len(calls) == 1
+
+    def test_add_plugin_missing_name_raises(self):
+        m = MapLibreMap(controls={})
+        with pytest.raises(ValueError, match="name is required"):
+            m.add_plugin(name="", js_url="https://example.com/p.js")
+
+    def test_add_plugin_missing_js_raises(self):
+        m = MapLibreMap(controls={})
+        with pytest.raises(ValueError, match="Either js_url or js_code"):
+            m.add_plugin(name="p3")
+
+    def test_add_plugin_both_js_raises(self):
+        m = MapLibreMap(controls={})
+        with pytest.raises(ValueError, match="not both"):
+            m.add_plugin(
+                name="p4",
+                js_url="https://example.com/p.js",
+                js_code="export function init() {}",
+            )
+
+    def test_add_plugin_duplicate_raises(self):
+        m = MapLibreMap(controls={})
+        m.add_plugin(name="p5", js_url="https://example.com/p.js")
+        with pytest.raises(ValueError, match="already loaded"):
+            m.add_plugin(name="p5", js_url="https://example.com/p2.js")
+
+    def test_remove_plugin(self):
+        m = MapLibreMap(controls={})
+        m.add_plugin(name="p6", js_url="https://example.com/plugin.js")
+        m.remove_plugin("p6")
+        assert "p6" not in m._plugins
+        calls = [c for c in m._js_calls if c["method"] == "removePlugin"]
+        assert len(calls) == 1
+        assert calls[0]["args"][0] == "p6"
+
+    def test_call_plugin_method(self):
+        m = MapLibreMap(controls={})
+        m.add_plugin(name="p7", js_url="https://example.com/plugin.js")
+        m.call_plugin_method("p7", "updateData", {"key": "val"})
+        calls = [c for c in m._js_calls if c["method"] == "callPluginMethod"]
+        assert len(calls) == 1
+        assert calls[0]["args"][0] == "p7"
+        assert calls[0]["args"][1] == "updateData"

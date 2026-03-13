@@ -5983,6 +5983,10 @@ class MapLibreMap(MapWidget):
             raise ValueError("Either js_url or js_code is required")
         if js_url and js_code:
             raise ValueError("Provide either js_url or js_code, not both")
+        if name in self._plugins:
+            raise ValueError(
+                f"Plugin '{name}' is already loaded. Call remove_plugin() first."
+            )
 
         descriptor: Dict[str, Any] = {
             "name": name,
