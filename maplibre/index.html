@@ -2878,6 +2878,34 @@
   
   
     <li class="md-nav__item">
+      <a href="private_plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Private plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="route_animation/" class="md-nav__link">
         
   
@@ -4766,6 +4794,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_plugin()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.add_pmtiles_control" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5045,6 +5084,17 @@
     <span class="md-ellipsis">
       
         animate_along_route()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.call_plugin_method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        call_plugin_method()
       
     </span>
   </a>
@@ -5441,6 +5491,17 @@
     <span class="md-ellipsis">
       
         remove_opacity_slider()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.remove_plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        remove_plugin()
       
     </span>
   </a>
@@ -6600,6 +6661,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_plugin()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.add_pmtiles_control" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6879,6 +6951,17 @@
     <span class="md-ellipsis">
       
         animate_along_route()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.call_plugin_method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        call_plugin_method()
       
     </span>
   </a>
@@ -7275,6 +7358,17 @@
     <span class="md-ellipsis">
       
         remove_opacity_slider()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.remove_plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        remove_plugin()
       
     </span>
   </a>
@@ -13605,6 +13699,148 @@ full bidirectional communication through anywidget.</p>
             <span class="k">return</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_features</span><span class="p">(</span><span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">,</span> <span class="p">[]))</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;geopandas is required for to_geopandas()&quot;</span><span class="p">)</span>
+
+    <span class="c1"># -------------------------------------------------------------------------</span>
+    <span class="c1"># Private Plugins</span>
+    <span class="c1"># -------------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_plugin</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">js_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">js_code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">css_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">css_code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">module</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">init_function</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load a private plugin dynamically into the map widget.</span>
+
+<span class="sd">        Plugins can be loaded from a URL or from inline JavaScript code. The</span>
+<span class="sd">        init function receives ``(map, config)`` and should return an object</span>
+<span class="sd">        with callable methods and an optional ``destroy()`` for cleanup.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: Unique name for the plugin.</span>
+<span class="sd">            js_url: URL to the plugin JavaScript file. Mutually exclusive with</span>
+<span class="sd">                ``js_code``.</span>
+<span class="sd">            js_code: Inline JavaScript module code. The code is treated as an</span>
+<span class="sd">                ESM module and can use ``import`` statements. Mutually exclusive</span>
+<span class="sd">                with ``js_url``.</span>
+<span class="sd">            css_url: Optional URL to the plugin CSS file.</span>
+<span class="sd">            css_code: Optional inline CSS code.</span>
+<span class="sd">            module: If True and using ``js_url``, load as ESM module via</span>
+<span class="sd">                dynamic ``import()``. Ignored when using ``js_code`` (always</span>
+<span class="sd">                treated as ESM).</span>
+<span class="sd">            init_function: Name of the function to call after loading. For</span>
+<span class="sd">                classic scripts (``js_url`` without ``module``), a dot-separated</span>
+<span class="sd">                global path (e.g., ``&quot;MyPlugin.init&quot;``). For ESM modules</span>
+<span class="sd">                (``js_url`` with ``module=True`` or ``js_code``), the export</span>
+<span class="sd">                name (e.g., ``&quot;default&quot;`` or ``&quot;init&quot;``).</span>
+<span class="sd">            config: Optional configuration dict passed to the init function.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; # Load plugin from URL (classic script)</span>
+<span class="sd">            &gt;&gt;&gt; m.add_plugin(</span>
+<span class="sd">            ...     name=&quot;my-plugin&quot;,</span>
+<span class="sd">            ...     js_url=&quot;https://example.com/maplibre-my-plugin.js&quot;,</span>
+<span class="sd">            ...     css_url=&quot;https://example.com/maplibre-my-plugin.css&quot;,</span>
+<span class="sd">            ...     init_function=&quot;MyPlugin.init&quot;,</span>
+<span class="sd">            ...     config={&quot;option1&quot;: &quot;value1&quot;},</span>
+<span class="sd">            ... )</span>
+<span class="sd">            &gt;&gt;&gt; # Load plugin from URL (ESM module)</span>
+<span class="sd">            &gt;&gt;&gt; m.add_plugin(</span>
+<span class="sd">            ...     name=&quot;my-esm-plugin&quot;,</span>
+<span class="sd">            ...     js_url=&quot;https://esm.sh/my-maplibre-plugin@1.0.0&quot;,</span>
+<span class="sd">            ...     module=True,</span>
+<span class="sd">            ...     init_function=&quot;default&quot;,</span>
+<span class="sd">            ... )</span>
+<span class="sd">            &gt;&gt;&gt; # Load plugin from inline code</span>
+<span class="sd">            &gt;&gt;&gt; m.add_plugin(</span>
+<span class="sd">            ...     name=&quot;my-inline-plugin&quot;,</span>
+<span class="sd">            ...     js_code=\&quot;\&quot;\&quot;</span>
+<span class="sd">            ...     import { MyControl } from &#39;https://esm.sh/my-pkg@1.0.0&#39;;</span>
+<span class="sd">            ...     export function init(map, config) {</span>
+<span class="sd">            ...         const ctrl = new MyControl(config);</span>
+<span class="sd">            ...         map.addControl(ctrl, config.position || &#39;top-right&#39;);</span>
+<span class="sd">            ...         return { destroy() { map.removeControl(ctrl); } };</span>
+<span class="sd">            ...     }</span>
+<span class="sd">            ...     \&quot;\&quot;\&quot;,</span>
+<span class="sd">            ...     init_function=&quot;init&quot;,</span>
+<span class="sd">            ...     config={&quot;position&quot;: &quot;top-left&quot;},</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Plugin name is required&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">js_url</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">js_code</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either js_url or js_code is required&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">js_url</span> <span class="ow">and</span> <span class="n">js_code</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Provide either js_url or js_code, not both&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Plugin &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; is already loaded. Call remove_plugin() first.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">descriptor</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;js_url&quot;</span><span class="p">:</span> <span class="n">js_url</span><span class="p">,</span>
+            <span class="s2">&quot;js_code&quot;</span><span class="p">:</span> <span class="n">js_code</span><span class="p">,</span>
+            <span class="s2">&quot;css_url&quot;</span><span class="p">:</span> <span class="n">css_url</span><span class="p">,</span>
+            <span class="s2">&quot;css_code&quot;</span><span class="p">:</span> <span class="n">css_code</span><span class="p">,</span>
+            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="p">,</span>
+            <span class="s2">&quot;init_function&quot;</span><span class="p">:</span> <span class="n">init_function</span><span class="p">,</span>
+            <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="n">config</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="p">}</span>
+
+        <span class="n">plugins</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span><span class="p">)</span>
+        <span class="n">plugins</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">descriptor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span> <span class="o">=</span> <span class="n">plugins</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+            <span class="s2">&quot;loadPlugin&quot;</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">js_url</span><span class="o">=</span><span class="n">js_url</span><span class="p">,</span>
+            <span class="n">js_code</span><span class="o">=</span><span class="n">js_code</span><span class="p">,</span>
+            <span class="n">css_url</span><span class="o">=</span><span class="n">css_url</span><span class="p">,</span>
+            <span class="n">css_code</span><span class="o">=</span><span class="n">css_code</span><span class="p">,</span>
+            <span class="n">module</span><span class="o">=</span><span class="n">module</span><span class="p">,</span>
+            <span class="n">init_function</span><span class="o">=</span><span class="n">init_function</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a previously loaded plugin.</span>
+
+<span class="sd">        Calls the plugin&#39;s ``destroy()`` method if available, removes injected</span>
+<span class="sd">        script/CSS elements, and cleans up the plugin instance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: Name of the plugin to remove.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removePlugin&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="n">plugins</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span><span class="p">)</span>
+        <span class="n">plugins</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span> <span class="o">=</span> <span class="n">plugins</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call_plugin_method</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">plugin_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Call a method on a loaded plugin instance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            plugin_name: Name of the plugin.</span>
+<span class="sd">            method_name: Name of the method to call on the plugin instance.</span>
+<span class="sd">            *args: Positional arguments passed to the method.</span>
+<span class="sd">            **kwargs: Keyword arguments passed to the method.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; m.call_plugin_method(&quot;my-plugin&quot;, &quot;updateData&quot;, {&quot;key&quot;: &quot;value&quot;})</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+            <span class="s2">&quot;callPluginMethod&quot;</span><span class="p">,</span> <span class="n">plugin_name</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># HTML Export</span>
@@ -20917,6 +21153,239 @@ Default: [51, 136, 255, 200] (blue).</p></td>
 
 
 
+<h3 id="anymap_ts.maplibre.MapLibreMap.add_plugin" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">js_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">js_code</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">css_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">css_code</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">init_function</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.add_plugin" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Load a private plugin dynamically into the map widget.</p>
+<p>Plugins can be loaded from a URL or from inline JavaScript code. The
+init function receives <code>(map, config)</code> and should return an object
+with callable methods and an optional <code>destroy()</code> for cleanup.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>Unique name for the plugin.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>js_url</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>URL to the plugin JavaScript file. Mutually exclusive with
+<code>js_code</code>.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>js_code</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Inline JavaScript module code. The code is treated as an
+ESM module and can use <code>import</code> statements. Mutually exclusive
+with <code>js_url</code>.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>css_url</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Optional URL to the plugin CSS file.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>css_code</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Optional inline CSS code.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>module</code></td>
+        <td><code>bool</code></td>
+        <td><p>If True and using <code>js_url</code>, load as ESM module via
+dynamic <code>import()</code>. Ignored when using <code>js_code</code> (always
+treated as ESM).</p></td>
+        <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>init_function</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Name of the function to call after loading. For
+classic scripts (<code>js_url</code> without <code>module</code>), a dot-separated
+global path (e.g., <code>"MyPlugin.init"</code>). For ESM modules
+(<code>js_url</code> with <code>module=True</code> or <code>js_code</code>), the export
+name (e.g., <code>"default"</code> or <code>"init"</code>).</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>config</code></td>
+        <td><code>Optional[Dict[str, Any]]</code></td>
+        <td><p>Optional configuration dict passed to the init function.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="c1"># Load plugin from URL (classic script)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_plugin</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-plugin&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">js_url</span><span class="o">=</span><span class="s2">&quot;https://example.com/maplibre-my-plugin.js&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">css_url</span><span class="o">=</span><span class="s2">&quot;https://example.com/maplibre-my-plugin.css&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">init_function</span><span class="o">=</span><span class="s2">&quot;MyPlugin.init&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;option1&quot;</span><span class="p">:</span> <span class="s2">&quot;value1&quot;</span><span class="p">},</span>
+<span class="o">...</span> <span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># Load plugin from URL (ESM module)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_plugin</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-esm-plugin&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">js_url</span><span class="o">=</span><span class="s2">&quot;https://esm.sh/my-maplibre-plugin@1.0.0&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">module</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">init_function</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+<span class="o">...</span> <span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="c1"># Load plugin from inline code</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_plugin</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-inline-plugin&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">js_code</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">...     import { MyControl } from &#39;https://esm.sh/my-pkg@1.0.0&#39;;</span>
+<span class="s2">...     export function init(map, config) {</span>
+<span class="s2">...         const ctrl = new MyControl(config);</span>
+<span class="s2">...         map.addControl(ctrl, config.position || &#39;top-right&#39;);</span>
+<span class="s2">...         return { destroy() { map.removeControl(ctrl); } };</span>
+<span class="s2">...     }</span>
+<span class="s2">...     &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">init_function</span><span class="o">=</span><span class="s2">&quot;init&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="s2">&quot;top-left&quot;</span><span class="p">},</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_plugin</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">js_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">js_code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">css_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">css_code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">module</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">init_function</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a private plugin dynamically into the map widget.</span>
+
+<span class="sd">    Plugins can be loaded from a URL or from inline JavaScript code. The</span>
+<span class="sd">    init function receives ``(map, config)`` and should return an object</span>
+<span class="sd">    with callable methods and an optional ``destroy()`` for cleanup.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Unique name for the plugin.</span>
+<span class="sd">        js_url: URL to the plugin JavaScript file. Mutually exclusive with</span>
+<span class="sd">            ``js_code``.</span>
+<span class="sd">        js_code: Inline JavaScript module code. The code is treated as an</span>
+<span class="sd">            ESM module and can use ``import`` statements. Mutually exclusive</span>
+<span class="sd">            with ``js_url``.</span>
+<span class="sd">        css_url: Optional URL to the plugin CSS file.</span>
+<span class="sd">        css_code: Optional inline CSS code.</span>
+<span class="sd">        module: If True and using ``js_url``, load as ESM module via</span>
+<span class="sd">            dynamic ``import()``. Ignored when using ``js_code`` (always</span>
+<span class="sd">            treated as ESM).</span>
+<span class="sd">        init_function: Name of the function to call after loading. For</span>
+<span class="sd">            classic scripts (``js_url`` without ``module``), a dot-separated</span>
+<span class="sd">            global path (e.g., ``&quot;MyPlugin.init&quot;``). For ESM modules</span>
+<span class="sd">            (``js_url`` with ``module=True`` or ``js_code``), the export</span>
+<span class="sd">            name (e.g., ``&quot;default&quot;`` or ``&quot;init&quot;``).</span>
+<span class="sd">        config: Optional configuration dict passed to the init function.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; # Load plugin from URL (classic script)</span>
+<span class="sd">        &gt;&gt;&gt; m.add_plugin(</span>
+<span class="sd">        ...     name=&quot;my-plugin&quot;,</span>
+<span class="sd">        ...     js_url=&quot;https://example.com/maplibre-my-plugin.js&quot;,</span>
+<span class="sd">        ...     css_url=&quot;https://example.com/maplibre-my-plugin.css&quot;,</span>
+<span class="sd">        ...     init_function=&quot;MyPlugin.init&quot;,</span>
+<span class="sd">        ...     config={&quot;option1&quot;: &quot;value1&quot;},</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; # Load plugin from URL (ESM module)</span>
+<span class="sd">        &gt;&gt;&gt; m.add_plugin(</span>
+<span class="sd">        ...     name=&quot;my-esm-plugin&quot;,</span>
+<span class="sd">        ...     js_url=&quot;https://esm.sh/my-maplibre-plugin@1.0.0&quot;,</span>
+<span class="sd">        ...     module=True,</span>
+<span class="sd">        ...     init_function=&quot;default&quot;,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; # Load plugin from inline code</span>
+<span class="sd">        &gt;&gt;&gt; m.add_plugin(</span>
+<span class="sd">        ...     name=&quot;my-inline-plugin&quot;,</span>
+<span class="sd">        ...     js_code=\&quot;\&quot;\&quot;</span>
+<span class="sd">        ...     import { MyControl } from &#39;https://esm.sh/my-pkg@1.0.0&#39;;</span>
+<span class="sd">        ...     export function init(map, config) {</span>
+<span class="sd">        ...         const ctrl = new MyControl(config);</span>
+<span class="sd">        ...         map.addControl(ctrl, config.position || &#39;top-right&#39;);</span>
+<span class="sd">        ...         return { destroy() { map.removeControl(ctrl); } };</span>
+<span class="sd">        ...     }</span>
+<span class="sd">        ...     \&quot;\&quot;\&quot;,</span>
+<span class="sd">        ...     init_function=&quot;init&quot;,</span>
+<span class="sd">        ...     config={&quot;position&quot;: &quot;top-left&quot;},</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Plugin name is required&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">js_url</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">js_code</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either js_url or js_code is required&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">js_url</span> <span class="ow">and</span> <span class="n">js_code</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Provide either js_url or js_code, not both&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Plugin &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; is already loaded. Call remove_plugin() first.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">descriptor</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+        <span class="s2">&quot;js_url&quot;</span><span class="p">:</span> <span class="n">js_url</span><span class="p">,</span>
+        <span class="s2">&quot;js_code&quot;</span><span class="p">:</span> <span class="n">js_code</span><span class="p">,</span>
+        <span class="s2">&quot;css_url&quot;</span><span class="p">:</span> <span class="n">css_url</span><span class="p">,</span>
+        <span class="s2">&quot;css_code&quot;</span><span class="p">:</span> <span class="n">css_code</span><span class="p">,</span>
+        <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="p">,</span>
+        <span class="s2">&quot;init_function&quot;</span><span class="p">:</span> <span class="n">init_function</span><span class="p">,</span>
+        <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="n">config</span> <span class="ow">or</span> <span class="p">{},</span>
+    <span class="p">}</span>
+
+    <span class="n">plugins</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span><span class="p">)</span>
+    <span class="n">plugins</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">descriptor</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span> <span class="o">=</span> <span class="n">plugins</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+        <span class="s2">&quot;loadPlugin&quot;</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">js_url</span><span class="o">=</span><span class="n">js_url</span><span class="p">,</span>
+        <span class="n">js_code</span><span class="o">=</span><span class="n">js_code</span><span class="p">,</span>
+        <span class="n">css_url</span><span class="o">=</span><span class="n">css_url</span><span class="p">,</span>
+        <span class="n">css_code</span><span class="o">=</span><span class="n">css_code</span><span class="p">,</span>
+        <span class="n">module</span><span class="o">=</span><span class="n">module</span><span class="p">,</span>
+        <span class="n">init_function</span><span class="o">=</span><span class="n">init_function</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">=</span><span class="n">config</span> <span class="ow">or</span> <span class="p">{},</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
 <h3 id="anymap_ts.maplibre.MapLibreMap.add_pmtiles_control" class="doc doc-heading">
 <code class="highlight language-python"><span class="n">add_pmtiles_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_default_url</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default_opacity</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">default_fill_color</span><span class="o">=</span><span class="s1">&#39;steelblue&#39;</span><span class="p">,</span> <span class="n">default_line_color</span><span class="o">=</span><span class="s1">&#39;#333&#39;</span><span class="p">,</span> <span class="n">default_pickable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
@@ -25186,6 +25655,88 @@ GeoDataFrame, or file path.</p></td>
 
 
 
+<h3 id="anymap_ts.maplibre.MapLibreMap.call_plugin_method" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">call_plugin_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin_name</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.call_plugin_method" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Call a method on a loaded plugin instance.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>plugin_name</code></td>
+        <td><code>str</code></td>
+        <td><p>Name of the plugin.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>method_name</code></td>
+        <td><code>str</code></td>
+        <td><p>Name of the method to call on the plugin instance.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>*args</code></td>
+        <td></td>
+        <td><p>Positional arguments passed to the method.</p></td>
+        <td><code>()</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td></td>
+        <td><p>Keyword arguments passed to the method.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">call_plugin_method</span><span class="p">(</span><span class="s2">&quot;my-plugin&quot;</span><span class="p">,</span> <span class="s2">&quot;updateData&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;value&quot;</span><span class="p">})</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">call_plugin_method</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">plugin_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Call a method on a loaded plugin instance.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        plugin_name: Name of the plugin.</span>
+<span class="sd">        method_name: Name of the method to call on the plugin instance.</span>
+<span class="sd">        *args: Positional arguments passed to the method.</span>
+<span class="sd">        **kwargs: Keyword arguments passed to the method.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; m.call_plugin_method(&quot;my-plugin&quot;, &quot;updateData&quot;, {&quot;key&quot;: &quot;value&quot;})</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
+        <span class="s2">&quot;callPluginMethod&quot;</span><span class="p">,</span> <span class="n">plugin_name</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
 <h3 id="anymap_ts.maplibre.MapLibreMap.clear_draw_data" class="doc doc-heading">
 <code class="highlight language-python"><span class="n">clear_draw_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
 
@@ -27104,6 +27655,65 @@ all colorbars.</p></td>
 <span class="sd">        layer_id: Layer identifier.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeOpacitySlider&quot;</span><span class="p">,</span> <span class="n">layerId</span><span class="o">=</span><span class="n">layer_id</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h3 id="anymap_ts.maplibre.MapLibreMap.remove_plugin" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">remove_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.remove_plugin" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Remove a previously loaded plugin.</p>
+<p>Calls the plugin's <code>destroy()</code> method if available, removes injected
+script/CSS elements, and cleans up the plugin instance.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>Name of the plugin to remove.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a previously loaded plugin.</span>
+
+<span class="sd">    Calls the plugin&#39;s ``destroy()`` method if available, removes injected</span>
+<span class="sd">    script/CSS elements, and cleans up the plugin instance.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: Name of the plugin to remove.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removePlugin&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="n">plugins</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span><span class="p">)</span>
+    <span class="n">plugins</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_plugins</span> <span class="o">=</span> <span class="n">plugins</span>
 </code></pre></div>
         </details>
     </div>
