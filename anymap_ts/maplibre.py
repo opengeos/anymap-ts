@@ -5907,6 +5907,144 @@ class MapLibreMap(MapWidget):
             raise ImportError("geopandas is required for to_geopandas()")
 
     # -------------------------------------------------------------------------
+    # Private Plugins
+    # -------------------------------------------------------------------------
+
+    def add_plugin(
+        self,
+        name: str,
+        js_url: Optional[str] = None,
+        js_code: Optional[str] = None,
+        css_url: Optional[str] = None,
+        css_code: Optional[str] = None,
+        module: bool = False,
+        init_function: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Load a private plugin dynamically into the map widget.
+
+        Plugins can be loaded from a URL or from inline JavaScript code. The
+        init function receives ``(map, config)`` and should return an object
+        with callable methods and an optional ``destroy()`` for cleanup.
+
+        Args:
+            name: Unique name for the plugin.
+            js_url: URL to the plugin JavaScript file. Mutually exclusive with
+                ``js_code``.
+            js_code: Inline JavaScript module code. The code is treated as an
+                ESM module and can use ``import`` statements. Mutually exclusive
+                with ``js_url``.
+            css_url: Optional URL to the plugin CSS file.
+            css_code: Optional inline CSS code.
+            module: If True and using ``js_url``, load as ESM module via
+                dynamic ``import()``. Ignored when using ``js_code`` (always
+                treated as ESM).
+            init_function: Name of the function to call after loading. For
+                classic scripts (``js_url`` without ``module``), a dot-separated
+                global path (e.g., ``"MyPlugin.init"``). For ESM modules
+                (``js_url`` with ``module=True`` or ``js_code``), the export
+                name (e.g., ``"default"`` or ``"init"``).
+            config: Optional configuration dict passed to the init function.
+
+        Example:
+            >>> # Load plugin from URL (classic script)
+            >>> m.add_plugin(
+            ...     name="my-plugin",
+            ...     js_url="https://example.com/maplibre-my-plugin.js",
+            ...     css_url="https://example.com/maplibre-my-plugin.css",
+            ...     init_function="MyPlugin.init",
+            ...     config={"option1": "value1"},
+            ... )
+            >>> # Load plugin from URL (ESM module)
+            >>> m.add_plugin(
+            ...     name="my-esm-plugin",
+            ...     js_url="https://esm.sh/my-maplibre-plugin@1.0.0",
+            ...     module=True,
+            ...     init_function="default",
+            ... )
+            >>> # Load plugin from inline code
+            >>> m.add_plugin(
+            ...     name="my-inline-plugin",
+            ...     js_code=\"\"\"
+            ...     import { MyControl } from 'https://esm.sh/my-pkg@1.0.0';
+            ...     export function init(map, config) {
+            ...         const ctrl = new MyControl(config);
+            ...         map.addControl(ctrl, config.position || 'top-right');
+            ...         return { destroy() { map.removeControl(ctrl); } };
+            ...     }
+            ...     \"\"\",
+            ...     init_function="init",
+            ...     config={"position": "top-left"},
+            ... )
+        """
+        if not name:
+            raise ValueError("Plugin name is required")
+        if not js_url and not js_code:
+            raise ValueError("Either js_url or js_code is required")
+        if js_url and js_code:
+            raise ValueError("Provide either js_url or js_code, not both")
+
+        descriptor: Dict[str, Any] = {
+            "name": name,
+            "js_url": js_url,
+            "js_code": js_code,
+            "css_url": css_url,
+            "css_code": css_code,
+            "module": module,
+            "init_function": init_function,
+            "config": config or {},
+        }
+
+        plugins = dict(self._plugins)
+        plugins[name] = descriptor
+        self._plugins = plugins
+
+        self.call_js_method(
+            "loadPlugin",
+            name=name,
+            js_url=js_url,
+            js_code=js_code,
+            css_url=css_url,
+            css_code=css_code,
+            module=module,
+            init_function=init_function,
+            config=config or {},
+        )
+
+    def remove_plugin(self, name: str) -> None:
+        """Remove a previously loaded plugin.
+
+        Calls the plugin's ``destroy()`` method if available, removes injected
+        script/CSS elements, and cleans up the plugin instance.
+
+        Args:
+            name: Name of the plugin to remove.
+        """
+        self.call_js_method("removePlugin", name)
+
+        plugins = dict(self._plugins)
+        plugins.pop(name, None)
+        self._plugins = plugins
+
+    def call_plugin_method(
+        self, plugin_name: str, method_name: str, *args, **kwargs
+    ) -> None:
+        """Call a method on a loaded plugin instance.
+
+        Args:
+            plugin_name: Name of the plugin.
+            method_name: Name of the method to call on the plugin instance.
+            *args: Positional arguments passed to the method.
+            **kwargs: Keyword arguments passed to the method.
+
+        Example:
+            >>> m.call_plugin_method("my-plugin", "updateData", {"key": "value"})
+        """
+        self.call_js_method(
+            "callPluginMethod", plugin_name, method_name, *args, **kwargs
+        )
+
+    # -------------------------------------------------------------------------
     # HTML Export
     # -------------------------------------------------------------------------
 

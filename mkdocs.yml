@@ -162,6 +162,7 @@ nav:
           - maplibre/pointcloud_layer.ipynb
           - maplibre/popups.ipynb
           - maplibre/print_control.ipynb
+          - maplibre/private_plugins.ipynb
           - maplibre/route_animation.ipynb
           - maplibre/search_control.ipynb
           - maplibre/sky_fog.ipynb

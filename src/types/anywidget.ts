@@ -78,6 +78,20 @@ export interface ControlState {
 }
 
 /**
+ * Plugin descriptor for dynamic plugin loading.
+ */
+export interface PluginDescriptor {
+  name: string;
+  js_url?: string;
+  js_code?: string;
+  css_url?: string;
+  css_code?: string;
+  module?: boolean;
+  init_function?: string;
+  config?: Record<string, unknown>;
+}
+
+/**
  * MapWidget model interface for anywidget.
  */
 export interface MapWidgetModel extends AnyModel {
@@ -95,6 +109,7 @@ export interface MapWidgetModel extends AnyModel {
   get(key: '_sources'): Record<string, SourceState>;
   get(key: '_controls'): Record<string, ControlState>;
   get(key: '_draw_data'): FeatureCollection | null;
+  get(key: '_plugins'): Record<string, PluginDescriptor>;
   get(key: '_queried_features'): Record<string, unknown>;
   get(key: 'clicked'): ClickedPoint | null;
   get(key: 'current_bounds'): [number, number, number, number] | null;

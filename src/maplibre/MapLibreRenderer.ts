@@ -145,6 +145,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // PMTiles sub-layer tracking for auto-discovery removal
   private pmtilesSubLayers: globalThis.Map<string, string[]> = new globalThis.Map();
 
+  // User-loaded plugin instances
+  private pluginInstances: globalThis.Map<string, unknown> = new globalThis.Map();
+
   // maplibre-gl-components controls
   protected pmtilesLayerControl: PMTilesLayerControl | null = null;
   protected cogLayerUiControl: CogLayerControl | null = null;
@@ -573,6 +576,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // FlatGeobuf
     this.registerMethod('addFlatGeobuf', this.handleAddFlatGeobuf.bind(this));
     this.registerMethod('removeFlatGeobuf', this.handleRemoveFlatGeobuf.bind(this));
+
+    // Private plugins
+    this.registerMethod('loadPlugin', this.handleLoadPlugin.bind(this));
+    this.registerMethod('removePlugin', this.handleRemovePlugin.bind(this));
+    this.registerMethod('callPluginMethod', this.handleCallPluginMethod.bind(this));
   }
 
   // -------------------------------------------------------------------------
@@ -5997,7 +6005,151 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Private plugin handlers
+  // -------------------------------------------------------------------------
+
+  private handleLoadPlugin(_args: unknown[], kwargs: Record<string, unknown>): void {
+    const name = kwargs.name as string;
+    const jsUrl = kwargs.js_url as string | undefined;
+    const jsCode = kwargs.js_code as string | undefined;
+    const cssUrl = kwargs.css_url as string | undefined;
+    const cssCode = kwargs.css_code as string | undefined;
+    const isModule = kwargs.module as boolean | undefined;
+    const initFunction = kwargs.init_function as string | undefined;
+    const config = (kwargs.config as Record<string, unknown>) || {};
+
+    if (!name || (!jsUrl && !jsCode)) {
+      console.warn('loadPlugin requires name and either js_url or js_code');
+      return;
+    }
+
+    // Skip if already loaded
+    if (this.pluginInstances.has(name)) {
+      console.warn(`Plugin "${name}" is already loaded`);
+      return;
+    }
+
+    const loadAndInit = async () => {
+      try {
+        // Load CSS if provided (URL or inline)
+        if (cssUrl) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = cssUrl;
+          link.dataset.plugin = name;
+          document.head.appendChild(link);
+        }
+        if (cssCode) {
+          const style = document.createElement('style');
+          style.textContent = cssCode;
+          style.dataset.plugin = name;
+          document.head.appendChild(style);
+        }
+
+        let initFn: ((...a: unknown[]) => unknown) | null = null;
+
+        if (jsCode) {
+          // Inline JS code: create a Blob URL and import as ESM module
+          const blob = new Blob([jsCode], { type: 'application/javascript' });
+          const blobUrl = URL.createObjectURL(blob);
+          try {
+            const mod = await import(/* @vite-ignore */ blobUrl);
+            if (initFunction) {
+              initFn = typeof mod[initFunction] === 'function' ? mod[initFunction] : null;
+            }
+          } finally {
+            URL.revokeObjectURL(blobUrl);
+          }
+        } else if (isModule && jsUrl) {
+          // ESM: use dynamic import()
+          const mod = await import(/* @vite-ignore */ jsUrl);
+          if (initFunction) {
+            initFn = typeof mod[initFunction] === 'function' ? mod[initFunction] : null;
+          }
+        } else if (jsUrl) {
+          // Classic: inject <script> tag and wait for load
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = jsUrl;
+            script.dataset.plugin = name;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error(`Failed to load plugin script: ${jsUrl}`));
+            document.head.appendChild(script);
+          });
+          if (initFunction) {
+            initFn = this.resolveGlobalFunction(initFunction);
+          }
+        }
+
+        // Call init function with (map, config)
+        if (initFn && this.map) {
+          const result = await initFn(this.map, config);
+          this.pluginInstances.set(name, result ?? true);
+        } else {
+          this.pluginInstances.set(name, true);
+        }
+      } catch (error) {
+        console.error(`Failed to load plugin "${name}":`, error);
+      }
+    };
+
+    loadAndInit();
+  }
+
+  private handleRemovePlugin(args: unknown[], kwargs: Record<string, unknown>): void {
+    const name = (args[0] || kwargs.name) as string;
+    if (!name) return;
+
+    const instance = this.pluginInstances.get(name);
+    if (instance && typeof instance === 'object' && instance !== null) {
+      const destroyable = instance as { destroy?: () => void };
+      if (typeof destroyable.destroy === 'function') {
+        destroyable.destroy();
+      }
+    }
+    this.pluginInstances.delete(name);
+
+    // Remove injected script/CSS tags
+    document.querySelectorAll(`[data-plugin="${name}"]`).forEach(el => el.remove());
+  }
+
+  private handleCallPluginMethod(args: unknown[], kwargs: Record<string, unknown>): void {
+    const pluginName = args[0] as string;
+    const methodName = args[1] as string;
+    const methodArgs = args.slice(2);
+
+    const instance = this.pluginInstances.get(pluginName);
+    if (!instance || typeof instance !== 'object' || instance === null) {
+      console.warn(`Plugin "${pluginName}" not found or has no methods`);
+      return;
+    }
+
+    const callable = instance as Record<string, unknown>;
+    if (typeof callable[methodName] === 'function') {
+      (callable[methodName] as (...a: unknown[]) => void)(...methodArgs, kwargs);
+    } else {
+      console.warn(`Method "${methodName}" not found on plugin "${pluginName}"`);
+    }
+  }
+
+  private resolveGlobalFunction(path: string): ((...a: unknown[]) => unknown) | null {
+    const parts = path.split('.');
+    let obj: unknown = window;
+    for (const part of parts) {
+      if (obj === null || obj === undefined) return null;
+      obj = (obj as Record<string, unknown>)[part];
+    }
+    return typeof obj === 'function' ? obj as (...a: unknown[]) => unknown : null;
+  }
+
   destroy(): void {
+    // Clean up plugins
+    this.pluginInstances.forEach((_instance, name) => {
+      this.handleRemovePlugin([name], {});
+    });
+    this.pluginInstances.clear();
+
     // Clean up split map
     if (this.splitActive) {
       this.handleRemoveSplitMap([], {});
