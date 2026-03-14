@@ -1196,8 +1196,10 @@ class MapLibreMap(MapWidget):
         discovers all source layers from the PMTiles metadata and renders each
         one with a distinct color. Geometry types from the metadata determine
         the layer type: Polygon becomes fill, LineString becomes line, and
-        Point becomes circle. This is similar to what https://pmtiles.io/
-        provides for visualizing PMTiles files.
+        Point becomes circle. For text labels and icons, use the symbol layer
+        type with layout properties like text-field and icon-image. This is
+        similar to what https://pmtiles.io/ provides for visualizing PMTiles
+        files.
 
         Args:
             url: URL to the PMTiles file (e.g., "https://example.com/data.pmtiles").

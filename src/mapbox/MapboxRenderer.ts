@@ -2338,7 +2338,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   /**
    * Map geometry type string to Mapbox layer type.
    */
-  private geometryToLayerType(geometryType: string): 'fill' | 'line' | 'circle' {
+  private geometryToLayerType(geometryType: string): 'fill' | 'line' | 'circle' | 'symbol' {
     const lower = geometryType.toLowerCase();
     if (lower.includes('polygon')) return 'fill';
     if (lower.includes('line')) return 'line';
@@ -2349,7 +2349,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   /**
    * Infer layer type from a source layer name when geometry_type is missing.
    */
-  private inferLayerTypeFromName(layerName: string): 'fill' | 'line' | 'circle' {
+  private inferLayerTypeFromName(layerName: string): 'fill' | 'line' | 'circle' | 'symbol' {
     const lower = layerName.toLowerCase();
     const linePatterns = [
       'road', 'street', 'highway', 'path', 'route', 'rail',
@@ -2398,14 +2398,38 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
         const prefix = (kwargs.prefix as string) ?? '';
         await this.autoDiscoverPMTilesLayers(url, layerId, sourceId, opacity, visible, fitBounds, prefix, popupConfig);
       } else if (!this.map.getLayer(layerId)) {
+        const layerType = sourceType === 'vector' ? ((style.type as string) || 'fill') : 'raster';
+        const { paint: extractedPaint, layout: extractedLayout } = this.extractPaintAndLayoutFromStyle(style, layerType);
+
+        const defaultLayout: Record<string, unknown> = {
+          visibility: visible ? 'visible' : 'none',
+        };
+        if (layerType === 'symbol') {
+          if (!extractedLayout['text-field'] && !extractedLayout['icon-image']) {
+            defaultLayout['text-field'] = ['get', 'name'];
+          }
+          if (!extractedLayout['text-size']) {
+            defaultLayout['text-size'] = 12;
+          }
+        }
+
+        let defaultPaint: Record<string, unknown> = {};
+        if (sourceType === 'vector') {
+          if (layerType === 'symbol') {
+            defaultPaint = { 'text-color': '#3388ff', 'text-opacity': opacity, 'text-halo-color': '#ffffff', 'text-halo-width': 1 };
+          } else {
+            defaultPaint = { 'fill-color': '#3388ff', 'fill-opacity': opacity };
+          }
+        } else {
+          defaultPaint = { 'raster-opacity': opacity };
+        }
+
         const layerConfig: Record<string, unknown> = {
           id: layerId,
-          type: sourceType === 'vector' ? ((style.type as string) || 'fill') : 'raster',
+          type: layerType,
           source: sourceId,
-          layout: { visibility: visible ? 'visible' : 'none' },
-          paint: sourceType === 'vector'
-            ? { 'fill-color': '#3388ff', 'fill-opacity': opacity, ...this.extractPaintFromStyle(style) }
-            : { 'raster-opacity': opacity },
+          layout: { ...defaultLayout, ...extractedLayout },
+          paint: { ...defaultPaint, ...extractedPaint },
         };
         if (style['source-layer']) {
           layerConfig['source-layer'] = style['source-layer'];
@@ -2445,11 +2469,39 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     return paint;
   }
 
+  private extractPaintAndLayoutFromStyle(
+    style: Record<string, unknown>,
+    layerType: string,
+  ): { paint: Record<string, unknown>; layout: Record<string, unknown> } {
+    const paint: Record<string, unknown> = {};
+    const layout: Record<string, unknown> = {};
+    const layoutKeys = [
+      'text-field', 'text-size', 'text-font', 'text-anchor',
+      'text-offset', 'text-rotate', 'text-max-width',
+      'text-allow-overlap', 'text-ignore-placement',
+      'text-justify', 'text-letter-spacing', 'text-line-height',
+      'text-transform', 'text-padding',
+      'icon-image', 'icon-size', 'icon-anchor', 'icon-offset',
+      'icon-rotate', 'icon-allow-overlap', 'icon-ignore-placement',
+      'icon-padding', 'symbol-placement', 'symbol-spacing',
+      'symbol-sort-key',
+    ];
+    for (const [key, value] of Object.entries(style)) {
+      if (key === 'type' || key === 'source-layer') continue;
+      if (layerType === 'symbol' && layoutKeys.includes(key)) {
+        layout[key] = value;
+      } else {
+        paint[key] = value;
+      }
+    }
+    return { paint, layout };
+  }
+
   /**
    * Build paint properties for a given layer type.
    */
   private buildPMTilesPaint(
-    layerType: 'fill' | 'line' | 'circle',
+    layerType: 'fill' | 'line' | 'circle' | 'symbol',
     color: string,
     opacity: number,
   ): Record<string, unknown> {
@@ -2457,11 +2509,38 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       return { 'fill-color': color, 'fill-opacity': opacity * 0.6, 'fill-outline-color': color };
     } else if (layerType === 'line') {
       return { 'line-color': color, 'line-width': 2, 'line-opacity': opacity };
+    } else if (layerType === 'symbol') {
+      return { 'text-color': color, 'text-opacity': opacity, 'text-halo-color': '#ffffff', 'text-halo-width': 1 };
     }
     return {
       'circle-color': color, 'circle-radius': 2, 'circle-opacity': opacity,
       'circle-stroke-color': color, 'circle-stroke-width': 0.5,
     };
+  }
+
+  /**
+   * Build layout properties for symbol layers.
+   */
+  private buildPMTilesSymbolLayout(
+    sourceLayerFields: string[],
+    visible: boolean,
+  ): Record<string, unknown> {
+    const layout: Record<string, unknown> = {
+      visibility: visible ? 'visible' : 'none',
+      'text-size': 12,
+      'text-anchor': 'center',
+      'text-allow-overlap': false,
+    };
+    const textFieldCandidates = ['name', 'label', 'text', 'title', 'description'];
+    let textField = 'name';
+    for (const candidate of textFieldCandidates) {
+      if (sourceLayerFields.some(f => f.toLowerCase() === candidate)) {
+        textField = sourceLayerFields.find(f => f.toLowerCase() === candidate)!;
+        break;
+      }
+    }
+    layout['text-field'] = ['get', textField];
+    return layout;
   }
 
   /**
@@ -2509,8 +2588,8 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
         : this.inferLayerTypeFromName(vl.id),
     }));
 
-    // Sort so fill renders first, then line, then circle (points on top)
-    const renderOrder: Record<string, number> = { fill: 0, line: 1, circle: 2 };
+    // Sort so fill renders first, then line, then circle, then symbol (labels on top)
+    const renderOrder: Record<string, number> = { fill: 0, line: 1, circle: 2, symbol: 3 };
     layerEntries.sort((a, b) => (renderOrder[a.mlType] ?? 0) - (renderOrder[b.mlType] ?? 0));
 
     const subLayerIds: string[] = [];
@@ -2518,13 +2597,19 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     for (const { vl, color, mlType } of layerEntries) {
       const subLayerId = prefix ? `${prefix}-${vl.id}` : vl.id;
 
+      // For symbol layers, extract field names from metadata to pick a text-field
+      const vlFields = (vl as Record<string, unknown>).fields as Record<string, string> | undefined;
+      const fieldNames = vlFields ? Object.keys(vlFields) : [];
+
       if (!this.map.getLayer(subLayerId)) {
         this.map.addLayer({
           id: subLayerId,
           type: mlType,
           source: sourceId,
           'source-layer': vl.id,
-          layout: { visibility: visible ? 'visible' : 'none' },
+          layout: mlType === 'symbol'
+            ? this.buildPMTilesSymbolLayout(fieldNames, visible)
+            : { visibility: visible ? 'visible' : 'none' },
           paint: this.buildPMTilesPaint(mlType, color, opacity),
         } as mapboxgl.AnyLayer);
         subLayerIds.push(subLayerId);

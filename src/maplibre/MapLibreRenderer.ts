@@ -3901,7 +3901,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   /**
    * Map geometry type string to MapLibre layer type.
    */
-  private geometryToLayerType(geometryType: string): 'fill' | 'line' | 'circle' {
+  private geometryToLayerType(geometryType: string): 'fill' | 'line' | 'circle' | 'symbol' {
     const lower = geometryType.toLowerCase();
     if (lower.includes('polygon')) return 'fill';
     if (lower.includes('line')) return 'line';
@@ -3913,7 +3913,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
    * Infer MapLibre layer type from a source layer name when geometry_type
    * is not available in the PMTiles metadata.
    */
-  private inferLayerTypeFromName(layerName: string): 'fill' | 'line' | 'circle' {
+  private inferLayerTypeFromName(layerName: string): 'fill' | 'line' | 'circle' | 'symbol' {
     const lower = layerName.toLowerCase();
     // Names that typically represent line geometries
     const linePatterns = [
@@ -4000,13 +4000,48 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
               'circle-radius': 5,
               'circle-opacity': opacity,
             };
+          } else if (layerType === 'symbol') {
+            defaultPaint = {
+              'text-color': '#3388ff',
+              'text-opacity': opacity,
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 1,
+            };
           }
 
-          // Extract paint properties from style (everything except type and source-layer)
+          // Extract paint and layout properties from style
           const paintFromStyle: Record<string, unknown> = {};
+          const layoutFromStyle: Record<string, unknown> = {};
+          const layoutKeys = [
+            'text-field', 'text-size', 'text-font', 'text-anchor',
+            'text-offset', 'text-rotate', 'text-max-width',
+            'text-allow-overlap', 'text-ignore-placement',
+            'text-justify', 'text-letter-spacing', 'text-line-height',
+            'text-transform', 'text-padding',
+            'icon-image', 'icon-size', 'icon-anchor', 'icon-offset',
+            'icon-rotate', 'icon-allow-overlap', 'icon-ignore-placement',
+            'icon-padding', 'symbol-placement', 'symbol-spacing',
+            'symbol-sort-key',
+          ];
           for (const [key, value] of Object.entries(style)) {
-            if (key !== 'type' && key !== 'source-layer') {
+            if (key === 'type' || key === 'source-layer') continue;
+            if (layoutKeys.includes(key)) {
+              layoutFromStyle[key] = value;
+            } else {
               paintFromStyle[key] = value;
+            }
+          }
+
+          // Build layout: default visibility + symbol-specific defaults + user overrides
+          const defaultLayout: Record<string, unknown> = {
+            visibility: visible ? 'visible' : 'none',
+          };
+          if (layerType === 'symbol') {
+            if (!layoutFromStyle['text-field'] && !layoutFromStyle['icon-image']) {
+              defaultLayout['text-field'] = ['get', 'name'];
+            }
+            if (!layoutFromStyle['text-size']) {
+              defaultLayout['text-size'] = 12;
             }
           }
 
@@ -4014,9 +4049,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
             id: layerId,
             type: layerType,
             source: sourceId,
-            layout: {
-              visibility: visible ? 'visible' : 'none',
-            },
+            layout: { ...defaultLayout, ...layoutFromStyle },
             paint: { ...defaultPaint, ...paintFromStyle },
           };
 
@@ -4075,7 +4108,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
    * Build paint properties for a given MapLibre layer type.
    */
   private buildPMTilesPaint(
-    layerType: 'fill' | 'line' | 'circle',
+    layerType: 'fill' | 'line' | 'circle' | 'symbol',
     color: string,
     opacity: number,
   ): Record<string, unknown> {
@@ -4083,11 +4116,40 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       return { 'fill-color': color, 'fill-opacity': opacity * 0.6, 'fill-outline-color': color };
     } else if (layerType === 'line') {
       return { 'line-color': color, 'line-width': 2, 'line-opacity': opacity };
+    } else if (layerType === 'symbol') {
+      return { 'text-color': color, 'text-opacity': opacity, 'text-halo-color': '#ffffff', 'text-halo-width': 1 };
     }
     return {
       'circle-color': color, 'circle-radius': 3, 'circle-opacity': opacity,
       'circle-stroke-color': color, 'circle-stroke-width': 1,
     };
+  }
+
+  /**
+   * Build layout properties for symbol layers. Symbol layers require layout
+   * properties (text-field, icon-image, etc.) to render.
+   */
+  private buildPMTilesSymbolLayout(
+    sourceLayerFields: string[],
+    visible: boolean,
+  ): Record<string, unknown> {
+    const layout: Record<string, unknown> = {
+      visibility: visible ? 'visible' : 'none',
+      'text-size': 12,
+      'text-anchor': 'center',
+      'text-allow-overlap': false,
+    };
+    // Use the first text-like field name as the label, or fallback to 'name'
+    const textFieldCandidates = ['name', 'label', 'text', 'title', 'description'];
+    let textField = 'name';
+    for (const candidate of textFieldCandidates) {
+      if (sourceLayerFields.some(f => f.toLowerCase() === candidate)) {
+        textField = sourceLayerFields.find(f => f.toLowerCase() === candidate)!;
+        break;
+      }
+    }
+    layout['text-field'] = ['get', textField];
+    return layout;
   }
 
   /**
@@ -4137,8 +4199,8 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         : this.inferLayerTypeFromName(vl.id),
     }));
 
-    // Sort so fill renders first, then line, then circle (points on top)
-    const renderOrder: Record<string, number> = { fill: 0, line: 1, circle: 2 };
+    // Sort so fill renders first, then line, then circle, then symbol (labels on top)
+    const renderOrder: Record<string, number> = { fill: 0, line: 1, circle: 2, symbol: 3 };
     layerEntries.sort((a, b) => (renderOrder[a.mlType] ?? 0) - (renderOrder[b.mlType] ?? 0));
 
     const subLayerIds: string[] = [];
@@ -4147,12 +4209,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const idBase = prefix ? `${prefix}-${vl.id}` : vl.id;
       const subLayerId = idBase;
 
+      // For symbol layers, extract field names from metadata to pick a text-field
+      const vlFields = (vl as Record<string, unknown>).fields as Record<string, string> | undefined;
+      const fieldNames = vlFields ? Object.keys(vlFields) : [];
+
       const layerConfig: Record<string, unknown> = {
         id: subLayerId,
         type: mlType,
         source: sourceId,
         'source-layer': vl.id,
-        layout: { visibility: visible ? 'visible' : 'none' },
+        layout: mlType === 'symbol'
+          ? this.buildPMTilesSymbolLayout(fieldNames, visible)
+          : { visibility: visible ? 'visible' : 'none' },
         paint: this.buildPMTilesPaint(mlType, color, opacity),
       };
 
