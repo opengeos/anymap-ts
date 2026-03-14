@@ -1184,6 +1184,8 @@ class MapLibreMap(MapWidget):
         source_type: str = "vector",
         prefix: str = "PMTiles",
         popup: Optional[Union[bool, List[str], str]] = None,
+        *,
+        filter: Optional[List] = None,
         **kwargs,
     ) -> None:
         """Add a PMTiles layer for efficient vector or raster tile serving.
@@ -1210,8 +1212,10 @@ class MapLibreMap(MapWidget):
                 - type: Layer type ('fill', 'line', 'circle', 'symbol')
                 - source-layer: Source layer name from vector tiles
                 - paint properties (e.g., 'fill-color', 'line-width')
+                - filter: MapLibre filter expression
                 Example: {"type": "line", "source-layer": "roads",
-                    "line-color": "#ff0000"}
+                    "line-color": "#ff0000",
+                    "filter": ["==", ["get", "type"], "highway"]}
             opacity: Layer opacity (0-1).
             visible: Whether layer is initially visible.
             fit_bounds: Whether to fit map to layer bounds after loading.
@@ -1223,6 +1227,10 @@ class MapLibreMap(MapWidget):
                 - List of property names: show only those properties.
                 - str: HTML template with {property_name} placeholders.
                 - None (default): no popup.
+            filter: A MapLibre filter expression to apply to the layer.
+                Uses MapLibre expression syntax, e.g.,
+                ["==", ["get", "category"], "walking"]. Can also be provided
+                inside the style dict. Defaults to None.
             **kwargs: Additional layer options.
 
         Example:
@@ -1248,6 +1256,13 @@ class MapLibreMap(MapWidget):
             ...         "fill-color": "#ff6b6b"},
             ...     popup="<h3>{name}</h3><p>Height: {height}m</p>",
             ... )
+            >>> # Filter by a property value
+            >>> m.add_pmtiles_layer(
+            ...     url="https://example.com/activities.pmtiles",
+            ...     style={"type": "line", "source-layer": "tracks",
+            ...         "line-color": ["get", "color"]},
+            ...     filter=["==", ["get", "category"], "walking"],
+            ... )
         """
         layer_id = layer_id or f"pmtiles-{len(self._layers)}"
 
@@ -1260,11 +1275,22 @@ class MapLibreMap(MapWidget):
         elif isinstance(popup, str):
             popup_config = {"enabled": True, "template": popup}
 
+        # Allow filter in both the style dict and the filter parameter;
+        # the explicit parameter takes precedence.
+        effective_style = dict(style) if style else {}
+        if filter is not None:
+            if not effective_style:
+                raise ValueError(
+                    "The 'filter' parameter requires a non-empty 'style' dict "
+                    "(including required fields such as 'source-layer')."
+                )
+            effective_style["filter"] = filter
+
         self.call_js_method(
             "addPMTilesLayer",
             url=url,
             id=layer_id,
-            style=style or {},
+            style=effective_style,
             opacity=opacity,
             visible=visible,
             fitBounds=fit_bounds,
