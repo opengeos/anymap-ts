@@ -1279,6 +1279,11 @@ class MapLibreMap(MapWidget):
         # the explicit parameter takes precedence.
         effective_style = dict(style) if style else {}
         if filter is not None:
+            if not effective_style:
+                raise ValueError(
+                    "The 'filter' parameter requires a non-empty 'style' dict "
+                    "(including required fields such as 'source-layer')."
+                )
             effective_style["filter"] = filter
 
         self.call_js_method(
