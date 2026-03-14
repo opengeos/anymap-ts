@@ -4062,6 +4062,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
           }
 
           this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
+
+          if (style['filter'] && (this as any).stateManager) {
+            ((this as any).stateManager as StateManager).setLayerFilter(
+              layerId,
+              style['filter'] as unknown[] | null
+            );
+          }
         } else {
           // Raster PMTiles
           layerConfig = {
