@@ -1184,6 +1184,7 @@ class MapLibreMap(MapWidget):
         source_type: str = "vector",
         prefix: str = "PMTiles",
         popup: Optional[Union[bool, List[str], str]] = None,
+        *,
         filter: Optional[List] = None,
         **kwargs,
     ) -> None:
