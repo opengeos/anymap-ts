@@ -4024,7 +4024,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
             'symbol-sort-key',
           ];
           for (const [key, value] of Object.entries(style)) {
-            if (key === 'type' || key === 'source-layer') continue;
+            if (key === 'type' || key === 'source-layer' || key === 'filter') continue;
             if (layoutKeys.includes(key)) {
               layoutFromStyle[key] = value;
             } else {
@@ -4055,6 +4055,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
           if (style['source-layer']) {
             layerConfig['source-layer'] = style['source-layer'];
+          }
+
+          if (style['filter']) {
+            layerConfig['filter'] = style['filter'];
           }
 
           this.map.addLayer(layerConfig as maplibregl.AddLayerObject);
