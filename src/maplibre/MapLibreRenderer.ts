@@ -1654,6 +1654,26 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // -------------------------------------------------------------------------
 
   /**
+   * Convert a value to an accessor function for deck.gl layers.
+   * Strings become property lookups, functions pass through, constants are returned as-is.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected makeAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any {
+    if (typeof value === 'string') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (d: any) => d[value];
+    }
+    if (typeof value === 'function') {
+      return value;
+    }
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return fallbackFn || ((d: any) => d[defaultProp]);
+  }
+
+  /**
    * Initialize deck.gl overlay if not already created.
    */
   protected initializeDeckOverlay(): void {
@@ -2000,31 +2020,17 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const id = kwargs.id as string || `arc-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value; // Return arrays/numbers directly
-      }
-      return fallbackFn || ((d: any) => d[defaultProp]);
-    };
-
     const layer = new ArcLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
-      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
-      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
-      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
-      getSourceColor: makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
-      getTargetColor: makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
-      getHeight: makeAccessor(kwargs.getHeight ?? kwargs.height, 'height', () => 1),
+      getWidth: this.makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      getSourcePosition: this.makeAccessor(kwargs.getSourcePosition, 'source', (d: any) => d.source || d.from || d.sourcePosition),
+      getTargetPosition: this.makeAccessor(kwargs.getTargetPosition, 'target', (d: any) => d.target || d.to || d.targetPosition),
+      getSourceColor: this.makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
+      getTargetColor: this.makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255]),
+      getHeight: this.makeAccessor(kwargs.getHeight ?? kwargs.height, 'height', () => 1),
       greatCircle: kwargs.greatCircle as boolean ?? false,
     });
 
@@ -2062,29 +2068,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const id = kwargs.id as string || `pointcloud-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value; // Return arrays/numbers directly
-      }
-      return fallbackFn || ((d: any) => d[defaultProp]);
-    };
-
     const layerProps: Record<string, unknown> = {
       id,
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
       pointSize: kwargs.pointSize as number ?? 2,
-      getPosition: makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
-      getNormal: makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
-      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
+      getPosition: this.makeAccessor(kwargs.getPosition, 'position', (d: any) => d.position || d.coordinates || [d.x, d.y, d.z]),
+      getNormal: this.makeAccessor(kwargs.getNormal, 'normal', () => [0, 0, 1]),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
       sizeUnits: kwargs.sizeUnits as 'pixels' | 'meters' | 'common' ?? 'pixels',
     };
 
@@ -2141,10 +2133,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       radiusMinPixels: kwargs.radiusMinPixels as number ?? 1,
       radiusMaxPixels: kwargs.radiusMaxPixels as number ?? 100,
       lineWidthMinPixels: kwargs.lineWidthMinPixels as number ?? 1,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getRadius: kwargs.getRadius ?? kwargs.radius ?? 5,
-      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 200],
-      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [255, 255, 255, 255],
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getRadius: this.makeAccessor(kwargs.getRadius ?? kwargs.radius, 'radius', () => 5),
+      getFillColor: this.makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 200]),
+      getLineColor: this.makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [255, 255, 255, 255]),
     } as any);
 
     this.deckLayers.set(id, layer);
@@ -2169,9 +2165,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       opacity: kwargs.opacity as number ?? 0.8,
       widthScale: kwargs.widthScale as number ?? 1,
       widthMinPixels: kwargs.widthMinPixels as number ?? 1,
-      getPath: kwargs.getPath ?? ((d: any) => d.path || d.coordinates),
-      getColor: kwargs.getColor ?? kwargs.color ?? [51, 136, 255, 200],
-      getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
+      getPath: this.makeAccessor(kwargs.getPath, 'path', (d: any) => d.path || d.coordinates),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
+      getWidth: this.makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
     } as any);
 
     this.deckLayers.set(id, layer);
@@ -2199,11 +2195,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       extruded: kwargs.extruded as boolean ?? false,
       wireframe: kwargs.wireframe as boolean ?? false,
       lineWidthMinPixels: kwargs.lineWidthMinPixels as number ?? 1,
-      getPolygon: kwargs.getPolygon ?? ((d: any) => d.polygon || d.contour || d.coordinates),
-      getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0,
-      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
-      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 255, 255],
-      getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
+      getPolygon: this.makeAccessor(kwargs.getPolygon, 'polygon', (d: any) => d.polygon || d.contour || d.coordinates),
+      getElevation: this.makeAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+      getFillColor: this.makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 255, 255]),
+      getLineWidth: this.makeAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
     } as any);
 
     this.deckLayers.set(id, layer);
@@ -2229,7 +2225,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       extruded: kwargs.extruded as boolean ?? true,
       radius: kwargs.radius as number ?? 1000,
       elevationScale: kwargs.elevationScale as number ?? 4,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
       colorRange: kwargs.colorRange ?? [
         [1, 152, 189],
         [73, 227, 206],
@@ -2263,8 +2263,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       radiusPixels: kwargs.radiusPixels as number ?? 30,
       intensity: kwargs.intensity as number ?? 1,
       threshold: kwargs.threshold as number ?? 0.05,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getWeight: this.makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
       colorRange: (kwargs.colorRange ?? [
         [255, 255, 178, 25],
         [254, 217, 118, 85],
@@ -2298,7 +2302,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       extruded: kwargs.extruded as boolean ?? true,
       cellSize: kwargs.cellSize as number ?? 200,
       elevationScale: kwargs.elevationScale as number ?? 4,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
       colorRange: kwargs.colorRange ?? [
         [1, 152, 189],
         [73, 227, 206],
@@ -2331,10 +2339,14 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       opacity: kwargs.opacity as number ?? 1,
       iconAtlas: kwargs.iconAtlas as string,
       iconMapping: kwargs.iconMapping,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getIcon: kwargs.getIcon ?? ((d: any) => d.icon || 'marker'),
-      getSize: kwargs.getSize ?? kwargs.size ?? 20,
-      getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255],
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getIcon: this.makeAccessor(kwargs.getIcon, 'icon', (d: any) => d.icon || 'marker'),
+      getSize: this.makeAccessor(kwargs.getSize ?? kwargs.size, 'size', () => 20),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255]),
     } as any);
 
     this.deckLayers.set(id, layer);
@@ -2357,14 +2369,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 1,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getText: kwargs.getText ?? ((d: any) => d.text || d.label || d.name || ''),
-      getSize: kwargs.getSize ?? kwargs.size ?? 12,
-      getColor: kwargs.getColor ?? kwargs.color ?? [0, 0, 0, 255],
-      getAngle: kwargs.getAngle ?? 0,
-      getTextAnchor: kwargs.getTextAnchor ?? 'middle',
-      getAlignmentBaseline: kwargs.getAlignmentBaseline ?? 'center',
-    } as any);
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getText: this.makeAccessor(kwargs.getText, 'text', (d: any) => d.text || d.label || d.name || ''),
+      getSize: this.makeAccessor(kwargs.getSize ?? kwargs.size, 'size', () => 12),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [0, 0, 0, 255]),
+      getAngle: this.makeAccessor(kwargs.getAngle, 'angle', () => 0),
+      getTextAnchor: (kwargs.getTextAnchor ?? 'middle') as any,
+      getAlignmentBaseline: (kwargs.getAlignmentBaseline ?? 'center') as any,
+    });
 
     this.deckLayers.set(id, layer);
     this.updateDeckOverlay();
@@ -2392,11 +2408,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       wireframe: kwargs.wireframe as boolean ?? false,
       lineWidthMinPixels: kwargs.lineWidthMinPixels as number ?? 1,
       pointRadiusMinPixels: kwargs.pointRadiusMinPixels as number ?? 2,
-      getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
-      getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 0, 255],
-      getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
-      getPointRadius: kwargs.getPointRadius ?? kwargs.pointRadius ?? 5,
-      getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0,
+      getFillColor: this.makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+      getLineColor: this.makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+      getLineWidth: this.makeAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
+      getPointRadius: this.makeAccessor(kwargs.getPointRadius ?? kwargs.pointRadius, 'pointRadius', () => 5),
+      getElevation: this.makeAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
     } as any);
 
     this.deckLayers.set(id, layer);
@@ -2425,8 +2441,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         { threshold: 5, color: [51, 136, 255], strokeWidth: 2 },
         { threshold: 10, color: [0, 0, 255], strokeWidth: 3 },
       ],
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getWeight: this.makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
     } as any);
 
     this.deckLayers.set(id, layer);
@@ -2450,8 +2470,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       cellSizePixels: kwargs.cellSizePixels as number ?? 50,
-      getPosition: kwargs.getPosition ?? ((d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-      getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+      getPosition: this.makeAccessor(
+        kwargs.getPosition,
+        'coordinates',
+        (d: any) => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+      ),
+      getWeight: this.makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
       colorRange: (kwargs.colorRange ?? [
         [255, 255, 178, 25],
         [254, 217, 118, 85],
@@ -2477,20 +2501,6 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const id = kwargs.id as string || `trips-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value;
-      }
-      return fallbackFn || ((d: any) => d[defaultProp]);
-    };
-
     const layer = new TripsLayer({
       id,
       data,
@@ -2499,9 +2509,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       widthMinPixels: kwargs.widthMinPixels as number ?? 2,
       trailLength: kwargs.trailLength as number ?? 180,
       currentTime: kwargs.currentTime as number ?? 0,
-      getPath: makeAccessor(kwargs.getPath, 'waypoints', (d: any) => d.waypoints || d.path || d.coordinates),
-      getTimestamps: makeAccessor(kwargs.getTimestamps, 'timestamps', (d: any) => d.timestamps),
-      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [253, 128, 93]),
+      getPath: this.makeAccessor(kwargs.getPath, 'waypoints', (d: any) => d.waypoints || d.path || d.coordinates),
+      getTimestamps: this.makeAccessor(kwargs.getTimestamps, 'timestamps', (d: any) => d.timestamps),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [253, 128, 93]),
     } as any);
 
     this.deckLayers.set(id, layer);
@@ -2519,30 +2529,16 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const id = kwargs.id as string || `line-${Date.now()}`;
     const data = kwargs.data as unknown[];
 
-    // Helper to create accessor from string or use value directly
-    const makeAccessor = (value: unknown, defaultProp: string, fallbackFn?: (d: any) => any): any => {
-      if (typeof value === 'string') {
-        return (d: any) => d[value];
-      }
-      if (typeof value === 'function') {
-        return value;
-      }
-      if (value !== undefined && value !== null) {
-        return value;
-      }
-      return fallbackFn || ((d: any) => d[defaultProp]);
-    };
-
     const layer = new LineLayer({
       id,
       data,
       pickable: kwargs.pickable !== false,
       opacity: kwargs.opacity as number ?? 0.8,
       widthMinPixels: kwargs.widthMinPixels as number ?? 1,
-      getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'sourcePosition', (d: any) => d.sourcePosition || d.source || d.from),
-      getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'targetPosition', (d: any) => d.targetPosition || d.target || d.to),
-      getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
-      getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+      getSourcePosition: this.makeAccessor(kwargs.getSourcePosition, 'sourcePosition', (d: any) => d.sourcePosition || d.source || d.from),
+      getTargetPosition: this.makeAccessor(kwargs.getTargetPosition, 'targetPosition', (d: any) => d.targetPosition || d.target || d.to),
+      getColor: this.makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
+      getWidth: this.makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
     } as any);
 
     this.deckLayers.set(id, layer);

@@ -9,6 +9,10 @@
     <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
     <!-- deck.gl -->
     <script src="https://unpkg.com/deck.gl@9/dist.min.js"></script>
+    <!-- maplibre-gl-layer-control CSS -->
+    <link href="https://unpkg.com/maplibre-gl-layer-control@0.14.1/dist/maplibre-gl-layer-control.css" rel="stylesheet" />
+    <!-- maplibre-gl-components CSS -->
+    <link href="https://unpkg.com/maplibre-gl-components@0.16.2/dist/maplibre-gl-components.css" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -17,9 +21,30 @@
 </head>
 <body>
     <div id="map"></div>
-    <script>
+    <script type="module">
         // Map state from Python
         const state = {{state}};
+
+        // Track added layers for layer control
+        const addedLayers = [];
+        let layerControlConfig = null;
+        let controlGridConfig = null;
+        let controlGridAdded = false;
+        let layerControlAdded = false;
+        let layerControlInstance = null;
+        let layerControlOrderSyncTimer = null;
+
+        // Load optional dependencies in parallel (non-blocking)
+        let LayerControl = null;
+        let addControlGridFn = null;
+
+        const lcPromise = import('https://esm.sh/maplibre-gl-layer-control@0.14.1')
+            .then(mod => { LayerControl = mod.LayerControl; })
+            .catch(() => console.warn('LayerControl library unavailable'));
+
+        const cgPromise = import('https://esm.sh/maplibre-gl-components@0.16.2')
+            .then(mod => { addControlGridFn = mod.addControlGrid; })
+            .catch(() => console.warn('ControlGrid library unavailable'));
 
         // Create MapLibre map
         const map = new maplibregl.Map({
@@ -37,7 +62,59 @@
 
         const DECK_SENTINEL_ID = '__deck-overlay-anchor';
 
-        map.on('load', function() {
+        // Deck layer adapter for layer control
+        function setDeckVisibility(layerId, visible) {
+            const layer = deckLayers.get(layerId);
+            if (!layer) return;
+            deckLayers.set(layerId, layer.clone({ visible }));
+            updateDeckOverlay();
+        }
+
+        function setDeckOpacity(layerId, opacity) {
+            const layer = deckLayers.get(layerId);
+            if (!layer) return;
+            deckLayers.set(layerId, layer.clone({ opacity }));
+            updateDeckOverlay();
+        }
+
+        const deckChangeCallbacks = [];
+
+        const deckLayerAdapter = {
+            type: 'deck',
+            getLayerIds() {
+                return Array.from(deckLayers.keys());
+            },
+            getLayerState(layerId) {
+                const layer = deckLayers.get(layerId);
+                if (!layer || !layer.props) return null;
+                return {
+                    visible: layer.props.visible !== false,
+                    opacity: layer.props.opacity ?? 1,
+                    name: layerId,
+                };
+            },
+            setVisibility(layerId, visible) {
+                setDeckVisibility(layerId, visible);
+            },
+            setOpacity(layerId, opacity) {
+                setDeckOpacity(layerId, opacity);
+            },
+            getName(layerId) {
+                return layerId;
+            },
+            getSymbolType() {
+                return 'deck';
+            },
+            onLayerChange(callback) {
+                deckChangeCallbacks.push(callback);
+                return () => {
+                    const idx = deckChangeCallbacks.indexOf(callback);
+                    if (idx >= 0) deckChangeCallbacks.splice(idx, 1);
+                };
+            },
+        };
+
+        map.on('load', async function() {
             // Initialize deck.gl overlay
             deckOverlay = new deck.MapboxOverlay({
                 interleaved: true,
@@ -61,12 +138,44 @@
                 });
             }
 
-            // Replay JS calls
+            // 1. Replay JS calls
             for (const call of state.js_calls || []) {
                 try {
                     executeMethod(call.method, call.args, call.kwargs);
                 } catch (e) {
                     console.error('Error executing', call.method, e);
+                }
+            }
+
+            // 2. Wait for optional imports to settle
+            await Promise.allSettled([lcPromise, cgPromise]);
+
+            // 3. Add layer control if configured
+            if (!layerControlAdded && (layerControlConfig || (state.controls && state.controls['layer-control']))) {
+                const config = layerControlConfig || state.controls['layer-control'];
+                if (LayerControl) {
+                    createLayerControl(config);
+                    layerControlAdded = true;
+                }
+            }
+
+            // 4. Add control grid if configured
+            if (!controlGridAdded && (controlGridConfig || (state.controls && state.controls['control-grid']))) {
+                const config = controlGridConfig || state.controls['control-grid'];
+                if (addControlGridFn) {
+                    addControlGridFn(map, {
+                        position: config.position || 'top-right',
+                        defaultControls: config.defaultControls,
+                        exclude: config.exclude,
+                        rows: config.rows,
+                        columns: config.columns,
+                        collapsed: config.collapsed !== false,
+                        title: config.title,
+                        basemapStyleUrl: config.basemapStyleUrl,
+                        excludeLayers: config.excludeLayers,
+                        bookmarkOptions: config.bookmarkOptions
+                    });
+                    controlGridAdded = true;
                 }
             }
         });
@@ -83,6 +192,15 @@
             }
             const layers = Array.from(deckLayers.values());
             deckOverlay.setProps({ layers });
+            map.triggerRepaint();
+            scheduleLayerControlOrderSync();
+        }
+
+        function makeAccessor(value, defaultProp, fallbackFn) {
+            if (typeof value === 'string') return d => d[value];
+            if (typeof value === 'function') return value;
+            if (value !== undefined && value !== null) return value;
+            return fallbackFn || (d => d[defaultProp]);
         }
 
         function executeMethod(method, args, kwargs) {
@@ -92,6 +210,7 @@
                     const url = args[0];
                     const name = kwargs.name || 'basemap';
                     const sourceId = 'basemap-' + name;
+                    const layerId = name;
                     if (!map.getSource(sourceId)) {
                         map.addSource(sourceId, {
                             type: 'raster',
@@ -100,12 +219,24 @@
                             attribution: kwargs.attribution || ''
                         });
                     }
-                    if (!map.getLayer(sourceId)) {
+                    if (!map.getLayer(layerId)) {
+                        // Insert basemap below deck sentinel so deck layers render on top
+                        let effectiveBeforeId;
+                        if (map.getLayer(DECK_SENTINEL_ID)) {
+                            const styleLayers = map.getStyle()?.layers || [];
+                            const si = styleLayers.findIndex(l => l.id === DECK_SENTINEL_ID);
+                            let ii = si;
+                            for (let i = si - 1; i >= 0; i--) {
+                                if (styleLayers[i].id.startsWith('@@deck.gl')) { ii = i; } else { break; }
+                            }
+                            effectiveBeforeId = styleLayers[ii]?.id;
+                        }
                         map.addLayer({
-                            id: sourceId,
+                            id: layerId,
                             type: 'raster',
                             source: sourceId
-                        });
+                        }, effectiveBeforeId);
+                        addedLayers.push({ id: layerId, type: 'raster' });
                     }
                     break;
                 }
@@ -119,13 +250,15 @@
                             data: kwargs.data
                         });
                     }
+                    const geoLayerType = kwargs.layerType || 'circle';
                     if (!map.getLayer(layerName)) {
                         map.addLayer({
                             id: layerName,
-                            type: kwargs.layerType || 'circle',
+                            type: geoLayerType,
                             source: sourceIdGeo,
                             paint: kwargs.paint || {}
                         });
+                        addedLayers.push({ id: layerName, type: geoLayerType });
                     }
                     if (kwargs.fitBounds && kwargs.bounds) {
                         map.fitBounds([
@@ -154,6 +287,7 @@
                             type: 'raster',
                             source: tileSourceId
                         });
+                        addedLayers.push({ id: tileName, type: 'raster' });
                     }
                     break;
                 }
@@ -214,10 +348,10 @@
                         radiusMinPixels: kwargs.radiusMinPixels ?? 1,
                         radiusMaxPixels: kwargs.radiusMaxPixels ?? 100,
                         lineWidthMinPixels: kwargs.lineWidthMinPixels ?? 1,
-                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
-                        getRadius: kwargs.getRadius ?? kwargs.radius ?? 5,
-                        getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 200],
-                        getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [255, 255, 255, 255]
+                        getPosition: makeAccessor(kwargs.getPosition, 'coordinates', d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+                        getRadius: makeAccessor(kwargs.getRadius ?? kwargs.radius, 'radius', () => 5),
+                        getFillColor: makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 200]),
+                        getLineColor: makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [255, 255, 255, 255])
                     });
                     deckLayers.set(id, layer);
                     updateDeckOverlay();
@@ -231,11 +365,11 @@
                         data: kwargs.data,
                         pickable: kwargs.pickable !== false,
                         opacity: kwargs.opacity ?? 0.8,
-                        getWidth: kwargs.getWidth ?? kwargs.width ?? 1,
-                        getSourcePosition: d => d.source || d.from || d.sourcePosition,
-                        getTargetPosition: d => d.target || d.to || d.targetPosition,
-                        getSourceColor: kwargs.getSourceColor ?? kwargs.sourceColor ?? [51, 136, 255, 255],
-                        getTargetColor: kwargs.getTargetColor ?? kwargs.targetColor ?? [255, 136, 51, 255]
+                        getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1),
+                        getSourcePosition: makeAccessor(kwargs.getSourcePosition, 'source', d => d.source || d.from || d.sourcePosition),
+                        getTargetPosition: makeAccessor(kwargs.getTargetPosition, 'target', d => d.target || d.to || d.targetPosition),
+                        getSourceColor: makeAccessor(kwargs.getSourceColor ?? kwargs.sourceColor, 'sourceColor', () => [51, 136, 255, 255]),
+                        getTargetColor: makeAccessor(kwargs.getTargetColor ?? kwargs.targetColor, 'targetColor', () => [255, 136, 51, 255])
                     });
                     deckLayers.set(id, layer);
                     updateDeckOverlay();
@@ -251,9 +385,9 @@
                         opacity: kwargs.opacity ?? 0.8,
                         widthScale: kwargs.widthScale ?? 1,
                         widthMinPixels: kwargs.widthMinPixels ?? 1,
-                        getPath: d => d.path || d.coordinates,
-                        getColor: kwargs.getColor ?? kwargs.color ?? [51, 136, 255, 200],
-                        getWidth: kwargs.getWidth ?? kwargs.width ?? 1
+                        getPath: makeAccessor(kwargs.getPath, 'path', d => d.path || d.coordinates),
+                        getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [51, 136, 255, 200]),
+                        getWidth: makeAccessor(kwargs.getWidth ?? kwargs.width, 'width', () => 1)
                     });
                     deckLayers.set(id, layer);
                     updateDeckOverlay();
@@ -272,11 +406,11 @@
                         extruded: kwargs.extruded ?? false,
                         wireframe: kwargs.wireframe ?? false,
                         lineWidthMinPixels: kwargs.lineWidthMinPixels ?? 1,
-                        getPolygon: d => d.polygon || d.contour || d.coordinates,
-                        getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0,
-                        getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
-                        getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 255, 255],
-                        getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1
+                        getPolygon: makeAccessor(kwargs.getPolygon, 'polygon', d => d.polygon || d.contour || d.coordinates),
+                        getElevation: makeAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0),
+                        getFillColor: makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+                        getLineColor: makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 255, 255]),
+                        getLineWidth: makeAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1)
                     });
                     deckLayers.set(id, layer);
                     updateDeckOverlay();
@@ -293,7 +427,7 @@
                         extruded: kwargs.extruded ?? true,
                         radius: kwargs.radius ?? 1000,
                         elevationScale: kwargs.elevationScale ?? 4,
-                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        getPosition: makeAccessor(kwargs.getPosition, 'coordinates', d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
                         colorRange: kwargs.colorRange ?? [
                             [1, 152, 189],
                             [73, 227, 206],
@@ -318,8 +452,8 @@
                         radiusPixels: kwargs.radiusPixels ?? 30,
                         intensity: kwargs.intensity ?? 1,
                         threshold: kwargs.threshold ?? 0.05,
-                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
-                        getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+                        getPosition: makeAccessor(kwargs.getPosition, 'coordinates', d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+                        getWeight: makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
                         colorRange: kwargs.colorRange ?? [
                             [255, 255, 178, 25],
                             [254, 217, 118, 85],
@@ -344,7 +478,7 @@
                         extruded: kwargs.extruded ?? true,
                         cellSize: kwargs.cellSize ?? 200,
                         elevationScale: kwargs.elevationScale ?? 4,
-                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
+                        getPosition: makeAccessor(kwargs.getPosition, 'coordinates', d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
                         colorRange: kwargs.colorRange ?? [
                             [1, 152, 189],
                             [73, 227, 206],
@@ -368,10 +502,10 @@
                         opacity: kwargs.opacity ?? 1,
                         iconAtlas: kwargs.iconAtlas,
                         iconMapping: kwargs.iconMapping,
-                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
-                        getIcon: d => d.icon || 'marker',
-                        getSize: kwargs.getSize ?? kwargs.size ?? 20,
-                        getColor: kwargs.getColor ?? kwargs.color ?? [255, 255, 255, 255]
+                        getPosition: makeAccessor(kwargs.getPosition, 'coordinates', d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+                        getIcon: makeAccessor(kwargs.getIcon, 'icon', d => d.icon || 'marker'),
+                        getSize: makeAccessor(kwargs.getSize ?? kwargs.size, 'size', () => 20),
+                        getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [255, 255, 255, 255])
                     });
                     deckLayers.set(id, layer);
                     updateDeckOverlay();
@@ -385,11 +519,11 @@
                         data: kwargs.data,
                         pickable: kwargs.pickable !== false,
                         opacity: kwargs.opacity ?? 1,
-                        getPosition: kwargs.getPosition ?? (d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
-                        getText: kwargs.getText ?? (d => d.text || d.label || d.name || ''),
-                        getSize: kwargs.getSize ?? kwargs.size ?? 12,
-                        getColor: kwargs.getColor ?? kwargs.color ?? [0, 0, 0, 255],
-                        getAngle: kwargs.getAngle ?? 0,
+                        getPosition: makeAccessor(kwargs.getPosition, 'coordinates', d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+                        getText: makeAccessor(kwargs.getText, 'text', d => d.text || d.label || d.name || ''),
+                        getSize: makeAccessor(kwargs.getSize ?? kwargs.size, 'size', () => 12),
+                        getColor: makeAccessor(kwargs.getColor ?? kwargs.color, 'color', () => [0, 0, 0, 255]),
+                        getAngle: makeAccessor(kwargs.getAngle, 'angle', () => 0),
                         getTextAnchor: kwargs.getTextAnchor ?? 'middle',
                         getAlignmentBaseline: kwargs.getAlignmentBaseline ?? 'center'
                     });
@@ -411,11 +545,11 @@
                         wireframe: kwargs.wireframe ?? false,
                         lineWidthMinPixels: kwargs.lineWidthMinPixels ?? 1,
                         pointRadiusMinPixels: kwargs.pointRadiusMinPixels ?? 2,
-                        getFillColor: kwargs.getFillColor ?? kwargs.fillColor ?? [51, 136, 255, 128],
-                        getLineColor: kwargs.getLineColor ?? kwargs.lineColor ?? [0, 0, 0, 255],
-                        getLineWidth: kwargs.getLineWidth ?? kwargs.lineWidth ?? 1,
-                        getPointRadius: kwargs.getPointRadius ?? kwargs.pointRadius ?? 5,
-                        getElevation: kwargs.getElevation ?? kwargs.elevation ?? 0
+                        getFillColor: makeAccessor(kwargs.getFillColor ?? kwargs.fillColor, 'fillColor', () => [51, 136, 255, 128]),
+                        getLineColor: makeAccessor(kwargs.getLineColor ?? kwargs.lineColor, 'lineColor', () => [0, 0, 0, 255]),
+                        getLineWidth: makeAccessor(kwargs.getLineWidth ?? kwargs.lineWidth, 'lineWidth', () => 1),
+                        getPointRadius: makeAccessor(kwargs.getPointRadius ?? kwargs.pointRadius, 'pointRadius', () => 5),
+                        getElevation: makeAccessor(kwargs.getElevation ?? kwargs.elevation, 'elevation', () => 0)
                     });
                     deckLayers.set(id, layer);
                     updateDeckOverlay();
@@ -435,8 +569,8 @@
                             { threshold: 5, color: [51, 136, 255], strokeWidth: 2 },
                             { threshold: 10, color: [0, 0, 255], strokeWidth: 3 }
                         ],
-                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
-                        getWeight: kwargs.getWeight ?? kwargs.weight ?? 1
+                        getPosition: makeAccessor(kwargs.getPosition, 'coordinates', d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+                        getWeight: makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1)
                     });
                     deckLayers.set(id, layer);
                     updateDeckOverlay();
@@ -451,8 +585,8 @@
                         pickable: kwargs.pickable !== false,
                         opacity: kwargs.opacity ?? 0.8,
                         cellSizePixels: kwargs.cellSizePixels ?? 50,
-                        getPosition: d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude],
-                        getWeight: kwargs.getWeight ?? kwargs.weight ?? 1,
+                        getPosition: makeAccessor(kwargs.getPosition, 'coordinates', d => d.coordinates || d.position || [d.lng || d.longitude, d.lat || d.latitude]),
+                        getWeight: makeAccessor(kwargs.getWeight ?? kwargs.weight, 'weight', () => 1),
                         colorRange: kwargs.colorRange ?? [
                             [255, 255, 178, 25],
                             [254, 217, 118, 85],
@@ -474,6 +608,16 @@
                     break;
                 }
 
+                case 'addLayerControl': {
+                    layerControlConfig = kwargs;
+                    break;
+                }
+
+                case 'addControlGrid': {
+                    controlGridConfig = kwargs;
+                    break;
+                }
+
                 case 'setDeckLayerVisibility': {
                     const [id, visible] = args;
                     const layer = deckLayers.get(id);
@@ -488,6 +632,105 @@
                 default:
                     console.log('Unknown method:', method);
             }
+        }
+        function getLayerControlOrder() {
+            const styleLayers = map.getStyle()?.layers || [];
+            const deckLayerIds = Array.from(deckLayers.keys());
+            if (styleLayers.length === 0) return deckLayerIds;
+
+            const orderedLayerIds = [];
+            let insertedDeckLayers = false;
+
+            for (const layer of styleLayers) {
+                if (layer.id === DECK_SENTINEL_ID) {
+                    if (!insertedDeckLayers) {
+                        orderedLayerIds.push(...deckLayerIds);
+                        insertedDeckLayers = true;
+                    }
+                    continue;
+                }
+                orderedLayerIds.push(layer.id);
+            }
+
+            if (!insertedDeckLayers) {
+                orderedLayerIds.push(...deckLayerIds);
+            }
+
+            return orderedLayerIds;
+        }
+
+        function syncLayerControlOrder() {
+            if (!layerControlInstance) return;
+
+            const layerStates = layerControlInstance.state && layerControlInstance.state.layerStates;
+            if (!layerStates || typeof layerControlInstance.buildLayerItems !== 'function') return;
+
+            const desiredOrder = getLayerControlOrder();
+            if (desiredOrder.length === 0) return;
+
+            const currentOrder = Object.keys(layerStates);
+            const hasBackground = currentOrder.includes('Background');
+            const currentLayerIds = currentOrder.filter(id => id !== 'Background');
+            const currentSet = new Set(currentLayerIds);
+            const desiredSet = new Set(desiredOrder);
+            const reorderedIds = [
+                ...desiredOrder.filter(id => currentSet.has(id)),
+                ...currentLayerIds.filter(id => !desiredSet.has(id)),
+            ];
+
+            if (reorderedIds.length === 0) return;
+
+            const isSameOrder = reorderedIds.length === currentLayerIds.length
+                && reorderedIds.every((id, index) => id === currentLayerIds[index]);
+            if (isSameOrder) return;
+
+            const reorderedStates = {};
+            if (hasBackground && Object.prototype.hasOwnProperty.call(layerStates, 'Background')) {
+                reorderedStates.Background = layerStates.Background;
+            }
+            reorderedIds.forEach(id => { reorderedStates[id] = layerStates[id]; });
+
+            layerControlInstance.state.layerStates = reorderedStates;
+            layerControlInstance.targetLayers = hasBackground
+                ? ['Background', ...reorderedIds]
+                : [...reorderedIds];
+            layerControlInstance.buildLayerItems();
+        }
+
+        function scheduleLayerControlOrderSync() {
+            if (!layerControlInstance) return;
+            if (layerControlOrderSyncTimer !== null) {
+                window.clearTimeout(layerControlOrderSyncTimer);
+            }
+            layerControlOrderSyncTimer = window.setTimeout(() => {
+                syncLayerControlOrder();
+                layerControlOrderSyncTimer = null;
+            }, 150);
+        }
+
+        function handleLayerControlReorder(layerOrder) {
+            if (deckLayers.size === 0) return;
+            updateDeckOverlay();
+        }
+
+        function createLayerControl(config) {
+            const position = config.position || 'top-right';
+            const collapsed = config.collapsed !== false;
+
+            const layerIds = addedLayers.map(layer => layer.id);
+
+            const customAdapters = [];
+            if (deckLayers.size > 0) customAdapters.push(deckLayerAdapter);
+
+            layerControlInstance = new LayerControl({
+                collapsed: collapsed,
+                layers: layerIds,
+                customLayerAdapters: customAdapters.length > 0 ? customAdapters : undefined,
+                onLayerReorder: handleLayerControlReorder,
+            });
+            map.addControl(layerControlInstance, position);
+            syncLayerControlOrder();
+            scheduleLayerControlOrderSync();
         }
     </script>
 </body>
