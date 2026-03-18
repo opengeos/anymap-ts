@@ -17,6 +17,8 @@
     <!-- Geoman for drawing -->
     <script src="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.umd.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.css" rel="stylesheet" />
+    <!-- GeoEditor for drawing UI -->
+    <link href="https://cdn.jsdelivr.net/npm/maplibre-gl-geo-editor@0.7.3/dist/maplibre-gl-geo-editor.css" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -40,6 +42,7 @@
         // Load optional dependencies in parallel (non-blocking)
         let LayerControl = null;
         let addControlGridFn = null;
+        let GeoEditorClass = null;
 
         const lcPromise = import('https://esm.sh/maplibre-gl-layer-control@0.14.1')
             .then(mod => { LayerControl = mod.LayerControl; })
@@ -48,6 +51,10 @@
         const cgPromise = import('https://esm.sh/maplibre-gl-components@0.16.2')
             .then(mod => { addControlGridFn = mod.addControlGrid; })
             .catch(() => console.warn('ControlGrid library unavailable — control grid will be skipped'));
+
+        const gePromise = import('https://esm.sh/maplibre-gl-geo-editor@0.7.3')
+            .then(mod => { GeoEditorClass = mod.GeoEditor; })
+            .catch(() => console.warn('GeoEditor library unavailable — falling back to Geoman'));
 
         // deck.gl COG layer support (lazy-loaded on first use)
         let MapboxOverlay = null;
@@ -318,7 +325,7 @@
             }
 
             // 2. Wait for optional imports to settle
-            await Promise.allSettled([lcPromise, cgPromise]);
+            await Promise.allSettled([lcPromise, cgPromise, gePromise]);
 
             // 3. Add layer control if library loaded and configured
             if (!layerControlAdded && (layerControlConfig || (state.controls && state.controls['layer-control']))) {
@@ -1887,15 +1894,42 @@
             }
 
             const position = config.position || 'top-right';
+            const drawModes = config.drawModes || ['polygon', 'line', 'rectangle', 'circle', 'marker'];
+            const editModes = config.editModes || ['select', 'drag', 'change', 'rotate', 'cut', 'delete', 'scale', 'copy', 'split', 'union', 'difference', 'simplify', 'lasso'];
+            const collapsed = config.collapsed || false;
 
-            // Initialize Geoman
-            const geoman = new GeomanClass(map, {
-                position: position
-            });
+            // Initialize Geoman first
+            const geoman = new GeomanClass(map, {});
+            let editorCreated = false;
 
-            map.on('gm:loaded', () => {
-                console.log('Geoman draw control loaded');
-            });
+            const createEditor = () => {
+                if (editorCreated) return;
+                editorCreated = true;
+
+                if (GeoEditorClass) {
+                    // Use full GeoEditor UI (matches Jupyter widget behavior)
+                    try {
+                        const geoEditor = new GeoEditorClass({
+                            position,
+                            drawModes,
+                            editModes,
+                            fileModes: ['open', 'save'],
+                            collapsed,
+                            showFeatureProperties: false,
+                            fitBoundsOnLoad: true,
+                        });
+                        geoEditor.setGeoman(geoman);
+                        map.addControl(geoEditor, position);
+                    } catch (error) {
+                        console.error('Failed to create GeoEditor:', error);
+                    }
+                } else {
+                    console.warn('GeoEditor not available, using Geoman fallback');
+                }
+            };
+
+            map.on('gm:loaded', createEditor);
+            setTimeout(() => { createEditor(); }, 1000);
         }
     </script>
 </body>

@@ -47,7 +47,7 @@ export class GeoEditorPlugin {
     const {
       position = 'top-right',
       drawModes = ['polygon', 'line', 'rectangle', 'circle', 'marker'],
-      editModes = ['select', 'drag', 'change', 'rotate', 'delete'],
+      editModes = ['select', 'drag', 'change', 'rotate', 'cut', 'delete', 'scale', 'copy', 'split', 'union', 'difference', 'simplify', 'lasso'],
       collapsed = false,
       fileModes = ['open', 'save'],
       showFeatureProperties = false,

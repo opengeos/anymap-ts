@@ -4576,7 +4576,21 @@ class MapLibreMap(MapWidget):
         if draw_modes is None:
             draw_modes = ["polygon", "line", "rectangle", "circle", "marker"]
         if edit_modes is None:
-            edit_modes = ["select", "drag", "change", "rotate", "delete"]
+            edit_modes = [
+                "select",
+                "drag",
+                "change",
+                "rotate",
+                "cut",
+                "delete",
+                "scale",
+                "copy",
+                "split",
+                "union",
+                "difference",
+                "simplify",
+                "lasso",
+            ]
 
         self.call_js_method(
             "addDrawControl",
@@ -4592,6 +4606,7 @@ class MapLibreMap(MapWidget):
                 "position": position,
                 "drawModes": draw_modes,
                 "editModes": edit_modes,
+                "collapsed": collapsed,
             },
         }
 
