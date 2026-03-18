@@ -1656,6 +1656,16 @@
                     break;
                 }
 
+                case 'setProjection': {
+                    const projection = kwargs.projection || args[0] || 'mercator';
+                    try {
+                        map.setProjection({ type: projection });
+                    } catch (err) {
+                        console.error('setProjection error:', err);
+                    }
+                    break;
+                }
+
                 default:
                     console.log('Unknown method:', method);
             }
