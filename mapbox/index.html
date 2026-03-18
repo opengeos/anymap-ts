@@ -10359,7 +10359,21 @@ variable or pass directly to the constructor.</p>
         <span class="k">if</span> <span class="n">draw_modes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">draw_modes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;polygon&quot;</span><span class="p">,</span> <span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="s2">&quot;rectangle&quot;</span><span class="p">,</span> <span class="s2">&quot;circle&quot;</span><span class="p">,</span> <span class="s2">&quot;marker&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">edit_modes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">edit_modes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;select&quot;</span><span class="p">,</span> <span class="s2">&quot;drag&quot;</span><span class="p">,</span> <span class="s2">&quot;change&quot;</span><span class="p">,</span> <span class="s2">&quot;rotate&quot;</span><span class="p">,</span> <span class="s2">&quot;delete&quot;</span><span class="p">]</span>
+            <span class="n">edit_modes</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;select&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;drag&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;change&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;rotate&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;cut&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;scale&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;split&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;union&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;difference&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;simplify&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;lasso&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
             <span class="s2">&quot;addDrawControl&quot;</span><span class="p">,</span>
@@ -13098,7 +13112,21 @@ create denser mesh for better accuracy.</p></td>
     <span class="k">if</span> <span class="n">draw_modes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">draw_modes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;polygon&quot;</span><span class="p">,</span> <span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="s2">&quot;rectangle&quot;</span><span class="p">,</span> <span class="s2">&quot;circle&quot;</span><span class="p">,</span> <span class="s2">&quot;marker&quot;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">edit_modes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">edit_modes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;select&quot;</span><span class="p">,</span> <span class="s2">&quot;drag&quot;</span><span class="p">,</span> <span class="s2">&quot;change&quot;</span><span class="p">,</span> <span class="s2">&quot;rotate&quot;</span><span class="p">,</span> <span class="s2">&quot;delete&quot;</span><span class="p">]</span>
+        <span class="n">edit_modes</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;select&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;drag&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;change&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rotate&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;cut&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;scale&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;split&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;union&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;difference&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;simplify&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;lasso&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
         <span class="s2">&quot;addDrawControl&quot;</span><span class="p">,</span>
