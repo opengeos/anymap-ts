@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PMTiles Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    /* Ensure popups render above the SwipeControl clip container */
+    .maplibregl-popup { z-index: 1000; }
+  </style>
+  <script type="module" crossorigin src="../assets/maplibre-pmtiles-BvkQv_vm.js"></script>
+  <link rel="modulepreload" crossorigin href="../assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="../assets/_commonjsHelpers-Cpj98o6Y.js">
+  <link rel="modulepreload" crossorigin href="../assets/maplibre-gl-CdJzwgaP.js">
+  <link rel="modulepreload" crossorigin href="../assets/maplibre-gl-layer-control-CMVFuDtY.js">
+  <link rel="stylesheet" crossorigin href="../assets/maplibre-gl-layer-control-B2B1lUgE.css">
+  <link rel="stylesheet" crossorigin href="../assets/styles-BIBrycxJ.css">
+  <link rel="stylesheet" crossorigin href="../assets/maplibre-gl-swipe-BWcExp8i.css">
+</head>
+
+<body>
+  <div class="header">
+    <h1>PMTiles Layer - Agricultural Field Boundaries</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Fields of the World</h3>
+    <p style="font-size:0.8rem;color:#aaa;margin-top:4px">Click a field to see its properties.</p>
+  </div>
+</body>
+
+</html>

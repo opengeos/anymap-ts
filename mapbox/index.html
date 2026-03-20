@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2494,6 +2494,34 @@
     
   
     Feature query filter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maplibre/field_boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field boundary
   
 
     
@@ -8330,15 +8358,16 @@ variable or pass directly to the constructor.</p>
 <span class="sd">            source_type: Source type - &quot;vector&quot; or &quot;raster&quot;.</span>
 <span class="sd">            prefix: Prefix for auto-discovered layer names in the layer</span>
 <span class="sd">                control. Defaults to empty string (no prefix).</span>
-<span class="sd">            popup: Configure popups on click. Accepts True (all properties),</span>
-<span class="sd">                a list of property names, or an HTML template string with</span>
-<span class="sd">                {property_name} placeholders. Defaults to None (no popup).</span>
+<span class="sd">            popup: Configure popups on click. Accepts &quot;all&quot; or True (all</span>
+<span class="sd">                properties), a list of property names, or an HTML template</span>
+<span class="sd">                string with {property_name} placeholders. Defaults to None</span>
+<span class="sd">                (no popup).</span>
 <span class="sd">            **kwargs: Additional layer options.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">layer_id</span> <span class="o">=</span> <span class="n">layer_id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;pmtiles-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="n">popup_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">popup</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
             <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">popup</span><span class="p">}</span>
@@ -15026,9 +15055,10 @@ control. Defaults to empty string (no prefix).</p></td>
       <tr>
         <td><code>popup</code></td>
         <td><code>Optional[Union[bool, List[str], str]]</code></td>
-        <td><p>Configure popups on click. Accepts True (all properties),
-a list of property names, or an HTML template string with
-{property_name} placeholders. Defaults to None (no popup).</p></td>
+        <td><p>Configure popups on click. Accepts "all" or True (all
+properties), a list of property names, or an HTML template
+string with {property_name} placeholders. Defaults to None
+(no popup).</p></td>
         <td><code>None</code></td>
       </tr>
       <tr>
@@ -15074,15 +15104,16 @@ a list of property names, or an HTML template string with
 <span class="sd">        source_type: Source type - &quot;vector&quot; or &quot;raster&quot;.</span>
 <span class="sd">        prefix: Prefix for auto-discovered layer names in the layer</span>
 <span class="sd">            control. Defaults to empty string (no prefix).</span>
-<span class="sd">        popup: Configure popups on click. Accepts True (all properties),</span>
-<span class="sd">            a list of property names, or an HTML template string with</span>
-<span class="sd">            {property_name} placeholders. Defaults to None (no popup).</span>
+<span class="sd">        popup: Configure popups on click. Accepts &quot;all&quot; or True (all</span>
+<span class="sd">            properties), a list of property names, or an HTML template</span>
+<span class="sd">            string with {property_name} placeholders. Defaults to None</span>
+<span class="sd">            (no popup).</span>
 <span class="sd">        **kwargs: Additional layer options.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">layer_id</span> <span class="o">=</span> <span class="n">layer_id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;pmtiles-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="n">popup_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">popup</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
         <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
         <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">popup</span><span class="p">}</span>

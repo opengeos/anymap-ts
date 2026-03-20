@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2494,6 +2494,34 @@
     
   
     Feature query filter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="field_boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field boundary
   
 
     
@@ -9017,10 +9045,10 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">            prefix: Prefix for auto-discovered layer names in the layer</span>
 <span class="sd">                control. Defaults to &quot;PMTiles&quot;.</span>
 <span class="sd">            popup: Configure popups on click for the layer(s). Accepts:</span>
-<span class="sd">                - True: show all feature properties in a table.</span>
+<span class="sd">                - &quot;all&quot; or True: show all feature properties in a table.</span>
 <span class="sd">                - List of property names: show only those properties.</span>
 <span class="sd">                - str: HTML template with {property_name} placeholders.</span>
-<span class="sd">                - None (default): no popup.</span>
+<span class="sd">                - None: no popup (default).</span>
 <span class="sd">            filter: A MapLibre filter expression to apply to the layer.</span>
 <span class="sd">                Uses MapLibre expression syntax, e.g.,</span>
 <span class="sd">                [&quot;==&quot;, [&quot;get&quot;, &quot;category&quot;], &quot;walking&quot;]. Can also be provided</span>
@@ -9034,7 +9062,7 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">            &gt;&gt;&gt; m.add_pmtiles_layer(</span>
 <span class="sd">            ...     url=&quot;https://example.com/data.pmtiles&quot;,</span>
 <span class="sd">            ...     fit_bounds=True,</span>
-<span class="sd">            ...     popup=True,</span>
+<span class="sd">            ...     popup=&quot;all&quot;,</span>
 <span class="sd">            ... )</span>
 <span class="sd">            &gt;&gt;&gt; # Popup with specific properties</span>
 <span class="sd">            &gt;&gt;&gt; m.add_pmtiles_layer(</span>
@@ -9062,7 +9090,7 @@ full bidirectional communication through anywidget.</p>
 
         <span class="c1"># Normalize popup config to pass to JS</span>
         <span class="n">popup_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">popup</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
             <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">popup</span><span class="p">}</span>
@@ -21692,10 +21720,10 @@ control. Defaults to "PMTiles".</p></td>
         <td><code>popup</code></td>
         <td><code>Optional[Union[bool, List[str], str]]</code></td>
         <td><p>Configure popups on click for the layer(s). Accepts:
-- True: show all feature properties in a table.
+- "all" or True: show all feature properties in a table.
 - List of property names: show only those properties.
 - str: HTML template with {property_name} placeholders.
-- None (default): no popup.</p></td>
+- None: no popup (default).</p></td>
         <td><code>None</code></td>
       </tr>
       <tr>
@@ -21722,7 +21750,7 @@ inside the style dict. Defaults to None.</p></td>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_layer</span><span class="p">(</span>
 <span class="o">...</span>     <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://example.com/data.pmtiles&quot;</span><span class="p">,</span>
 <span class="o">...</span>     <span class="n">fit_bounds</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="o">...</span>     <span class="n">popup</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">popup</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
 <span class="o">...</span> <span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="c1"># Popup with specific properties</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_pmtiles_layer</span><span class="p">(</span>
@@ -21799,10 +21827,10 @@ inside the style dict. Defaults to None.</p></td>
 <span class="sd">        prefix: Prefix for auto-discovered layer names in the layer</span>
 <span class="sd">            control. Defaults to &quot;PMTiles&quot;.</span>
 <span class="sd">        popup: Configure popups on click for the layer(s). Accepts:</span>
-<span class="sd">            - True: show all feature properties in a table.</span>
+<span class="sd">            - &quot;all&quot; or True: show all feature properties in a table.</span>
 <span class="sd">            - List of property names: show only those properties.</span>
 <span class="sd">            - str: HTML template with {property_name} placeholders.</span>
-<span class="sd">            - None (default): no popup.</span>
+<span class="sd">            - None: no popup (default).</span>
 <span class="sd">        filter: A MapLibre filter expression to apply to the layer.</span>
 <span class="sd">            Uses MapLibre expression syntax, e.g.,</span>
 <span class="sd">            [&quot;==&quot;, [&quot;get&quot;, &quot;category&quot;], &quot;walking&quot;]. Can also be provided</span>
@@ -21816,7 +21844,7 @@ inside the style dict. Defaults to None.</p></td>
 <span class="sd">        &gt;&gt;&gt; m.add_pmtiles_layer(</span>
 <span class="sd">        ...     url=&quot;https://example.com/data.pmtiles&quot;,</span>
 <span class="sd">        ...     fit_bounds=True,</span>
-<span class="sd">        ...     popup=True,</span>
+<span class="sd">        ...     popup=&quot;all&quot;,</span>
 <span class="sd">        ... )</span>
 <span class="sd">        &gt;&gt;&gt; # Popup with specific properties</span>
 <span class="sd">        &gt;&gt;&gt; m.add_pmtiles_layer(</span>
@@ -21844,7 +21872,7 @@ inside the style dict. Defaults to None.</p></td>
 
     <span class="c1"># Normalize popup config to pass to JS</span>
     <span class="n">popup_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">popup</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">popup</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
         <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
         <span class="n">popup_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">popup</span><span class="p">}</span>
