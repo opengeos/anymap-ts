@@ -1183,7 +1183,7 @@ class MapLibreMap(MapWidget):
         fit_bounds: bool = False,
         source_type: str = "vector",
         prefix: str = "PMTiles",
-        popup: Optional[Union[bool, List[str], str]] = None,
+        popup: Optional[Union[bool, List[str], str]] = True,
         *,
         filter: Optional[List] = None,
         **kwargs,
@@ -1226,7 +1226,7 @@ class MapLibreMap(MapWidget):
                 - True: show all feature properties in a table.
                 - List of property names: show only those properties.
                 - str: HTML template with {property_name} placeholders.
-                - None (default): no popup.
+                - None: no popup. Defaults to True.
             filter: A MapLibre filter expression to apply to the layer.
                 Uses MapLibre expression syntax, e.g.,
                 ["==", ["get", "category"], "walking"]. Can also be provided

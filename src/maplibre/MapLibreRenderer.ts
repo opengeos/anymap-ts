@@ -3963,6 +3963,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       }
 
       const hasUserStyle = Object.keys(style).length > 0;
+      const hasLayersArray = Array.isArray(style.layers);
 
       const popupConfig = kwargs.popup as Record<string, unknown> | null;
 
@@ -3970,6 +3971,53 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         // Auto-discovery mode: fetch metadata and add layers for each source layer
         const prefix = (kwargs.prefix as string) ?? '';
         await this.autoDiscoverPMTilesLayers(url, layerId, sourceId, opacity, visible, fitBounds, prefix, popupConfig);
+      } else if (hasLayersArray && sourceType === 'vector') {
+        // MapLibre-native style with a "layers" array
+        const layerDefs = style.layers as Array<Record<string, unknown>>;
+        const addedLayerIds: string[] = [];
+
+        for (const layerDef of layerDefs) {
+          const subId = (layerDef.id as string) || `${layerId}-${addedLayerIds.length}`;
+          if (this.map.getLayer(subId)) continue;
+
+          const subConfig: Record<string, unknown> = {
+            ...layerDef,
+            id: subId,
+            source: sourceId,
+          };
+
+          // Apply visibility
+          const existingLayout = (layerDef.layout as Record<string, unknown>) || {};
+          subConfig.layout = { ...existingLayout, visibility: visible ? 'visible' : 'none' };
+
+          this.map.addLayer(subConfig as maplibregl.AddLayerObject);
+          this.stateManager.addLayer(subId, subConfig as unknown as LayerConfig);
+          this.userOverlayLayerIds.push(subId);
+          addedLayerIds.push(subId);
+        }
+
+        // Track sub-layers under the parent layerId for removal
+        this.pmtilesSubLayers.set(layerId, addedLayerIds);
+
+        // Register popup across all sub-layers
+        if (popupConfig?.enabled && addedLayerIds.length > 0) {
+          this.registerPMTilesGroupPopup(addedLayerIds, popupConfig);
+        }
+
+        // Fit bounds if requested
+        if (fitBounds) {
+          const pmtiles = new PMTiles(url);
+          pmtiles.getHeader().then(header => {
+            if (this.map) {
+              this.map.fitBounds(
+                [[header.minLon, header.minLat], [header.maxLon, header.maxLat]],
+                { padding: 50, duration: 1000 },
+              );
+            }
+          }).catch(err => {
+            console.warn(`[anymap-ts] Could not fetch PMTiles header for fitBounds:`, err);
+          });
+        }
       } else if (!this.map.getLayer(layerId)) {
         // Explicit style mode (existing behavior)
         let layerConfig: Record<string, unknown>;
@@ -4313,38 +4361,57 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const properties = config.properties as string[] | undefined;
     const template = config.template as string | undefined;
 
-    const popupStyles = `
-      <style>
-        .anymap-pmtiles-popup table { border-collapse: collapse; font-size: 13px; color: #333; width: 100%; table-layout: fixed; background: #fff !important; border: none !important; margin: 0 !important; }
-        .anymap-pmtiles-popup tr { background: #fff !important; }
-        .anymap-pmtiles-popup td { padding: 4px 8px !important; border: none !important; border-bottom: 1px solid #eee !important; color: #333 !important; word-break: break-word; overflow-wrap: break-word; background: #fff !important; }
-        .anymap-pmtiles-popup tr:last-child td { border-bottom: none !important; }
-        .anymap-pmtiles-popup td:first-child { font-weight: 600; color: #222 !important; white-space: nowrap; width: 40%; }
-        .anymap-pmtiles-popup td:last-child { color: #444 !important; width: 60%; }
-        .anymap-pmtiles-popup .section-header { font-weight: 700; font-size: 13px; color: #111; padding: 6px 8px 4px 8px; text-transform: capitalize; background: #f0f0f0 !important; border-bottom: 1px solid #ddd; }
-        .anymap-popup h1, .anymap-popup h2, .anymap-popup h3, .anymap-popup h4 { color: #222; margin: 0 0 8px 0; }
-        .anymap-popup p { color: #444; margin: 4px 0; }
-      </style>
-    `;
+    // Use fully inline styles — <style> blocks injected via setHTML can be
+    // sanitized or ignored in iframe environments such as Jupyter notebooks.
+    const tdKeyStyle = [
+      'font-weight:600',
+      'color:#222',
+      'white-space:nowrap',
+      'overflow:hidden',
+      'text-overflow:ellipsis',
+      'max-width:0',
+      'width:40%',
+      'padding:4px 8px',
+      'border-bottom:1px solid #eee',
+      'font-size:13px',
+      'vertical-align:top',
+    ].join(';');
 
-    const containerStyle = 'font-size: 13px; color: #333; line-height: 1.4; word-break: break-word; overflow-wrap: break-word;';
+    const tdValStyle = [
+      'color:#444',
+      'word-break:break-word',
+      'padding:4px 8px',
+      'border-bottom:1px solid #eee',
+      'font-size:13px',
+      'width:60%',
+      'vertical-align:top',
+    ].join(';');
+
+    const tableStyle = 'border-collapse:collapse;width:100%;table-layout:fixed';
+    const wrapStyle = 'max-height:300px;overflow-y:auto';
+
+    const makeRow = (key: string, value: unknown) =>
+      `<tr>` +
+      `<td style="${tdKeyStyle}" title="${key}">${key}</td>` +
+      `<td style="${tdValStyle}">${value}</td>` +
+      `</tr>`;
 
     if (template) {
-      const replaced = template.replace(/\{(\w+)\}/g, (match, key) => {
-        return props[key] !== undefined ? String(props[key]) : match;
-      });
-      return `${popupStyles}<div class="anymap-popup" style="${containerStyle}">${replaced}</div>`;
+      const replaced = template.replace(/\{(\w+)\}/g, (match, key) =>
+        props[key] !== undefined ? String(props[key]) : match
+      );
+      return `<div style="font-size:13px;color:#333;line-height:1.4;word-break:break-word">${replaced}</div>`;
     } else if (properties) {
       const rows = properties
         .filter((key) => props[key] !== undefined)
-        .map((key) => `<tr><td>${key}</td><td>${props[key]}</td></tr>`)
+        .map((key) => makeRow(key, props[key]))
         .join('');
-      return `${popupStyles}<div class="anymap-pmtiles-popup"><table>${rows}</table></div>`;
+      return `<div style="${wrapStyle}"><table style="${tableStyle}">${rows}</table></div>`;
     } else {
       const rows = Object.entries(props)
-        .map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`)
+        .map(([key, value]) => makeRow(key, value))
         .join('');
-      return `${popupStyles}<div class="anymap-pmtiles-popup"><table>${rows}</table></div>`;
+      return `<div style="${wrapStyle}"><table style="${tableStyle}">${rows}</table></div>`;
     }
   }
 
@@ -4388,10 +4455,22 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   ): void {
     if (!this.map) return;
 
-    this.map.on('click', (e) => {
+    // Only register click handlers on clickable layer types (fill, circle).
+    // Line/symbol layers don't reliably receive click events.
+    const CLICKABLE_TYPES = new Set(['fill', 'circle', 'fill-extrusion']);
+
+    const clickableIds = subLayerIds.filter((id) => {
+      const layer = this.map?.getLayer(id);
+      return layer && CLICKABLE_TYPES.has(layer.type);
+    });
+
+    // Fall back to all sub-layers if none are clickable (e.g. line-only group)
+    const triggerIds = clickableIds.length > 0 ? clickableIds : subLayerIds;
+
+    const handleClick = (e: maplibregl.MapMouseEvent): void => {
       if (!this.map) return;
 
-      // Query all sub-layers at the click point
+      // Query all sub-layers at the click point to build a combined popup
       const allFeatures: Array<{ layer: string; props: Record<string, unknown> }> = [];
       for (const subId of subLayerIds) {
         if (!this.map.getLayer(subId)) continue;
@@ -4412,19 +4491,24 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       for (const { layer, props } of allFeatures) {
         const friendlyName = layer.replace(/[-_]/g, ' ');
         if (allFeatures.length > 1) {
-          sections.push(`<div class="section-header">${friendlyName}</div>`);
+          const headerStyle = 'font-weight:700;font-size:13px;color:#111;padding:6px 8px 4px;background:#f0f0f0;border-bottom:1px solid #ddd;text-transform:capitalize';
+          sections.push(`<div style="${headerStyle}">${friendlyName}</div>`);
         }
         sections.push(this.buildPMTilesPopupHTML(props, config));
       }
 
-      const wrapperStyle = 'max-height: 300px; overflow-y: auto;';
-      const content = `<div class="anymap-pmtiles-popup" style="${wrapperStyle}">${sections.join('')}</div>`;
+      const content = `<div style="max-height:300px;overflow-y:auto">${sections.join('')}</div>`;
 
       new Popup({ maxWidth: '320px' })
         .setLngLat(e.lngLat)
         .setHTML(content)
         .addTo(this.map!);
-    });
+    };
+
+    // Register layer-filtered click handlers (more reliable than a global handler)
+    for (const triggerId of triggerIds) {
+      this.map.on('click', triggerId, handleClick);
+    }
 
     // Cursor changes for all sub-layers
     for (const subId of subLayerIds) {

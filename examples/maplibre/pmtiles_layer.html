@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PMTiles Layer - anymap-ts Example</title>
+  <link href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <style>
+    /* Ensure popups render above the SwipeControl clip container */
+    .maplibregl-popup { z-index: 1000; }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1>PMTiles Layer - Agricultural Field Boundaries</h1>
+    <a href="../">← Back to Examples</a>
+  </div>
+  <div id="map"></div>
+  <div class="controls">
+    <h3>Fields of the World</h3>
+    <p style="font-size:0.8rem;color:#aaa;margin-top:4px">Click a field to see its properties.</p>
+  </div>
+  <script type="module" src="./pmtiles-main.ts"></script>
+</body>
+
+</html>

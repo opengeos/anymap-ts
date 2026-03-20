@@ -149,6 +149,7 @@ nav:
           - maplibre/deck_advanced_layers.ipynb
           - maplibre/deck_layers.ipynb
           - maplibre/feature_query_filter.ipynb
+          - maplibre/field_boundary.ipynb
           - maplibre/flatgeobuf.ipynb
           - maplibre/geophoto.ipynb
           - maplibre/globe_projection.ipynb
