@@ -761,15 +761,16 @@ class MapboxMap(MapWidget):
             source_type: Source type - "vector" or "raster".
             prefix: Prefix for auto-discovered layer names in the layer
                 control. Defaults to empty string (no prefix).
-            popup: Configure popups on click. Accepts True (all properties),
-                a list of property names, or an HTML template string with
-                {property_name} placeholders. Defaults to None (no popup).
+            popup: Configure popups on click. Accepts "all" or True (all
+                properties), a list of property names, or an HTML template
+                string with {property_name} placeholders. Defaults to None
+                (no popup).
             **kwargs: Additional layer options.
         """
         layer_id = layer_id or f"pmtiles-{len(self._layers)}"
 
         popup_config: Optional[Dict[str, Any]] = None
-        if popup is True:
+        if popup is True or popup == "all":
             popup_config = {"enabled": True}
         elif isinstance(popup, list):
             popup_config = {"enabled": True, "properties": popup}

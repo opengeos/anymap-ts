@@ -145,6 +145,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   // PMTiles sub-layer tracking for auto-discovery removal
   private pmtilesSubLayers: globalThis.Map<string, string[]> = new globalThis.Map();
 
+  // PMTiles popup event handler references for cleanup
+  private pmtilesPopupHandlers: globalThis.Map<string, Array<{ event: string; layer: string; handler: (...args: unknown[]) => void }>> = new globalThis.Map();
+
   // User-loaded plugin instances
   private pluginInstances: globalThis.Map<string, unknown> = new globalThis.Map();
 
@@ -3946,8 +3949,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const style = (kwargs.style as Record<string, unknown>) || {};
     const fitBounds = kwargs.fitBounds === true;
 
-    // Ensure pmtiles:// protocol prefix
+    // Ensure pmtiles:// protocol prefix for the map source
     const pmtilesUrl = url.startsWith('pmtiles://') ? url : `pmtiles://${url}`;
+    // Strip pmtiles:// prefix for the PMTiles constructor (needs raw HTTP URL)
+    const archiveUrl = url.startsWith('pmtiles://') ? url.slice('pmtiles://'.length) : url;
 
     try {
       // Add source
@@ -3970,14 +3975,19 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       if (sourceType === 'vector' && !hasUserStyle) {
         // Auto-discovery mode: fetch metadata and add layers for each source layer
         const prefix = (kwargs.prefix as string) ?? '';
-        await this.autoDiscoverPMTilesLayers(url, layerId, sourceId, opacity, visible, fitBounds, prefix, popupConfig);
+        await this.autoDiscoverPMTilesLayers(archiveUrl, layerId, sourceId, opacity, visible, fitBounds, prefix, popupConfig);
       } else if (hasLayersArray && sourceType === 'vector') {
         // MapLibre-native style with a "layers" array
         const layerDefs = style.layers as Array<Record<string, unknown>>;
         const addedLayerIds: string[] = [];
 
+        // Track all sub-layer IDs (including pre-existing ones) so that
+        // a subsequent remove always cleans up all layers for this group.
+        const allSubLayerIds: string[] = [];
+
         for (const layerDef of layerDefs) {
-          const subId = (layerDef.id as string) || `${layerId}-${addedLayerIds.length}`;
+          const subId = (layerDef.id as string) || `${layerId}-${allSubLayerIds.length}`;
+          allSubLayerIds.push(subId);
           if (this.map.getLayer(subId)) continue;
 
           const subConfig: Record<string, unknown> = {
@@ -3997,16 +4007,16 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         }
 
         // Track sub-layers under the parent layerId for removal
-        this.pmtilesSubLayers.set(layerId, addedLayerIds);
+        this.pmtilesSubLayers.set(layerId, allSubLayerIds);
 
         // Register popup across all sub-layers
         if (popupConfig?.enabled && addedLayerIds.length > 0) {
-          this.registerPMTilesGroupPopup(addedLayerIds, popupConfig);
+          this.registerPMTilesGroupPopup(layerId, addedLayerIds, popupConfig);
         }
 
         // Fit bounds if requested
         if (fitBounds) {
-          const pmtiles = new PMTiles(url);
+          const pmtiles = new PMTiles(archiveUrl);
           pmtiles.getHeader().then(header => {
             if (this.map) {
               this.map.fitBounds(
@@ -4136,12 +4146,12 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
         // Register popup if configured
         if (popupConfig?.enabled && sourceType === 'vector') {
-          this.registerPMTilesPopup(layerId, popupConfig);
+          this.registerPMTilesPopup(layerId, layerId, popupConfig);
         }
 
         // Fit bounds if requested
         if (fitBounds) {
-          const pmtiles = new PMTiles(url);
+          const pmtiles = new PMTiles(archiveUrl);
           pmtiles.getHeader().then(header => {
             if (this.map) {
               this.map.fitBounds(
@@ -4292,7 +4302,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Register a single grouped popup for all sub-layers
     if (popupConfig?.enabled) {
-      this.registerPMTilesGroupPopup(subLayerIds, popupConfig);
+      this.registerPMTilesGroupPopup(layerId, subLayerIds, popupConfig);
     }
 
     // Fit bounds from header
@@ -4325,6 +4335,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const [layerId] = args as [string];
     const sourceId = `${layerId}-source`;
 
+    // Unregister popup event handlers to prevent accumulation
+    const popupHandlers = this.pmtilesPopupHandlers.get(layerId);
+    if (popupHandlers) {
+      for (const { event, layer, handler } of popupHandlers) {
+        this.map.off(event as 'click' | 'mouseenter' | 'mouseleave', layer, handler as (e: maplibregl.MapLayerMouseEvent) => void);
+      }
+      this.pmtilesPopupHandlers.delete(layerId);
+    }
+
     // Check if this was an auto-discovered multi-layer
     const subLayerIds = this.pmtilesSubLayers.get(layerId);
     if (subLayerIds) {
@@ -4349,6 +4368,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.map.removeSource(sourceId);
       this.stateManager.removeSource(sourceId);
     }
+  }
+
+  /**
+   * Escape a string for safe insertion into HTML.
+   */
+  private escapeHTML(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
@@ -4390,15 +4421,18 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     const tableStyle = 'border-collapse:collapse;width:100%;table-layout:fixed';
     const wrapStyle = 'max-height:300px;overflow-y:auto';
 
-    const makeRow = (key: string, value: unknown) =>
-      `<tr>` +
-      `<td style="${tdKeyStyle}" title="${key}">${key}</td>` +
-      `<td style="${tdValStyle}">${value}</td>` +
-      `</tr>`;
+    const makeRow = (key: string, value: unknown) => {
+      const safeKey = this.escapeHTML(String(key));
+      const safeVal = this.escapeHTML(String(value ?? ''));
+      return `<tr>` +
+        `<td style="${tdKeyStyle}" title="${safeKey}">${safeKey}</td>` +
+        `<td style="${tdValStyle}">${safeVal}</td>` +
+        `</tr>`;
+    };
 
     if (template) {
       const replaced = template.replace(/\{(\w+)\}/g, (match, key) =>
-        props[key] !== undefined ? String(props[key]) : match
+        props[key] !== undefined ? this.escapeHTML(String(props[key])) : match
       );
       return `<div style="font-size:13px;color:#333;line-height:1.4;word-break:break-word">${replaced}</div>`;
     } else if (properties) {
@@ -4419,12 +4453,15 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
    * Register a click popup for a single PMTiles layer (non-auto-discovery).
    */
   private registerPMTilesPopup(
+    parentLayerId: string,
     targetLayerId: string,
     config: Record<string, unknown>,
   ): void {
     if (!this.map) return;
 
-    this.map.on('click', targetLayerId, (e) => {
+    const handlers: Array<{ event: string; layer: string; handler: (...args: unknown[]) => void }> = [];
+
+    const clickHandler = ((e: maplibregl.MapLayerMouseEvent) => {
       if (!e.features || e.features.length === 0) return;
       const feature = e.features[0];
       const props = feature.properties || {};
@@ -4434,14 +4471,23 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
         .setLngLat(e.lngLat)
         .setHTML(content)
         .addTo(this.map!);
-    });
+    }) as (...args: unknown[]) => void;
+    this.map.on('click', targetLayerId, clickHandler as (e: maplibregl.MapLayerMouseEvent) => void);
+    handlers.push({ event: 'click', layer: targetLayerId, handler: clickHandler });
 
-    this.map.on('mouseenter', targetLayerId, () => {
+    const enterHandler = (() => {
       if (this.map) this.map.getCanvas().style.cursor = 'pointer';
-    });
-    this.map.on('mouseleave', targetLayerId, () => {
+    }) as (...args: unknown[]) => void;
+    this.map.on('mouseenter', targetLayerId, enterHandler as (e: maplibregl.MapLayerMouseEvent) => void);
+    handlers.push({ event: 'mouseenter', layer: targetLayerId, handler: enterHandler });
+
+    const leaveHandler = (() => {
       if (this.map) this.map.getCanvas().style.cursor = '';
-    });
+    }) as (...args: unknown[]) => void;
+    this.map.on('mouseleave', targetLayerId, leaveHandler as (e: maplibregl.MapLayerMouseEvent) => void);
+    handlers.push({ event: 'mouseleave', layer: targetLayerId, handler: leaveHandler });
+
+    this.pmtilesPopupHandlers.set(parentLayerId, handlers);
   }
 
   /**
@@ -4450,10 +4496,13 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
    * one popup, avoiding stacked popups when layers overlap.
    */
   private registerPMTilesGroupPopup(
+    parentLayerId: string,
     subLayerIds: string[],
     config: Record<string, unknown>,
   ): void {
     if (!this.map) return;
+
+    const handlers: Array<{ event: string; layer: string; handler: (...args: unknown[]) => void }> = [];
 
     // Only register click handlers on clickable layer types (fill, circle).
     // Line/symbol layers don't reliably receive click events.
@@ -4489,7 +4538,7 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       const sections: string[] = [];
 
       for (const { layer, props } of allFeatures) {
-        const friendlyName = layer.replace(/[-_]/g, ' ');
+        const friendlyName = this.escapeHTML(layer.replace(/[-_]/g, ' '));
         if (allFeatures.length > 1) {
           const headerStyle = 'font-weight:700;font-size:13px;color:#111;padding:6px 8px 4px;background:#f0f0f0;border-bottom:1px solid #ddd;text-transform:capitalize';
           sections.push(`<div style="${headerStyle}">${friendlyName}</div>`);
@@ -4507,18 +4556,27 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
 
     // Register layer-filtered click handlers (more reliable than a global handler)
     for (const triggerId of triggerIds) {
-      this.map.on('click', triggerId, handleClick);
+      const wrappedClick = handleClick as unknown as (...args: unknown[]) => void;
+      this.map.on('click', triggerId, handleClick as (e: maplibregl.MapLayerMouseEvent) => void);
+      handlers.push({ event: 'click', layer: triggerId, handler: wrappedClick });
     }
 
     // Cursor changes for all sub-layers
     for (const subId of subLayerIds) {
-      this.map.on('mouseenter', subId, () => {
+      const enterHandler = (() => {
         if (this.map) this.map.getCanvas().style.cursor = 'pointer';
-      });
-      this.map.on('mouseleave', subId, () => {
+      }) as (...args: unknown[]) => void;
+      this.map.on('mouseenter', subId, enterHandler as (e: maplibregl.MapLayerMouseEvent) => void);
+      handlers.push({ event: 'mouseenter', layer: subId, handler: enterHandler });
+
+      const leaveHandler = (() => {
         if (this.map) this.map.getCanvas().style.cursor = '';
-      });
+      }) as (...args: unknown[]) => void;
+      this.map.on('mouseleave', subId, leaveHandler as (e: maplibregl.MapLayerMouseEvent) => void);
+      handlers.push({ event: 'mouseleave', layer: subId, handler: leaveHandler });
     }
+
+    this.pmtilesPopupHandlers.set(parentLayerId, handlers);
   }
 
   // -------------------------------------------------------------------------

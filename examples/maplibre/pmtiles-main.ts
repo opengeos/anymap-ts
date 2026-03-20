@@ -35,6 +35,15 @@ function buildFillColor(): maplibregl.ExpressionSpecification {
   return expr as maplibregl.ExpressionSpecification;
 }
 
+function escapeHTML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function buildPopupHTML(props: Record<string, unknown>): string {
   const tdKeyStyle = [
     'font-weight:600',
@@ -57,12 +66,14 @@ function buildPopupHTML(props: Record<string, unknown>): string {
   ].join(';');
 
   const rows = Object.entries(props)
-    .map(([k, v]) =>
-      `<tr>` +
-      `<td style="${tdKeyStyle}" title="${k}">${k}</td>` +
-      `<td style="${tdValStyle}">${v}</td>` +
-      `</tr>`
-    )
+    .map(([k, v]) => {
+      const safeKey = escapeHTML(String(k));
+      const safeVal = escapeHTML(String(v ?? ''));
+      return `<tr>` +
+        `<td style="${tdKeyStyle}" title="${safeKey}">${safeKey}</td>` +
+        `<td style="${tdValStyle}">${safeVal}</td>` +
+        `</tr>`;
+    })
     .join('');
 
   return (

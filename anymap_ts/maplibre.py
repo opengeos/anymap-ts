@@ -1183,7 +1183,7 @@ class MapLibreMap(MapWidget):
         fit_bounds: bool = False,
         source_type: str = "vector",
         prefix: str = "PMTiles",
-        popup: Optional[Union[bool, List[str], str]] = True,
+        popup: Optional[Union[bool, List[str], str]] = None,
         *,
         filter: Optional[List] = None,
         **kwargs,
@@ -1223,10 +1223,10 @@ class MapLibreMap(MapWidget):
             prefix: Prefix for auto-discovered layer names in the layer
                 control. Defaults to "PMTiles".
             popup: Configure popups on click for the layer(s). Accepts:
-                - True: show all feature properties in a table.
+                - "all" or True: show all feature properties in a table.
                 - List of property names: show only those properties.
                 - str: HTML template with {property_name} placeholders.
-                - None: no popup. Defaults to True.
+                - None: no popup (default).
             filter: A MapLibre filter expression to apply to the layer.
                 Uses MapLibre expression syntax, e.g.,
                 ["==", ["get", "category"], "walking"]. Can also be provided
@@ -1240,7 +1240,7 @@ class MapLibreMap(MapWidget):
             >>> m.add_pmtiles_layer(
             ...     url="https://example.com/data.pmtiles",
             ...     fit_bounds=True,
-            ...     popup=True,
+            ...     popup="all",
             ... )
             >>> # Popup with specific properties
             >>> m.add_pmtiles_layer(
@@ -1268,7 +1268,7 @@ class MapLibreMap(MapWidget):
 
         # Normalize popup config to pass to JS
         popup_config: Optional[Dict[str, Any]] = None
-        if popup is True:
+        if popup is True or popup == "all":
             popup_config = {"enabled": True}
         elif isinstance(popup, list):
             popup_config = {"enabled": True, "properties": popup}
