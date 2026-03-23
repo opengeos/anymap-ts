@@ -3,14 +3,14 @@
  */
 
 /**
- * Convert MapLibre/Mapbox [lng, lat] to Leaflet [lat, lng].
+ * Convert Leaflet [lat, lng] to MapLibre/Mapbox [lng, lat].
  */
 export function toLngLat(latLng: [number, number]): [number, number] {
   return [latLng[1], latLng[0]];
 }
 
 /**
- * Convert Leaflet [lat, lng] to MapLibre/Mapbox [lng, lat].
+ * Convert MapLibre/Mapbox [lng, lat] to Leaflet [lat, lng].
  */
 export function toLatLng(lngLat: [number, number]): [number, number] {
   return [lngLat[1], lngLat[0]];

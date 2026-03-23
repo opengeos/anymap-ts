@@ -87,12 +87,13 @@ BaseMapRenderer<TMap>
   +-- MapLibreRenderer        (primary, ~80+ handlers)
   |     +-- DeckGLRenderer    (extends with heavy geo-layers)
   |
+  +-- MapboxRenderer           (standalone, similar API to MapLibre)
   +-- LeafletRenderer         (standalone)
   +-- OpenLayersRenderer      (standalone)
   +-- CesiumRenderer          (standalone, 3D globe)
 ```
 
-MapboxRenderer, KeplerGL, and Potree are standalone implementations that don't extend BaseMapRenderer.
+KeplerGL and Potree are standalone implementations that don't extend BaseMapRenderer.
 
 ## Handler Registration
 
