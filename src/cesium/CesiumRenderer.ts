@@ -13,13 +13,12 @@ type MethodHandler = (args: unknown[], kwargs: Record<string, unknown>) => void;
 /**
  * Cesium 3D globe renderer.
  */
-export class CesiumRenderer extends BaseMapRenderer<unknown> {
-  private viewer: any | null = null;
-  // @ts-ignore - Using Record instead of Map for simplicity
-  private methodHandlers: Record<string, MethodHandler> = {};
-  private imageryLayers: Map<string, any> = new Map();
-  private tilesets: Map<string, any> = new Map();
-  private dataSources: Map<string, any> = new Map();
+export class CesiumRenderer extends BaseMapRenderer<Cesium.Viewer> {
+  private viewer: Cesium.Viewer | null = null;
+  private cesiumMethodHandlers: Record<string, MethodHandler> = {};
+  private imageryLayers: Map<string, Cesium.ImageryLayer> = new Map();
+  private tilesets: Map<string, Cesium.Cesium3DTileset> = new Map();
+  private dataSources: Map<string, Cesium.GeoJsonDataSource> = new Map();
 
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
@@ -29,8 +28,8 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
   /**
    * Register a method handler.
    */
-  protected registerMethod(name: string, handler: MethodHandler): void {
-    this.methodHandlers[name] = handler;
+  private registerCesiumMethod(name: string, handler: MethodHandler): void {
+    this.cesiumMethodHandlers[name] = handler;
   }
 
   /**
@@ -38,39 +37,39 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
    */
   private registerDefaultMethods(): void {
     // Basemap/imagery
-    this.registerMethod('addBasemap', this.handleAddBasemap.bind(this));
-    this.registerMethod('addImageryLayer', this.handleAddImageryLayer.bind(this));
-    this.registerMethod('removeImageryLayer', this.handleRemoveImageryLayer.bind(this));
+    this.registerCesiumMethod('addBasemap', this.handleAddBasemap.bind(this));
+    this.registerCesiumMethod('addImageryLayer', this.handleAddImageryLayer.bind(this));
+    this.registerCesiumMethod('removeImageryLayer', this.handleRemoveImageryLayer.bind(this));
 
     // Terrain
-    this.registerMethod('setTerrain', this.handleSetTerrain.bind(this));
-    this.registerMethod('removeTerrain', this.handleRemoveTerrain.bind(this));
+    this.registerCesiumMethod('setTerrain', this.handleSetTerrain.bind(this));
+    this.registerCesiumMethod('removeTerrain', this.handleRemoveTerrain.bind(this));
 
     // 3D Tiles
-    this.registerMethod('add3DTileset', this.handleAdd3DTileset.bind(this));
-    this.registerMethod('remove3DTileset', this.handleRemove3DTileset.bind(this));
+    this.registerCesiumMethod('add3DTileset', this.handleAdd3DTileset.bind(this));
+    this.registerCesiumMethod('remove3DTileset', this.handleRemove3DTileset.bind(this));
 
     // GeoJSON
-    this.registerMethod('addGeoJSON', this.handleAddGeoJSON.bind(this));
-    this.registerMethod('removeDataSource', this.handleRemoveDataSource.bind(this));
+    this.registerCesiumMethod('addGeoJSON', this.handleAddGeoJSON.bind(this));
+    this.registerCesiumMethod('removeDataSource', this.handleRemoveDataSource.bind(this));
 
     // Camera
-    this.registerMethod('flyTo', this.handleFlyTo.bind(this));
-    this.registerMethod('zoomTo', this.handleZoomTo.bind(this));
-    this.registerMethod('setCamera', this.handleSetCamera.bind(this));
-    this.registerMethod('resetView', this.handleResetView.bind(this));
+    this.registerCesiumMethod('flyTo', this.handleFlyTo.bind(this));
+    this.registerCesiumMethod('zoomTo', this.handleZoomTo.bind(this));
+    this.registerCesiumMethod('setCamera', this.handleSetCamera.bind(this));
+    this.registerCesiumMethod('resetView', this.handleResetView.bind(this));
 
     // Layer management
-    this.registerMethod('setVisibility', this.handleSetVisibility.bind(this));
-    this.registerMethod('setOpacity', this.handleSetOpacity.bind(this));
+    this.registerCesiumMethod('setVisibility', this.handleSetVisibility.bind(this));
+    this.registerCesiumMethod('setOpacity', this.handleSetOpacity.bind(this));
   }
 
   /**
    * Create the map instance.
    */
-  protected createMap(): unknown {
+  protected createMap(): Cesium.Viewer {
     // Cesium viewer is created in initialize()
-    return this.viewer;
+    return this.viewer!;
   }
 
   /**
@@ -81,7 +80,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     if (this.viewer) {
       const currentHeight = this.viewer.camera.positionCartographic.height;
       this.viewer.camera.flyTo({
-        destination: (Cesium as any).Cartesian3.fromDegrees(newCenter[0], newCenter[1], currentHeight),
+        destination: Cesium.Cartesian3.fromDegrees(newCenter[0], newCenter[1], currentHeight),
       });
     }
   }
@@ -110,7 +109,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
 
     // Set Cesium Ion access token
     if (accessToken) {
-      (Cesium as any).Ion.defaultAccessToken = accessToken;
+      Cesium.Ion.defaultAccessToken = accessToken;
     }
 
     // Create container
@@ -123,7 +122,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     const height = this.zoomToHeight(zoom);
 
     // Create viewer
-    this.viewer = new (Cesium as any).Viewer(container, {
+    this.viewer = new Cesium.Viewer(container, {
       baseLayerPicker: false,
       geocoder: false,
       homeButton: false,
@@ -139,14 +138,14 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
 
     // Set initial camera position
     this.viewer.camera.setView({
-      destination: (Cesium as any).Cartesian3.fromDegrees(center[0], center[1], height),
+      destination: Cesium.Cartesian3.fromDegrees(center[0], center[1], height),
     });
 
     // Process pending JS calls
     const jsCalls = this.model.get('_js_calls') as JsCall[];
     if (jsCalls && jsCalls.length > 0) {
       for (const call of jsCalls) {
-        await this.executeMethod(call);
+        await this.executeCesiumMethod(call);
       }
     }
 
@@ -160,7 +159,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
       if (this.viewer) {
         const currentHeight = this.viewer.camera.positionCartographic.height;
         this.viewer.camera.flyTo({
-          destination: (Cesium as any).Cartesian3.fromDegrees(newCenter[0], newCenter[1], currentHeight),
+          destination: Cesium.Cartesian3.fromDegrees(newCenter[0], newCenter[1], currentHeight),
         });
       }
     });
@@ -181,17 +180,16 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     const jsCalls = this.model.get('_js_calls') as JsCall[];
     if (jsCalls && jsCalls.length > 0) {
       const lastCall = jsCalls[jsCalls.length - 1];
-      this.executeMethod(lastCall);
+      this.executeCesiumMethod(lastCall);
     }
   }
 
   /**
    * Execute a method from Python.
    */
-  // @ts-ignore - Different signature than base class
-  private async executeMethod(call: JsCall): Promise<void> {
+  private async executeCesiumMethod(call: JsCall): Promise<void> {
     const { method, args, kwargs } = call;
-    const handler = this.methodHandlers[method];
+    const handler = this.cesiumMethodHandlers[method];
 
     if (handler) {
       try {
@@ -208,14 +206,14 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
   // Basemap/Imagery Handlers
   // -------------------------------------------------------------------------
 
-  private handleAddBasemap(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleAddBasemap(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
-    const url = args[0] as string;
+    const url = _args[0] as string;
     const name = kwargs.name as string || 'basemap';
 
     // Create OpenStreetMap or XYZ imagery provider
-    const imageryProvider = new (Cesium as any).UrlTemplateImageryProvider({
+    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
       url: url,
     });
 
@@ -223,35 +221,33 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     this.imageryLayers.set(name, layer);
   }
 
-  private handleAddImageryLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  private async handleAddImageryLayer(_args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.viewer) return;
 
     const url = kwargs.url as string;
     const name = kwargs.name as string || `imagery-${this.imageryLayers.size}`;
     const alpha = kwargs.alpha as number ?? 1;
 
-    let imageryProvider: any;
+    let imageryProvider: Cesium.ImageryProvider;
 
     if (kwargs.type === 'wms') {
-      imageryProvider = new (Cesium as any).WebMapServiceImageryProvider({
+      imageryProvider = new Cesium.WebMapServiceImageryProvider({
         url: url,
         layers: kwargs.layers as string,
         parameters: kwargs.parameters as Record<string, string>,
       });
     } else if (kwargs.type === 'wmts') {
-      imageryProvider = new (Cesium as any).WebMapTileServiceImageryProvider({
+      imageryProvider = new Cesium.WebMapTileServiceImageryProvider({
         url: url,
         layer: kwargs.layer as string,
         style: kwargs.style as string || 'default',
         tileMatrixSetID: kwargs.tileMatrixSetID as string,
       });
     } else if (kwargs.type === 'arcgis') {
-      imageryProvider = new (Cesium as any).ArcGisMapServerImageryProvider({
-        url: url,
-      });
+      imageryProvider = await Cesium.ArcGisMapServerImageryProvider.fromUrl(url);
     } else {
       // Default XYZ tiles
-      imageryProvider = new (Cesium as any).UrlTemplateImageryProvider({
+      imageryProvider = new Cesium.UrlTemplateImageryProvider({
         url: url,
       });
     }
@@ -261,7 +257,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     this.imageryLayers.set(name, layer);
   }
 
-  private handleRemoveImageryLayer(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleRemoveImageryLayer(args: unknown[], _kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     const [name] = args as [string];
@@ -277,7 +273,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
   // Terrain Handlers
   // -------------------------------------------------------------------------
 
-  private handleSetTerrain(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetTerrain(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     const url = kwargs.url as string;
@@ -287,17 +283,17 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     if (url === 'cesium-world-terrain' || !url) {
       // Use Cesium World Terrain (requires Ion token)
       this.viewer.scene.setTerrain(
-        (Cesium as any).Terrain.fromWorldTerrain({
+        Cesium.Terrain.fromWorldTerrain({
           requestVertexNormals: requestVertexNormals,
           requestWaterMask: requestWaterMask,
         })
       );
     } else {
       // Custom terrain provider
-      (Cesium as any).CesiumTerrainProvider.fromUrl(url, {
+      Cesium.CesiumTerrainProvider.fromUrl(url, {
         requestVertexNormals: requestVertexNormals,
         requestWaterMask: requestWaterMask,
-      }).then((terrainProvider: any) => {
+      }).then((terrainProvider) => {
         if (this.viewer) {
           this.viewer.terrainProvider = terrainProvider;
         }
@@ -305,16 +301,16 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     }
   }
 
-  private handleRemoveTerrain(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleRemoveTerrain(_args: unknown[], _kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
-    this.viewer.terrainProvider = new (Cesium as any).EllipsoidTerrainProvider();
+    this.viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
   }
 
   // -------------------------------------------------------------------------
   // 3D Tiles Handlers
   // -------------------------------------------------------------------------
 
-  private async handleAdd3DTileset(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+  private async handleAdd3DTileset(_args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.viewer) return;
 
     const url = kwargs.url as string;
@@ -322,18 +318,18 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     const maximumScreenSpaceError = kwargs.maximumScreenSpaceError as number ?? 16;
 
     try {
-      let tileset: any;
+      let tileset: Cesium.Cesium3DTileset;
 
       // Check if it's an Ion asset ID
       if (typeof url === 'number' || (typeof url === 'string' && /^\d+$/.test(url))) {
-        tileset = await (Cesium as any).Cesium3DTileset.fromIonAssetId(
+        tileset = await Cesium.Cesium3DTileset.fromIonAssetId(
           parseInt(url as string),
           {
             maximumScreenSpaceError: maximumScreenSpaceError,
           }
         );
       } else {
-        tileset = await (Cesium as any).Cesium3DTileset.fromUrl(url, {
+        tileset = await Cesium.Cesium3DTileset.fromUrl(url, {
           maximumScreenSpaceError: maximumScreenSpaceError,
         });
       }
@@ -349,7 +345,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     }
   }
 
-  private handleRemove3DTileset(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleRemove3DTileset(args: unknown[], _kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     const [name] = args as [string];
@@ -365,7 +361,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
   // GeoJSON Handlers
   // -------------------------------------------------------------------------
 
-  private async handleAddGeoJSON(args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
+  private async handleAddGeoJSON(_args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.viewer) return;
 
     const data = kwargs.data as object;
@@ -376,10 +372,10 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     const fill = kwargs.fill as string || 'rgba(51, 136, 255, 0.5)';
 
     try {
-      const dataSource = await (Cesium as any).GeoJsonDataSource.load(data, {
-        stroke: (Cesium as any).Color.fromCssColorString(stroke),
+      const dataSource = await Cesium.GeoJsonDataSource.load(data, {
+        stroke: Cesium.Color.fromCssColorString(stroke),
         strokeWidth: strokeWidth,
-        fill: (Cesium as any).Color.fromCssColorString(fill),
+        fill: Cesium.Color.fromCssColorString(fill),
         clampToGround: clampToGround,
       });
 
@@ -394,7 +390,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     }
   }
 
-  private handleRemoveDataSource(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleRemoveDataSource(args: unknown[], _kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     const [name] = args as [string];
@@ -422,17 +418,17 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     const duration = kwargs.duration as number ?? 2;
 
     this.viewer.camera.flyTo({
-      destination: (Cesium as any).Cartesian3.fromDegrees(lng, lat, height),
+      destination: Cesium.Cartesian3.fromDegrees(lng, lat, height),
       orientation: {
-        heading: (Cesium as any).Math.toRadians(heading),
-        pitch: (Cesium as any).Math.toRadians(pitch),
-        roll: (Cesium as any).Math.toRadians(roll),
+        heading: Cesium.Math.toRadians(heading),
+        pitch: Cesium.Math.toRadians(pitch),
+        roll: Cesium.Math.toRadians(roll),
       },
       duration: duration,
     });
   }
 
-  private handleZoomTo(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleZoomTo(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     const target = kwargs.target as string;
@@ -452,7 +448,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     }
   }
 
-  private handleSetCamera(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetCamera(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     const lng = kwargs.longitude as number || 0;
@@ -463,16 +459,16 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     const roll = kwargs.roll as number || 0;
 
     this.viewer.camera.setView({
-      destination: (Cesium as any).Cartesian3.fromDegrees(lng, lat, height),
+      destination: Cesium.Cartesian3.fromDegrees(lng, lat, height),
       orientation: {
-        heading: (Cesium as any).Math.toRadians(heading),
-        pitch: (Cesium as any).Math.toRadians(pitch),
-        roll: (Cesium as any).Math.toRadians(roll),
+        heading: Cesium.Math.toRadians(heading),
+        pitch: Cesium.Math.toRadians(pitch),
+        roll: Cesium.Math.toRadians(roll),
       },
     });
   }
 
-  private handleResetView(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleResetView(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     this.viewer.camera.flyHome(kwargs.duration as number ?? 2);
@@ -482,7 +478,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
   // Layer Management Handlers
   // -------------------------------------------------------------------------
 
-  private handleSetVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetVisibility(args: unknown[], _kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     const [name, visible] = args as [string, boolean];
@@ -506,7 +502,7 @@ export class CesiumRenderer extends BaseMapRenderer<unknown> {
     }
   }
 
-  private handleSetOpacity(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetOpacity(args: unknown[], _kwargs: Record<string, unknown>): void {
     if (!this.viewer) return;
 
     const [name, opacity] = args as [string, number];

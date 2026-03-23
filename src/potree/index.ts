@@ -61,10 +61,27 @@ class PotreeWidget {
   private lastProcessedCallId: number = 0;
   private animationId: number = 0;
   private resizeObserver: ResizeObserver | null = null;
+  private methodHandlers: Map<string, (args: unknown[], kwargs: Record<string, unknown>) => void> = new Map();
 
   constructor(model: PotreeModel, el: HTMLElement) {
     this.model = model;
     this.el = el;
+    this.registerMethods();
+  }
+
+  private registerMethods(): void {
+    this.methodHandlers.set('loadPointCloud', (args, kwargs) => this.handleLoadPointCloud(args, kwargs));
+    this.methodHandlers.set('removePointCloud', (args, kwargs) => this.handleRemovePointCloud(args, kwargs));
+    this.methodHandlers.set('setPointCloudVisibility', (args, kwargs) => this.handleSetPointCloudVisibility(args, kwargs));
+    this.methodHandlers.set('setCameraPosition', (args, kwargs) => this.handleSetCameraPosition(args, kwargs));
+    this.methodHandlers.set('setCameraTarget', (args, kwargs) => this.handleSetCameraTarget(args, kwargs));
+    this.methodHandlers.set('flyToPointCloud', (args, kwargs) => this.handleFlyToPointCloud(args, kwargs));
+    this.methodHandlers.set('resetCamera', () => this.handleResetCamera());
+    this.methodHandlers.set('setPointBudget', (args, kwargs) => this.handleSetPointBudget(args, kwargs));
+    this.methodHandlers.set('setPointSize', (args, kwargs) => this.handleSetPointSize(args, kwargs));
+    this.methodHandlers.set('setFOV', (args, kwargs) => this.handleSetFOV(args, kwargs));
+    this.methodHandlers.set('setBackground', (args, kwargs) => this.handleSetBackground(args, kwargs));
+    this.methodHandlers.set('setEDL', (args, kwargs) => this.handleSetEDL(args, kwargs));
   }
 
   async initialize(): Promise<void> {
@@ -190,10 +207,10 @@ class PotreeWidget {
 
   private executeMethod(call: { method: string; args: unknown[]; kwargs: Record<string, unknown> }): void {
     const { method, args, kwargs } = call;
-    const handler = (this as any)[`handle_${method}`];
+    const handler = this.methodHandlers.get(method);
     if (handler) {
       try {
-        handler.call(this, args, kwargs);
+        handler(args, kwargs);
       } catch (error) {
         console.error(`Error executing method ${method}:`, error);
       }
@@ -281,7 +298,7 @@ class PotreeWidget {
     this.controls.update();
   }
 
-  handle_loadPointCloud(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleLoadPointCloud(_args: unknown[], kwargs: Record<string, unknown>): void {
     this.loadPointCloud(
       kwargs.url as string,
       kwargs.name as string,
@@ -290,7 +307,7 @@ class PotreeWidget {
     );
   }
 
-  handle_removePointCloud(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleRemovePointCloud(_args: unknown[], kwargs: Record<string, unknown>): void {
     const name = kwargs.name as string;
     const pco = this.pointClouds.get(name);
     if (pco && this.scene) {
@@ -301,7 +318,7 @@ class PotreeWidget {
     }
   }
 
-  handle_setPointCloudVisibility(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetPointCloudVisibility(_args: unknown[], kwargs: Record<string, unknown>): void {
     const pco = this.pointClouds.get(kwargs.name as string);
     if (pco) {
       pco.visible = kwargs.visible as boolean;
@@ -312,7 +329,7 @@ class PotreeWidget {
   // Camera Methods
   // ---------------------------------------------------------------------------
 
-  handle_setCameraPosition(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetCameraPosition(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.camera) return;
     this.camera.position.set(
       kwargs.x as number,
@@ -321,7 +338,7 @@ class PotreeWidget {
     );
   }
 
-  handle_setCameraTarget(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetCameraTarget(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.controls) return;
     this.controls.target.set(
       kwargs.x as number,
@@ -331,7 +348,7 @@ class PotreeWidget {
     this.controls.update();
   }
 
-  handle_flyToPointCloud(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleFlyToPointCloud(_args: unknown[], kwargs: Record<string, unknown>): void {
     const name = kwargs.name as string;
     if (name) {
       const pco = this.pointClouds.get(name);
@@ -350,7 +367,7 @@ class PotreeWidget {
     }
   }
 
-  handle_resetCamera(): void {
+  private handleResetCamera(): void {
     this.fitToPointClouds();
   }
 
@@ -358,30 +375,30 @@ class PotreeWidget {
   // Visualization Settings
   // ---------------------------------------------------------------------------
 
-  handle_setPointBudget(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetPointBudget(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.potree) return;
     this.potree.pointBudget = kwargs.budget as number;
   }
 
-  handle_setPointSize(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetPointSize(_args: unknown[], kwargs: Record<string, unknown>): void {
     const size = kwargs.size as number;
     this.pointClouds.forEach(pco => {
       pco.material.size = size;
     });
   }
 
-  handle_setFOV(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetFOV(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.camera) return;
     this.camera.fov = kwargs.fov as number;
     this.camera.updateProjectionMatrix();
   }
 
-  handle_setBackground(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetBackground(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.scene) return;
     this.scene.background = new Color(kwargs.color as string);
   }
 
-  handle_setEDL(args: unknown[], kwargs: Record<string, unknown>): void {
+  private handleSetEDL(_args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.potreeRenderer) return;
     this.potreeRenderer.setEDL({
       enabled: kwargs.enabled as boolean,

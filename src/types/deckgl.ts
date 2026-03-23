@@ -508,30 +508,3 @@ export interface GeoJsonLayerProps {
   pickable?: boolean;
 }
 
-/**
- * Convert color from various formats to [r, g, b, a].
- */
-export function parseColor(color: string | number[]): number[] {
-  if (Array.isArray(color)) {
-    return color.length === 3 ? [...color, 255] : color;
-  }
-  // Parse hex color
-  if (color.startsWith('#')) {
-    const hex = color.slice(1);
-    if (hex.length === 3) {
-      return [
-        parseInt(hex[0] + hex[0], 16),
-        parseInt(hex[1] + hex[1], 16),
-        parseInt(hex[2] + hex[2], 16),
-        255,
-      ];
-    }
-    return [
-      parseInt(hex.slice(0, 2), 16),
-      parseInt(hex.slice(2, 4), 16),
-      parseInt(hex.slice(4, 6), 16),
-      hex.length === 8 ? parseInt(hex.slice(6, 8), 16) : 255,
-    ];
-  }
-  return [51, 136, 255, 255]; // Default blue
-}

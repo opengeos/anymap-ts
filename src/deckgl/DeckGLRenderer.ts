@@ -149,7 +149,7 @@ export class DeckGLRenderer extends MapLibreRenderer {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private makeAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: unknown) => any): any {
+  protected override makeAccessor(value: unknown, defaultProp: string, fallbackFn?: (d: unknown) => any): any {
     if (typeof value === 'string') {
       return (d: unknown) => (d as Record<string, unknown>)[value];
     }
