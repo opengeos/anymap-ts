@@ -66,6 +66,7 @@
         // Track added layers for layer control
         const addedLayers = [];
         let layerControlConfig = null;
+        let timeSliderContainer = null;
 
         // Create map
         const map = new mapboxgl.Map({
@@ -274,6 +275,120 @@
                         if (opacityProp) {
                             map.setPaintProperty(layerId, opacityProp, opacity);
                         }
+                    }
+                    break;
+                }
+
+                case 'setPaintProperty': {
+                    const [layerId, property, value] = args;
+                    if (map.getLayer(layerId)) {
+                        map.setPaintProperty(layerId, property, value);
+                    }
+                    break;
+                }
+
+                case 'setLayoutProperty': {
+                    const [layerId, property, value] = args;
+                    if (map.getLayer(layerId)) {
+                        map.setLayoutProperty(layerId, property, value);
+                    }
+                    break;
+                }
+
+                case 'addTimeSlider': {
+                    const layerId = kwargs.layerId;
+                    const property = kwargs.property;
+                    const min = kwargs.min ?? 0;
+                    const max = kwargs.max ?? 100;
+                    const step = kwargs.step ?? 1;
+                    const position = kwargs.position || 'bottom-left';
+                    const label = kwargs.label || 'Time';
+                    const autoPlay = kwargs.autoPlay ?? false;
+                    const interval = kwargs.interval ?? 500;
+
+                    // Remove existing slider
+                    if (timeSliderContainer) {
+                        timeSliderContainer.remove();
+                        timeSliderContainer = null;
+                    }
+
+                    const container = document.createElement('div');
+                    container.className = 'mapboxgl-ctrl anymap-time-slider';
+                    container.style.cssText = 'padding:10px;background:rgba(255,255,255,0.95);min-width:250px;border-radius:4px;';
+
+                    const labelEl = document.createElement('div');
+                    labelEl.style.cssText = 'font-size:12px;font-weight:bold;margin-bottom:5px;';
+                    labelEl.textContent = `${label}: ${min}`;
+
+                    const slider = document.createElement('input');
+                    slider.type = 'range';
+                    slider.min = String(min);
+                    slider.max = String(max);
+                    slider.step = String(step);
+                    slider.value = String(min);
+                    slider.style.cssText = 'width:100%;cursor:pointer;';
+
+                    const playBtn = document.createElement('button');
+                    playBtn.textContent = '\u25B6';
+                    playBtn.style.cssText = 'margin-top:5px;padding:2px 8px;cursor:pointer;border:1px solid #ccc;border-radius:3px;background:#fff;';
+
+                    let animTimer = null;
+
+                    const updateFilter = (value) => {
+                        labelEl.textContent = `${label}: ${value}`;
+                        if (layerId && property) {
+                            map.setFilter(layerId, ['<=', property, value]);
+                        }
+                    };
+
+                    slider.addEventListener('input', () => {
+                        updateFilter(Number(slider.value));
+                    });
+
+                    const stopAnim = () => {
+                        if (animTimer !== null) {
+                            clearInterval(animTimer);
+                            animTimer = null;
+                            playBtn.textContent = '\u25B6';
+                        }
+                    };
+
+                    playBtn.addEventListener('click', () => {
+                        if (animTimer !== null) {
+                            stopAnim();
+                        } else {
+                            playBtn.textContent = '\u23F8';
+                            animTimer = setInterval(() => {
+                                let val = Number(slider.value) + step;
+                                if (val > max) val = min;
+                                slider.value = String(val);
+                                updateFilter(val);
+                            }, interval);
+                        }
+                    });
+
+                    container.appendChild(labelEl);
+                    container.appendChild(slider);
+                    container.appendChild(playBtn);
+
+                    const controlContainer = map.getContainer().querySelector(`.mapboxgl-ctrl-${position}`);
+                    if (controlContainer) {
+                        controlContainer.appendChild(container);
+                    } else {
+                        map.getContainer().appendChild(container);
+                    }
+                    timeSliderContainer = container;
+
+                    if (autoPlay) {
+                        playBtn.click();
+                    }
+                    break;
+                }
+
+                case 'removeTimeSlider': {
+                    if (timeSliderContainer) {
+                        timeSliderContainer.remove();
+                        timeSliderContainer = null;
                     }
                     break;
                 }
