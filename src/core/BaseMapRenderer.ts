@@ -3,7 +3,7 @@
  * Handles anywidget model communication and state management.
  */
 
-import type { MapWidgetModel, JsCall, JsEvent, LayerState, SourceState } from '../types/anywidget';
+import type { MapWidgetModel, JsCall, JsEvent } from '../types/anywidget';
 
 /**
  * Method handler function type.
@@ -210,7 +210,7 @@ export abstract class BaseMapRenderer<TMap> {
       return !(id.startsWith('basemap-') || cfg.type === 'raster');
     });
     const orderedEntries = [...basemapEntries, ...otherEntries];
-    for (const [layerId, layerConfig] of orderedEntries) {
+    for (const [_layerId, layerConfig] of orderedEntries) {
       this.executeMethod('addLayer', [], layerConfig as unknown as Record<string, unknown>);
     }
 

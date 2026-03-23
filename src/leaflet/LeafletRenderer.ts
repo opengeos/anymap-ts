@@ -18,7 +18,7 @@ type LatLngBounds = L.LatLngBounds;
 import { BaseMapRenderer, MethodHandler } from '../core/BaseMapRenderer';
 import { StateManager } from '../core/StateManager';
 import type { MapWidgetModel } from '../types/anywidget';
-import type { ControlPosition, FlyToOptions, FitBoundsOptions, DEFAULT_STYLE, inferGeometryType } from '../types/leaflet';
+import type { ControlPosition, FlyToOptions, FitBoundsOptions } from '../types/leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
 
 /**
