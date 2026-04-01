@@ -40,6 +40,9 @@
         let layerControlAdded = false;
         let timeSliderContainer = null;
 
+        // Route animation state
+        const animations = new Map();
+
         // Load optional dependencies in parallel (non-blocking)
         let LayerControl = null;
         let addControlGridFn = null;
@@ -56,6 +59,42 @@
         const gePromise = import('https://esm.sh/maplibre-gl-geo-editor@0.7.3')
             .then(mod => { GeoEditorClass = mod.GeoEditor; })
             .catch(() => console.warn('GeoEditor library unavailable — falling back to Geoman'));
+
+        // Inline route animation helpers (Haversine-based, no CDN dependency)
+        function _haversineDistance(a, b) {
+            const toRad = x => x * Math.PI / 180;
+            const R = 6371; // Earth radius in km
+            const dLat = toRad(b[1] - a[1]);
+            const dLon = toRad(b[0] - a[0]);
+            const lat1 = toRad(a[1]);
+            const lat2 = toRad(b[1]);
+            const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+        }
+
+        function _lineLength(coords) {
+            let total = 0;
+            for (let i = 1; i < coords.length; i++) {
+                total += _haversineDistance(coords[i - 1], coords[i]);
+            }
+            return total;
+        }
+
+        function _pointAlong(coords, distKm) {
+            let traveled = 0;
+            for (let i = 1; i < coords.length; i++) {
+                const segLen = _haversineDistance(coords[i - 1], coords[i]);
+                if (traveled + segLen >= distKm) {
+                    const t = (distKm - traveled) / segLen;
+                    return [
+                        coords[i - 1][0] + t * (coords[i][0] - coords[i - 1][0]),
+                        coords[i - 1][1] + t * (coords[i][1] - coords[i - 1][1]),
+                    ];
+                }
+                traveled += segLen;
+            }
+            return coords[coords.length - 1];
+        }
 
         // deck.gl COG layer support (lazy-loaded on first use)
         let MapboxOverlay = null;
@@ -1778,6 +1817,165 @@
                         timeSliderContainer.remove();
                         timeSliderContainer = null;
                     }
+                    break;
+                }
+
+                case 'animateAlongRoute': {
+                    const id = kwargs.id;
+                    const coordinates = kwargs.coordinates;
+                    const duration = kwargs.duration || 10000;
+                    const loop = kwargs.loop !== false;
+                    const markerColor = kwargs.markerColor || '#3388ff';
+                    const markerSize = kwargs.markerSize || 1.0;
+                    const showTrail = kwargs.showTrail === true;
+                    const trailColor = kwargs.trailColor || '#3388ff';
+                    const trailWidth = kwargs.trailWidth || 3;
+
+                    const routeLength = _lineLength(coordinates);
+
+                    const marker = new maplibregl.Marker({ color: markerColor, scale: markerSize })
+                        .setLngLat(coordinates[0])
+                        .addTo(map);
+
+                    let trailSourceId;
+                    let trailLayerId;
+                    if (showTrail) {
+                        trailSourceId = `${id}-trail-source`;
+                        trailLayerId = `${id}-trail`;
+
+                        if (!map.getSource(trailSourceId)) {
+                            map.addSource(trailSourceId, {
+                                type: 'geojson',
+                                data: {
+                                    type: 'Feature',
+                                    properties: {},
+                                    geometry: { type: 'LineString', coordinates: [] },
+                                },
+                            });
+                        }
+
+                        if (!map.getLayer(trailLayerId)) {
+                            map.addLayer({
+                                id: trailLayerId,
+                                type: 'line',
+                                source: trailSourceId,
+                                paint: {
+                                    'line-color': trailColor,
+                                    'line-width': trailWidth,
+                                    'line-opacity': 0.8,
+                                },
+                            });
+                        }
+                    }
+
+                    const startTime = performance.now();
+                    const trailCoords = [coordinates[0]];
+
+                    const animate = (currentTime) => {
+                        const animation = animations.get(id);
+                        if (!animation) return;
+
+                        if (animation.isPaused) {
+                            animation.animationId = requestAnimationFrame(animate);
+                            return;
+                        }
+
+                        let elapsed = (currentTime - animation.startTime) * animation.speed;
+                        if (animation.pausedAt > 0) {
+                            elapsed = (currentTime - animation.pausedAt + (animation.pausedAt - animation.startTime)) * animation.speed;
+                        }
+
+                        const progress = (elapsed % animation.duration) / animation.duration;
+                        const distance = progress * routeLength;
+                        const position = _pointAlong(coordinates, distance);
+
+                        animation.marker.setLngLat(position);
+
+                        if (showTrail && trailSourceId) {
+                            trailCoords.push(position);
+                            const source = map.getSource(trailSourceId);
+                            if (source) {
+                                source.setData({
+                                    type: 'Feature',
+                                    properties: {},
+                                    geometry: { type: 'LineString', coordinates: trailCoords },
+                                });
+                            }
+                        }
+
+                        if (elapsed >= animation.duration && !loop) {
+                            cancelAnimationFrame(animation.animationId);
+                            animation.marker.remove();
+                            if (animation.trailLayerId && map.getLayer(animation.trailLayerId)) {
+                                map.removeLayer(animation.trailLayerId);
+                            }
+                            if (animation.trailSourceId && map.getSource(animation.trailSourceId)) {
+                                map.removeSource(animation.trailSourceId);
+                            }
+                            animations.delete(id);
+                            return;
+                        }
+
+                        animation.animationId = requestAnimationFrame(animate);
+                    };
+
+                    animations.set(id, {
+                        animationId: requestAnimationFrame(animate),
+                        marker,
+                        isPaused: false,
+                        speed: 1,
+                        startTime,
+                        pausedAt: 0,
+                        duration,
+                        coordinates,
+                        loop,
+                        trailSourceId,
+                        trailLayerId,
+                    });
+                    break;
+                }
+
+                case 'pauseAnimation': {
+                    const [id] = args;
+                    const animation = animations.get(id);
+                    if (!animation) break;
+                    animation.isPaused = true;
+                    animation.pausedAt = performance.now();
+                    break;
+                }
+
+                case 'resumeAnimation': {
+                    const [id] = args;
+                    const animation = animations.get(id);
+                    if (!animation || !animation.isPaused) break;
+                    const pausedDuration = performance.now() - animation.pausedAt;
+                    animation.startTime += pausedDuration;
+                    animation.isPaused = false;
+                    animation.pausedAt = 0;
+                    break;
+                }
+
+                case 'setAnimationSpeed': {
+                    const [id, speed] = args;
+                    const animation = animations.get(id);
+                    if (!animation) break;
+                    animation.speed = speed;
+                    break;
+                }
+
+                case 'stopAnimation': {
+                    const [id] = args;
+                    const animation = animations.get(id);
+                    if (!animation) break;
+                    cancelAnimationFrame(animation.animationId);
+                    animation.marker.remove();
+                    if (animation.trailLayerId && map.getLayer(animation.trailLayerId)) {
+                        map.removeLayer(animation.trailLayerId);
+                    }
+                    if (animation.trailSourceId && map.getSource(animation.trailSourceId)) {
+                        map.removeSource(animation.trailSourceId);
+                    }
+                    animations.delete(id);
                     break;
                 }
 
