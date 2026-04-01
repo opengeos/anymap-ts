@@ -5619,7 +5619,7 @@ m = Map(center=[-122.4, 37.8], zoom=10)
 m.add_marker(
     -122.4,
     37.8,
-    popup="<b>San Francisco</b><br/>Click to see this popup!",
+    popup="&lt;b&gt;San Francisco&lt;/b&gt;&lt;br&gt;Click to see this popup!",
     tooltip="Hover over me!",
 )
 m</div>
@@ -5981,9 +5981,9 @@ m_scale</div>
 
 # Marker with wide popup (400px) containing longer content
 long_content = """
-<h3>San Francisco</h3>
-<p>San Francisco is a city in California known for the Golden Gate Bridge, 
-cable cars, and Victorian architecture. It's a major tech hub and cultural center.</p>
+&lt;h3&gt;San Francisco&lt;/h3&gt;
+&lt;p&gt;San Francisco is a city in California known for the Golden Gate Bridge, 
+cable cars, and Victorian architecture. It's a major tech hub and cultural center.&lt;/p&gt;
 """
 
 m_width.add_marker(
@@ -6000,7 +6000,7 @@ m_width.add_marker(
 m_width.add_marker(
     -122.38,
     37.80,
-    popup="<b>Narrow popup</b><br/>Max width: 150px",
+    popup="&lt;b&gt;Narrow popup&lt;/b&gt;&lt;br&gt;Max width: 150px",
     tooltip="Narrow popup example",
     popup_max_width="150px",
     color="#ff9800",
