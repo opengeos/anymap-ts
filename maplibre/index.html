@@ -2570,6 +2570,34 @@
   
   
     <li class="md-nav__item">
+      <a href="geoagent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geoagent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="geophoto/" class="md-nav__link">
         
   
@@ -4338,6 +4366,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.geoagent_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        geoagent_state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.pmtiles_styles" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4573,6 +4612,17 @@
     <span class="md-ellipsis">
       
         add_flatgeobuf()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_geoagent_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_geoagent_control()
       
     </span>
   </a>
@@ -5449,6 +5499,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.remove_geoagent_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        remove_geoagent_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.remove_geophoto_control" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5717,6 +5778,17 @@
     <span class="md-ellipsis">
       
         set_filter()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.set_geoagent_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        set_geoagent_state()
       
     </span>
   </a>
@@ -6205,6 +6277,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.geoagent_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        geoagent_state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.pmtiles_styles" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6440,6 +6523,17 @@
     <span class="md-ellipsis">
       
         add_flatgeobuf()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.add_geoagent_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_geoagent_control()
       
     </span>
   </a>
@@ -7316,6 +7410,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.remove_geoagent_control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        remove_geoagent_control()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anymap_ts.maplibre.MapLibreMap.remove_geophoto_control" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7584,6 +7689,17 @@
     <span class="md-ellipsis">
       
         set_filter()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anymap_ts.maplibre.MapLibreMap.set_geoagent_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        set_geoagent_state()
       
     </span>
   </a>
@@ -7872,6 +7988,9 @@ full bidirectional communication through anywidget.</p>
     <span class="c1"># Layer tracking</span>
     <span class="n">_layer_dict</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Dict</span><span class="p">({})</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
+    <span class="c1"># Latest state emitted by maplibre-gl-geoagent</span>
+    <span class="n">_geoagent_state</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Dict</span><span class="p">({})</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">center</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
@@ -7950,6 +8069,10 @@ full bidirectional communication through anywidget.</p>
                     <span class="p">)</span>
                 <span class="k">elif</span> <span class="n">control_name</span> <span class="o">==</span> <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">add_control_grid</span><span class="p">(</span>
+                        <span class="o">**</span><span class="p">(</span><span class="n">config</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{})</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">control_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;geoagent&quot;</span><span class="p">,</span> <span class="s2">&quot;geoagent-control&quot;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add_geoagent_control</span><span class="p">(</span>
                         <span class="o">**</span><span class="p">(</span><span class="n">config</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{})</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -12184,6 +12307,112 @@ full bidirectional communication through anywidget.</p>
             <span class="k">del</span> <span class="n">controls</span><span class="p">[</span><span class="n">control_type</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="n">controls</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_geoagent_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+        <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;GeoAgent&quot;</span><span class="p">,</span>
+        <span class="n">panel_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">390</span><span class="p">,</span>
+        <span class="n">panel_min_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">320</span><span class="p">,</span>
+        <span class="n">panel_max_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">720</span><span class="p">,</span>
+        <span class="n">default_provider</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;openai-responses&quot;</span><span class="p">,</span>
+        <span class="n">default_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">storage_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;geoagent.maplibre&quot;</span><span class="p">,</span>
+        <span class="n">allow_code_execution_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">allow_destructive_tools_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">show_permission_toggles</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">basemaps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the maplibre-gl-geoagent AI assistant control.</span>
+
+<span class="sd">        The control runs provider SDKs in the browser and lets users enter API</span>
+<span class="sd">        keys in the panel. Keys and model preferences are stored in browser</span>
+<span class="sd">        ``sessionStorage`` using ``storage_prefix``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;,</span>
+<span class="sd">                or &#39;bottom-right&#39;).</span>
+<span class="sd">            collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">            title: Panel title and control button label.</span>
+<span class="sd">            panel_width: Initial floating panel width in pixels.</span>
+<span class="sd">            panel_min_width: Minimum resizable panel width in pixels.</span>
+<span class="sd">            panel_max_width: Maximum resizable panel width in pixels.</span>
+<span class="sd">            default_provider: Initial provider. Supported values include</span>
+<span class="sd">                &#39;openai-responses&#39;, &#39;openai-chat&#39;, &#39;anthropic&#39;, &#39;google&#39;,</span>
+<span class="sd">                and &#39;bedrock&#39;.</span>
+<span class="sd">            default_model: Default model for all providers, or a provider to</span>
+<span class="sd">                model mapping.</span>
+<span class="sd">            storage_prefix: Prefix for browser sessionStorage keys.</span>
+<span class="sd">            allow_code_execution_default: Whether the MapLibre JavaScript tool</span>
+<span class="sd">                starts enabled.</span>
+<span class="sd">            allow_destructive_tools_default: Whether layer removal tools start</span>
+<span class="sd">                enabled.</span>
+<span class="sd">            show_permission_toggles: Whether to show permission toggles.</span>
+<span class="sd">            basemaps: Optional basemap style registry exposed to the agent.</span>
+<span class="sd">            class_name: Extra CSS class for the control container.</span>
+<span class="sd">            **kwargs: Additional maplibre-gl-geoagent options, using camelCase.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">            &gt;&gt;&gt; m.add_geoagent_control(</span>
+<span class="sd">            ...     position=&quot;top-left&quot;,</span>
+<span class="sd">            ...     collapsed=False,</span>
+<span class="sd">            ...     default_provider=&quot;openai-responses&quot;,</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_position</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+        <span class="n">js_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+            <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">,</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
+            <span class="s2">&quot;panelWidth&quot;</span><span class="p">:</span> <span class="n">panel_width</span><span class="p">,</span>
+            <span class="s2">&quot;panelMinWidth&quot;</span><span class="p">:</span> <span class="n">panel_min_width</span><span class="p">,</span>
+            <span class="s2">&quot;panelMaxWidth&quot;</span><span class="p">:</span> <span class="n">panel_max_width</span><span class="p">,</span>
+            <span class="s2">&quot;defaultProvider&quot;</span><span class="p">:</span> <span class="n">default_provider</span><span class="p">,</span>
+            <span class="s2">&quot;storagePrefix&quot;</span><span class="p">:</span> <span class="n">storage_prefix</span><span class="p">,</span>
+            <span class="s2">&quot;allowCodeExecutionDefault&quot;</span><span class="p">:</span> <span class="n">allow_code_execution_default</span><span class="p">,</span>
+            <span class="s2">&quot;allowDestructiveToolsDefault&quot;</span><span class="p">:</span> <span class="n">allow_destructive_tools_default</span><span class="p">,</span>
+            <span class="s2">&quot;showPermissionToggles&quot;</span><span class="p">:</span> <span class="n">show_permission_toggles</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">default_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;defaultModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_model</span>
+        <span class="k">if</span> <span class="n">basemaps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;basemaps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemaps</span>
+        <span class="k">if</span> <span class="n">class_name</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;className&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">class_name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addGeoAgentControl&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">js_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+            <span class="s2">&quot;geoagent-control&quot;</span><span class="p">:</span> <span class="n">js_kwargs</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_geoagent_control</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the GeoAgent control.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeGeoAgentControl&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;geoagent-control&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">:</span>
+            <span class="n">controls</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">controls</span><span class="p">[</span><span class="s2">&quot;geoagent-control&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="n">controls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_geoagent_state</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_geoagent_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">state</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the GeoAgent control state from Python.</span>
+
+<span class="sd">        Common state keys include ``collapsed``, ``panelWidth``,</span>
+<span class="sd">        ``providerId``, ``modelId``, ``bedrockRegion``,</span>
+<span class="sd">        ``allowCodeExecution``, and ``allowDestructiveTools``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;setGeoAgentState&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">state</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">geoagent_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Latest GeoAgent state emitted by the browser control.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geoagent_state</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">add_layer_control</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">layers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -13985,6 +14214,29 @@ full bidirectional communication through anywidget.</p>
 
 
 
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="anymap_ts.maplibre.MapLibreMap.geoagent_state" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">geoagent_state</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+<a href="#anymap_ts.maplibre.MapLibreMap.geoagent_state" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Latest GeoAgent state emitted by the browser control.</p>
+    </div>
+
+  </div>
+
+
+
 
   <div class="doc doc-object doc-attribute">
 
@@ -14267,6 +14519,10 @@ Use {"layer-control": {"collapsed": True}} for custom options.</p></td>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="n">control_name</span> <span class="o">==</span> <span class="s2">&quot;control-grid&quot;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">add_control_grid</span><span class="p">(</span>
+                    <span class="o">**</span><span class="p">(</span><span class="n">config</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{})</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">control_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;geoagent&quot;</span><span class="p">,</span> <span class="s2">&quot;geoagent-control&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_geoagent_control</span><span class="p">(</span>
                     <span class="o">**</span><span class="p">(</span><span class="n">config</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{})</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -17569,6 +17825,233 @@ If None, inferred from geometry type.</p></td>
         <span class="p">},</span>
     <span class="p">}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_layer_dict</span><span class="p">(</span><span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;Vector&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h3 id="anymap_ts.maplibre.MapLibreMap.add_geoagent_control" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_geoagent_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;GeoAgent&#39;</span><span class="p">,</span> <span class="n">panel_width</span><span class="o">=</span><span class="mi">390</span><span class="p">,</span> <span class="n">panel_min_width</span><span class="o">=</span><span class="mi">320</span><span class="p">,</span> <span class="n">panel_max_width</span><span class="o">=</span><span class="mi">720</span><span class="p">,</span> <span class="n">default_provider</span><span class="o">=</span><span class="s1">&#39;openai-responses&#39;</span><span class="p">,</span> <span class="n">default_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">storage_prefix</span><span class="o">=</span><span class="s1">&#39;geoagent.maplibre&#39;</span><span class="p">,</span> <span class="n">allow_code_execution_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_destructive_tools_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_permission_toggles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">basemaps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.add_geoagent_control" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Add the maplibre-gl-geoagent AI assistant control.</p>
+<p>The control runs provider SDKs in the browser and lets users enter API
+keys in the panel. Keys and model preferences are stored in browser
+<code>sessionStorage</code> using <code>storage_prefix</code>.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>position</code></td>
+        <td><code>str</code></td>
+        <td><p>Control position ('top-left', 'top-right', 'bottom-left',
+or 'bottom-right').</p></td>
+        <td><code>&#39;top-right&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>collapsed</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the panel starts collapsed.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>title</code></td>
+        <td><code>str</code></td>
+        <td><p>Panel title and control button label.</p></td>
+        <td><code>&#39;GeoAgent&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>panel_width</code></td>
+        <td><code>int</code></td>
+        <td><p>Initial floating panel width in pixels.</p></td>
+        <td><code>390</code></td>
+      </tr>
+      <tr>
+        <td><code>panel_min_width</code></td>
+        <td><code>int</code></td>
+        <td><p>Minimum resizable panel width in pixels.</p></td>
+        <td><code>320</code></td>
+      </tr>
+      <tr>
+        <td><code>panel_max_width</code></td>
+        <td><code>int</code></td>
+        <td><p>Maximum resizable panel width in pixels.</p></td>
+        <td><code>720</code></td>
+      </tr>
+      <tr>
+        <td><code>default_provider</code></td>
+        <td><code>str</code></td>
+        <td><p>Initial provider. Supported values include
+'openai-responses', 'openai-chat', 'anthropic', 'google',
+and 'bedrock'.</p></td>
+        <td><code>&#39;openai-responses&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>default_model</code></td>
+        <td><code>Optional[Union[str, Dict[str, str]]]</code></td>
+        <td><p>Default model for all providers, or a provider to
+model mapping.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>storage_prefix</code></td>
+        <td><code>str</code></td>
+        <td><p>Prefix for browser sessionStorage keys.</p></td>
+        <td><code>&#39;geoagent.maplibre&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>allow_code_execution_default</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether the MapLibre JavaScript tool
+starts enabled.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>allow_destructive_tools_default</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether layer removal tools start
+enabled.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>show_permission_toggles</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to show permission toggles.</p></td>
+        <td><code>False</code></td>
+      </tr>
+      <tr>
+        <td><code>basemaps</code></td>
+        <td><code>Optional[Dict[str, Any]]</code></td>
+        <td><p>Optional basemap style registry exposed to the agent.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>class_name</code></td>
+        <td><code>str</code></td>
+        <td><p>Extra CSS class for the control container.</p></td>
+        <td><code>&#39;&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>**kwargs</code></td>
+        <td></td>
+        <td><p>Additional maplibre-gl-geoagent options, using camelCase.</p></td>
+        <td><code>{}</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_geoagent_control</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">position</span><span class="o">=</span><span class="s2">&quot;top-left&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">collapsed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">default_provider</span><span class="o">=</span><span class="s2">&quot;openai-responses&quot;</span><span class="p">,</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_geoagent_control</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;top-right&quot;</span><span class="p">,</span>
+    <span class="n">collapsed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;GeoAgent&quot;</span><span class="p">,</span>
+    <span class="n">panel_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">390</span><span class="p">,</span>
+    <span class="n">panel_min_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">320</span><span class="p">,</span>
+    <span class="n">panel_max_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">720</span><span class="p">,</span>
+    <span class="n">default_provider</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;openai-responses&quot;</span><span class="p">,</span>
+    <span class="n">default_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">storage_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;geoagent.maplibre&quot;</span><span class="p">,</span>
+    <span class="n">allow_code_execution_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">allow_destructive_tools_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">show_permission_toggles</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">basemaps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add the maplibre-gl-geoagent AI assistant control.</span>
+
+<span class="sd">    The control runs provider SDKs in the browser and lets users enter API</span>
+<span class="sd">    keys in the panel. Keys and model preferences are stored in browser</span>
+<span class="sd">    ``sessionStorage`` using ``storage_prefix``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;,</span>
+<span class="sd">            or &#39;bottom-right&#39;).</span>
+<span class="sd">        collapsed: Whether the panel starts collapsed.</span>
+<span class="sd">        title: Panel title and control button label.</span>
+<span class="sd">        panel_width: Initial floating panel width in pixels.</span>
+<span class="sd">        panel_min_width: Minimum resizable panel width in pixels.</span>
+<span class="sd">        panel_max_width: Maximum resizable panel width in pixels.</span>
+<span class="sd">        default_provider: Initial provider. Supported values include</span>
+<span class="sd">            &#39;openai-responses&#39;, &#39;openai-chat&#39;, &#39;anthropic&#39;, &#39;google&#39;,</span>
+<span class="sd">            and &#39;bedrock&#39;.</span>
+<span class="sd">        default_model: Default model for all providers, or a provider to</span>
+<span class="sd">            model mapping.</span>
+<span class="sd">        storage_prefix: Prefix for browser sessionStorage keys.</span>
+<span class="sd">        allow_code_execution_default: Whether the MapLibre JavaScript tool</span>
+<span class="sd">            starts enabled.</span>
+<span class="sd">        allow_destructive_tools_default: Whether layer removal tools start</span>
+<span class="sd">            enabled.</span>
+<span class="sd">        show_permission_toggles: Whether to show permission toggles.</span>
+<span class="sd">        basemaps: Optional basemap style registry exposed to the agent.</span>
+<span class="sd">        class_name: Extra CSS class for the control container.</span>
+<span class="sd">        **kwargs: Additional maplibre-gl-geoagent options, using camelCase.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; m = MapLibreMap()</span>
+<span class="sd">        &gt;&gt;&gt; m.add_geoagent_control(</span>
+<span class="sd">        ...     position=&quot;top-left&quot;,</span>
+<span class="sd">        ...     collapsed=False,</span>
+<span class="sd">        ...     default_provider=&quot;openai-responses&quot;,</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_position</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+    <span class="n">js_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+        <span class="s2">&quot;collapsed&quot;</span><span class="p">:</span> <span class="n">collapsed</span><span class="p">,</span>
+        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
+        <span class="s2">&quot;panelWidth&quot;</span><span class="p">:</span> <span class="n">panel_width</span><span class="p">,</span>
+        <span class="s2">&quot;panelMinWidth&quot;</span><span class="p">:</span> <span class="n">panel_min_width</span><span class="p">,</span>
+        <span class="s2">&quot;panelMaxWidth&quot;</span><span class="p">:</span> <span class="n">panel_max_width</span><span class="p">,</span>
+        <span class="s2">&quot;defaultProvider&quot;</span><span class="p">:</span> <span class="n">default_provider</span><span class="p">,</span>
+        <span class="s2">&quot;storagePrefix&quot;</span><span class="p">:</span> <span class="n">storage_prefix</span><span class="p">,</span>
+        <span class="s2">&quot;allowCodeExecutionDefault&quot;</span><span class="p">:</span> <span class="n">allow_code_execution_default</span><span class="p">,</span>
+        <span class="s2">&quot;allowDestructiveToolsDefault&quot;</span><span class="p">:</span> <span class="n">allow_destructive_tools_default</span><span class="p">,</span>
+        <span class="s2">&quot;showPermissionToggles&quot;</span><span class="p">:</span> <span class="n">show_permission_toggles</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">default_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;defaultModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_model</span>
+    <span class="k">if</span> <span class="n">basemaps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;basemaps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemaps</span>
+    <span class="k">if</span> <span class="n">class_name</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;className&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">class_name</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addGeoAgentControl&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">js_kwargs</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">,</span>
+        <span class="s2">&quot;geoagent-control&quot;</span><span class="p">:</span> <span class="n">js_kwargs</span><span class="p">,</span>
+    <span class="p">}</span>
 </code></pre></div>
         </details>
     </div>
@@ -27460,6 +27943,38 @@ all colorbars.</p></td>
 
 
 
+<h3 id="anymap_ts.maplibre.MapLibreMap.remove_geoagent_control" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">remove_geoagent_control</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.remove_geoagent_control" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Remove the GeoAgent control.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_geoagent_control</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the GeoAgent control.&quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeGeoAgentControl&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;geoagent-control&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">:</span>
+        <span class="n">controls</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_controls</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">controls</span><span class="p">[</span><span class="s2">&quot;geoagent-control&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controls</span> <span class="o">=</span> <span class="n">controls</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_geoagent_state</span> <span class="o">=</span> <span class="p">{}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
 <h3 id="anymap_ts.maplibre.MapLibreMap.remove_geophoto_control" class="doc doc-heading">
 <code class="highlight language-python"><span class="n">remove_geophoto_control</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
 
@@ -28662,6 +29177,41 @@ Pass None to clear the filter.</p></td>
         <span class="n">layerId</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
         <span class="nb">filter</span><span class="o">=</span><span class="n">filter_expression</span><span class="p">,</span>
     <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h3 id="anymap_ts.maplibre.MapLibreMap.set_geoagent_state" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">set_geoagent_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">state</span><span class="p">)</span></code>
+
+
+<a href="#anymap_ts.maplibre.MapLibreMap.set_geoagent_state" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Update the GeoAgent control state from Python.</p>
+<p>Common state keys include <code>collapsed</code>, <code>panelWidth</code>,
+<code>providerId</code>, <code>modelId</code>, <code>bedrockRegion</code>,
+<code>allowCodeExecution</code>, and <code>allowDestructiveTools</code>.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>anymap_ts/maplibre.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_geoagent_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">state</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the GeoAgent control state from Python.</span>
+
+<span class="sd">    Common state keys include ``collapsed``, ``panelWidth``,</span>
+<span class="sd">    ``providerId``, ``modelId``, ``bedrockRegion``,</span>
+<span class="sd">    ``allowCodeExecution``, and ``allowDestructiveTools``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;setGeoAgentState&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">state</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
