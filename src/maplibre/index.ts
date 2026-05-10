@@ -18,6 +18,8 @@ import 'maplibre-gl-layer-control/style.css';
 import 'maplibre-gl-lidar/style.css';
 // Import GeoPhoto Control CSS
 import 'maplibre-gl-geophoto/style.css';
+// Import GeoAgent Control CSS
+import 'maplibre-gl-geoagent/style.css';
 // Import custom anymap-ts styles (dark mode overrides, tooltip, controls)
 import '../styles/maplibre.css';
 

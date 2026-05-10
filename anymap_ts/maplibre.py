@@ -50,6 +50,9 @@ class MapLibreMap(MapWidget):
     # Layer tracking
     _layer_dict = traitlets.Dict({}).tag(sync=True)
 
+    # Latest state emitted by maplibre-gl-geoagent
+    _geoagent_state = traitlets.Dict({}).tag(sync=True)
+
     def __init__(
         self,
         center: Tuple[float, float] = (0.0, 0.0),
@@ -128,6 +131,10 @@ class MapLibreMap(MapWidget):
                     )
                 elif control_name == "control-grid":
                     self.add_control_grid(
+                        **(config if isinstance(config, dict) else {})
+                    )
+                elif control_name in ("geoagent", "geoagent-control"):
+                    self.add_geoagent_control(
                         **(config if isinstance(config, dict) else {})
                     )
                 else:
@@ -4361,6 +4368,112 @@ class MapLibreMap(MapWidget):
             controls = dict(self._controls)
             del controls[control_type]
             self._controls = controls
+
+    def add_geoagent_control(
+        self,
+        position: str = "top-right",
+        collapsed: bool = True,
+        title: str = "GeoAgent",
+        panel_width: int = 390,
+        panel_min_width: int = 320,
+        panel_max_width: int = 720,
+        default_provider: str = "openai-responses",
+        default_model: Optional[Union[str, Dict[str, str]]] = None,
+        storage_prefix: str = "geoagent.maplibre",
+        allow_code_execution_default: bool = True,
+        allow_destructive_tools_default: bool = True,
+        show_permission_toggles: bool = False,
+        basemaps: Optional[Dict[str, Any]] = None,
+        class_name: str = "",
+        **kwargs,
+    ) -> None:
+        """Add the maplibre-gl-geoagent AI assistant control.
+
+        The control runs provider SDKs in the browser and lets users enter API
+        keys in the panel. Keys and model preferences are stored in browser
+        ``sessionStorage`` using ``storage_prefix``.
+
+        Args:
+            position: Control position ('top-left', 'top-right', 'bottom-left',
+                or 'bottom-right').
+            collapsed: Whether the panel starts collapsed.
+            title: Panel title and control button label.
+            panel_width: Initial floating panel width in pixels.
+            panel_min_width: Minimum resizable panel width in pixels.
+            panel_max_width: Maximum resizable panel width in pixels.
+            default_provider: Initial provider. Supported values include
+                'openai-responses', 'openai-chat', 'anthropic', 'google',
+                and 'bedrock'.
+            default_model: Default model for all providers, or a provider to
+                model mapping.
+            storage_prefix: Prefix for browser sessionStorage keys.
+            allow_code_execution_default: Whether the MapLibre JavaScript tool
+                starts enabled.
+            allow_destructive_tools_default: Whether layer removal tools start
+                enabled.
+            show_permission_toggles: Whether to show permission toggles.
+            basemaps: Optional basemap style registry exposed to the agent.
+            class_name: Extra CSS class for the control container.
+            **kwargs: Additional maplibre-gl-geoagent options, using camelCase.
+
+        Example:
+            >>> m = MapLibreMap()
+            >>> m.add_geoagent_control(
+            ...     position="top-left",
+            ...     collapsed=False,
+            ...     default_provider="openai-responses",
+            ... )
+        """
+        position = self._validate_position(position)
+        js_kwargs: Dict[str, Any] = {
+            "position": position,
+            "collapsed": collapsed,
+            "title": title,
+            "panelWidth": panel_width,
+            "panelMinWidth": panel_min_width,
+            "panelMaxWidth": panel_max_width,
+            "defaultProvider": default_provider,
+            "storagePrefix": storage_prefix,
+            "allowCodeExecutionDefault": allow_code_execution_default,
+            "allowDestructiveToolsDefault": allow_destructive_tools_default,
+            "showPermissionToggles": show_permission_toggles,
+            **kwargs,
+        }
+        if default_model is not None:
+            js_kwargs["defaultModel"] = default_model
+        if basemaps is not None:
+            js_kwargs["basemaps"] = basemaps
+        if class_name:
+            js_kwargs["className"] = class_name
+
+        self.call_js_method("addGeoAgentControl", **js_kwargs)
+        self._controls = {
+            **self._controls,
+            "geoagent-control": js_kwargs,
+        }
+
+    def remove_geoagent_control(self) -> None:
+        """Remove the GeoAgent control."""
+        self.call_js_method("removeGeoAgentControl")
+        if "geoagent-control" in self._controls:
+            controls = dict(self._controls)
+            del controls["geoagent-control"]
+            self._controls = controls
+        self._geoagent_state = {}
+
+    def set_geoagent_state(self, **state: Any) -> None:
+        """Update the GeoAgent control state from Python.
+
+        Common state keys include ``collapsed``, ``panelWidth``,
+        ``providerId``, ``modelId``, ``bedrockRegion``,
+        ``allowCodeExecution``, and ``allowDestructiveTools``.
+        """
+        self.call_js_method("setGeoAgentState", **state)
+
+    @property
+    def geoagent_state(self) -> Dict[str, Any]:
+        """Latest GeoAgent state emitted by the browser control."""
+        return dict(self._geoagent_state)
 
     def add_layer_control(
         self,

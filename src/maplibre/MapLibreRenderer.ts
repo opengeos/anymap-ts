@@ -65,6 +65,11 @@ import { COGLayerAdapter, ZarrLayerAdapter, DeckLayerAdapter, MarkerLayerAdapter
 import { LidarControl, LidarLayerAdapter } from 'maplibre-gl-lidar';
 import type { LidarControlOptions, LidarLayerOptions, LidarColorScheme } from '../types/lidar';
 import { GeoPhotoControl } from 'maplibre-gl-geophoto';
+import {
+  GeoAgentControl,
+  type GeoAgentControlEventHandler,
+  type GeoAgentControlOptions,
+} from 'maplibre-gl-geoagent';
 
 // Import controls from maplibre-gl-components
 import {
@@ -164,6 +169,9 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   protected measureControl: MeasureControl | null = null;
   protected printControl: PrintControl | null = null;
   protected geoPhotoControl: GeoPhotoControl | null = null;
+  protected geoAgentControl: GeoAgentControl | null = null;
+  private geoAgentStateHandler: GeoAgentControlEventHandler | null = null;
+  private geoAgentEventGuardCleanup: (() => void) | null = null;
 
   // Route animations
   protected animations: globalThis.Map<string, {
@@ -567,6 +575,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     // GeoPhoto Control
     this.registerMethod('addGeoPhotoControl', this.handleAddGeoPhotoControl.bind(this));
     this.registerMethod('removeGeoPhotoControl', this.handleRemoveGeoPhotoControl.bind(this));
+
+    // GeoAgent control
+    this.registerMethod('addGeoAgentControl', this.handleAddGeoAgentControl.bind(this));
+    this.registerMethod('removeGeoAgentControl', this.handleRemoveGeoAgentControl.bind(this));
+    this.registerMethod('setGeoAgentState', this.handleSetGeoAgentState.bind(this));
     this.registerMethod('loadGeoPhotoZip', this.handleLoadGeoPhotoZip.bind(this));
     this.registerMethod('loadGeoPhotoUrls', this.handleLoadGeoPhotoUrls.bind(this));
     this.registerMethod('geoPhotoSelectCamera', this.handleGeoPhotoSelectCamera.bind(this));
@@ -1066,6 +1079,10 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       case 'globe':
         control = new GlobeControl();
         break;
+      case 'geoagent':
+      case 'geoagent-control':
+        this.handleAddGeoAgentControl(args, kwargs);
+        return;
     }
 
     if (control) {
@@ -1078,6 +1095,11 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
   private handleRemoveControl(args: unknown[], kwargs: Record<string, unknown>): void {
     if (!this.map) return;
     const [controlType] = args as [string];
+
+    if (controlType === 'geoagent' || controlType === 'geoagent-control') {
+      this.handleRemoveGeoAgentControl(args, kwargs);
+      return;
+    }
 
     const control = this.controlsMap.get(controlType);
     if (control) {
@@ -6031,6 +6053,118 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
     this.geoPhotoControl = null;
   }
 
+  // -------------------------------------------------------------------------
+  // GeoAgent Control handlers
+  // -------------------------------------------------------------------------
+
+  private handleAddGeoAgentControl(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.map) return;
+
+    if (this.geoAgentControl) {
+      this.handleRemoveGeoAgentControl([], {});
+    }
+
+    const position = (kwargs.position as ControlPosition) || 'top-right';
+    const options = {
+      ...kwargs,
+      position,
+    } as GeoAgentControlOptions;
+
+    this.geoAgentControl = new GeoAgentControl(options);
+    this.geoAgentStateHandler = (event) => {
+      this.model.set('_geoagent_state', event.state);
+      this.model.save_changes();
+      this.sendEvent(`geoagent:${event.type}`, event.state);
+    };
+    this.geoAgentControl.on('collapse', this.geoAgentStateHandler);
+    this.geoAgentControl.on('expand', this.geoAgentStateHandler);
+    this.geoAgentControl.on('statechange', this.geoAgentStateHandler);
+
+    this.map.addControl(this.geoAgentControl as unknown as maplibregl.IControl, position);
+    this.installGeoAgentEventGuards(this.geoAgentControl);
+    this.controlsMap.set('geoagent-control', this.geoAgentControl as unknown as maplibregl.IControl);
+    this.stateManager.addControl('geoagent-control', 'geoagent-control', position, kwargs);
+
+    this.model.set('_geoagent_state', this.geoAgentControl.getState());
+    this.model.save_changes();
+  }
+
+  private handleRemoveGeoAgentControl(_args: unknown[], _kwargs: Record<string, unknown>): void {
+    if (!this.map || !this.geoAgentControl) return;
+
+    if (this.geoAgentStateHandler) {
+      this.geoAgentControl.off('collapse', this.geoAgentStateHandler);
+      this.geoAgentControl.off('expand', this.geoAgentStateHandler);
+      this.geoAgentControl.off('statechange', this.geoAgentStateHandler);
+      this.geoAgentStateHandler = null;
+    }
+    this.geoAgentEventGuardCleanup?.();
+    this.geoAgentEventGuardCleanup = null;
+
+    this.map.removeControl(this.geoAgentControl as unknown as maplibregl.IControl);
+    this.controlsMap.delete('geoagent-control');
+    this.stateManager.removeControl('geoagent-control');
+    this.geoAgentControl = null;
+    this.model.set('_geoagent_state', {});
+    this.model.save_changes();
+  }
+
+  private handleSetGeoAgentState(_args: unknown[], kwargs: Record<string, unknown>): void {
+    if (!this.geoAgentControl) {
+      console.warn('GeoAgent control not added. Call addGeoAgentControl first.');
+      return;
+    }
+    this.geoAgentControl.setState(kwargs);
+    this.model.set('_geoagent_state', this.geoAgentControl.getState());
+    this.model.save_changes();
+  }
+
+  private installGeoAgentEventGuards(control: GeoAgentControl): void {
+    this.geoAgentEventGuardCleanup?.();
+
+    const elements = [
+      control.getContainer?.(),
+      control.getPanel?.(),
+    ].filter((element): element is HTMLElement => element instanceof HTMLElement);
+
+    const stop = (event: Event) => {
+      event.stopPropagation();
+    };
+    const guardedEvents = [
+      'keydown',
+      'keypress',
+      'keyup',
+      'beforeinput',
+      'input',
+      'compositionstart',
+      'compositionupdate',
+      'compositionend',
+      'mousedown',
+      'mouseup',
+      'click',
+      'dblclick',
+      'pointerdown',
+      'pointerup',
+      'touchstart',
+      'touchend',
+      'wheel',
+    ];
+
+    for (const element of elements) {
+      for (const eventName of guardedEvents) {
+        element.addEventListener(eventName, stop);
+      }
+    }
+
+    this.geoAgentEventGuardCleanup = () => {
+      for (const element of elements) {
+        for (const eventName of guardedEvents) {
+          element.removeEventListener(eventName, stop);
+        }
+      }
+    };
+  }
+
   private async handleLoadGeoPhotoZip(_args: unknown[], kwargs: Record<string, unknown>): Promise<void> {
     if (!this.geoPhotoControl) {
       console.warn('GeoPhoto control not added. Call addGeoPhotoControl first.');
@@ -6439,6 +6573,21 @@ export class MapLibreRenderer extends BaseMapRenderer<MapLibreMap> {
       this.geoPhotoControl.clearData();
       this.map.removeControl(this.geoPhotoControl as unknown as maplibregl.IControl);
       this.geoPhotoControl = null;
+    }
+
+    // Remove GeoAgent control
+    if (this.geoAgentControl && this.map) {
+      if (this.geoAgentStateHandler) {
+        this.geoAgentControl.off('collapse', this.geoAgentStateHandler);
+        this.geoAgentControl.off('expand', this.geoAgentStateHandler);
+        this.geoAgentControl.off('statechange', this.geoAgentStateHandler);
+        this.geoAgentStateHandler = null;
+      }
+      this.geoAgentEventGuardCleanup?.();
+      this.geoAgentEventGuardCleanup = null;
+      this.map.removeControl(this.geoAgentControl as unknown as maplibregl.IControl);
+      this.controlsMap.delete('geoagent-control');
+      this.geoAgentControl = null;
     }
 
     // Remove control grid

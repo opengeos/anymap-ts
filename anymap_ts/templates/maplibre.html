@@ -14,6 +14,8 @@
     <link href="https://unpkg.com/maplibre-gl-layer-control@0.14.1/dist/maplibre-gl-layer-control.css" rel="stylesheet" />
     <!-- maplibre-gl-components CSS -->
     <link href="https://unpkg.com/maplibre-gl-components@0.16.2/dist/maplibre-gl-components.css" rel="stylesheet" />
+    <!-- maplibre-gl-geoagent CSS -->
+    <link href="https://unpkg.com/maplibre-gl-geoagent@0.3.1/dist/maplibre-gl-geoagent.css" rel="stylesheet" />
     <!-- Geoman for drawing -->
     <script src="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.umd.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.css" rel="stylesheet" />
@@ -36,8 +38,10 @@
         let layerControlConfig = null;
         let drawControlConfig = null;
         let controlGridConfig = null;
+        let geoAgentControlConfig = null;
         let controlGridAdded = false;
         let layerControlAdded = false;
+        let geoAgentControl = null;
         let timeSliderContainer = null;
 
         // Route animation state
@@ -47,6 +51,7 @@
         let LayerControl = null;
         let addControlGridFn = null;
         let GeoEditorClass = null;
+        let GeoAgentControlClass = null;
 
         const lcPromise = import('https://esm.sh/maplibre-gl-layer-control@0.14.1')
             .then(mod => { LayerControl = mod.LayerControl; })
@@ -59,6 +64,10 @@
         const gePromise = import('https://esm.sh/maplibre-gl-geo-editor@0.7.3')
             .then(mod => { GeoEditorClass = mod.GeoEditor; })
             .catch(() => console.warn('GeoEditor library unavailable — falling back to Geoman'));
+
+        const gaPromise = import('https://esm.sh/maplibre-gl-geoagent@0.3.1')
+            .then(mod => { GeoAgentControlClass = mod.GeoAgentControl; })
+            .catch(() => console.warn('GeoAgent library unavailable — GeoAgent control will be skipped'));
 
         // Inline route animation helpers (Haversine-based, no CDN dependency)
         function _haversineDistance(a, b) {
@@ -365,7 +374,7 @@
             }
 
             // 2. Wait for optional imports to settle
-            await Promise.allSettled([lcPromise, cgPromise, gePromise]);
+            await Promise.allSettled([lcPromise, cgPromise, gePromise, gaPromise]);
 
             // 3. Add layer control if library loaded and configured
             if (!layerControlAdded && (layerControlConfig || (state.controls && state.controls['layer-control']))) {
@@ -400,7 +409,13 @@
                 }
             }
 
-            // 5. Add draw control if configured
+            // 5. Add GeoAgent control if library loaded and configured
+            if (!geoAgentControl && (geoAgentControlConfig || (state.controls && state.controls['geoagent-control']))) {
+                const config = geoAgentControlConfig || state.controls['geoagent-control'];
+                createGeoAgentControl(config);
+            }
+
+            // 6. Add draw control if configured
             if (drawControlConfig || (state.controls && state.controls['draw-control'])) {
                 createDrawControl(drawControlConfig || state.controls['draw-control']);
             }
@@ -527,6 +542,13 @@
                                 compact: kwargs.compact !== false
                             });
                             break;
+                        case 'geoagent':
+                        case 'geoagent-control':
+                            geoAgentControlConfig = kwargs;
+                            if (GeoAgentControlClass) {
+                                createGeoAgentControl(geoAgentControlConfig);
+                            }
+                            break;
                     }
                     if (control) {
                         map.addControl(control, position);
@@ -549,6 +571,29 @@
                 case 'addControlGrid': {
                     // Store config for later (add after layer control)
                     controlGridConfig = kwargs;
+                    break;
+                }
+
+                case 'addGeoAgentControl': {
+                    geoAgentControlConfig = kwargs;
+                    if (GeoAgentControlClass) {
+                        createGeoAgentControl(geoAgentControlConfig);
+                    }
+                    break;
+                }
+
+                case 'removeGeoAgentControl': {
+                    if (geoAgentControl) {
+                        map.removeControl(geoAgentControl);
+                        geoAgentControl = null;
+                    }
+                    break;
+                }
+
+                case 'setGeoAgentState': {
+                    if (geoAgentControl && typeof geoAgentControl.setState === 'function') {
+                        geoAgentControl.setState(kwargs);
+                    }
                     break;
                 }
 
@@ -2201,6 +2246,59 @@
             map.addControl(layerControlInstance, position);
             syncLayerControlOrder();
             scheduleLayerControlOrderSync();
+        }
+
+        function createGeoAgentControl(config) {
+            if (!GeoAgentControlClass) {
+                console.warn('GeoAgent library unavailable — skipping GeoAgent control');
+                return;
+            }
+            if (geoAgentControl) {
+                map.removeControl(geoAgentControl);
+                geoAgentControl = null;
+            }
+
+            const position = config.position || 'top-right';
+            geoAgentControl = new GeoAgentControlClass({
+                ...config,
+                position,
+            });
+            map.addControl(geoAgentControl, position);
+            installGeoAgentEventGuards(geoAgentControl);
+        }
+
+        function installGeoAgentEventGuards(control) {
+            const elements = [
+                typeof control.getContainer === 'function' ? control.getContainer() : null,
+                typeof control.getPanel === 'function' ? control.getPanel() : null,
+            ].filter(Boolean);
+            const guardedEvents = [
+                'keydown',
+                'keypress',
+                'keyup',
+                'beforeinput',
+                'input',
+                'compositionstart',
+                'compositionupdate',
+                'compositionend',
+                'mousedown',
+                'mouseup',
+                'click',
+                'dblclick',
+                'pointerdown',
+                'pointerup',
+                'touchstart',
+                'touchend',
+                'wheel',
+            ];
+            const stop = event => event.stopPropagation();
+            for (const element of elements) {
+                if (element.dataset.anymapGeoagentEventGuards === 'true') continue;
+                element.dataset.anymapGeoagentEventGuards = 'true';
+                for (const eventName of guardedEvents) {
+                    element.addEventListener(eventName, stop);
+                }
+            }
         }
 
         function createDrawControl(config) {

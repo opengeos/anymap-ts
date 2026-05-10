@@ -151,6 +151,7 @@ nav:
           - maplibre/feature_query_filter.ipynb
           - maplibre/field_boundary.ipynb
           - maplibre/flatgeobuf.ipynb
+          - maplibre/geoagent.ipynb
           - maplibre/geophoto.ipynb
           - maplibre/globe_projection.ipynb
           - maplibre/image_overlay.ipynb
