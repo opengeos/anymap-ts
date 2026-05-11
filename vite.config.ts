@@ -60,6 +60,7 @@ export default defineConfig({
         'maplibre-control-grid': resolve(__dirname, 'examples/maplibre/control_grid.html'),
         'maplibre-geophoto': resolve(__dirname, 'examples/maplibre/geophoto_layer.html'),
         'maplibre-geoagent': resolve(__dirname, 'examples/maplibre/geoagent_control.html'),
+        'maplibre-geoagent-gee': resolve(__dirname, 'examples/maplibre/geoagent_gee.html'),
         'maplibre-pmtiles': resolve(__dirname, 'examples/maplibre/pmtiles_layer.html'),
         // Other map libraries
         leaflet: resolve(__dirname, 'examples/leaflet/index.html'),

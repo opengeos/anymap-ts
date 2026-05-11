@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+from datetime import datetime, timezone
+from importlib import import_module
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlencode
@@ -21,6 +24,78 @@ from .utils import (
 
 # Path to bundled static assets
 STATIC_DIR = Path(__file__).parent / "static"
+
+
+def _get_ee_initialized_state() -> Any:
+    """Return the Earth Engine Python API state if it is initialized."""
+    try:
+        ee = import_module("ee")
+    except Exception:
+        return None
+
+    data = getattr(ee, "data", None)
+    is_initialized = getattr(data, "is_initialized", None)
+    if callable(is_initialized):
+        try:
+            if not is_initialized():
+                return None
+        except Exception:
+            return None
+
+    get_state = getattr(data, "_get_state", None)
+    if not callable(get_state):
+        return None
+    try:
+        return get_state()
+    except Exception:
+        return None
+
+
+def _get_ee_token_expires_in(credentials: Any) -> Optional[int]:
+    """Return seconds until a Google auth credential expires, if known."""
+    expiry = getattr(credentials, "expiry", None)
+    if expiry is None:
+        return None
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
+    seconds = int((expiry - datetime.now(timezone.utc)).total_seconds())
+    return max(seconds, 1)
+
+
+def _get_ee_access_token_config() -> Dict[str, Any]:
+    """Build GeoAgent Earth Engine token config from initialized Python ee."""
+    state = _get_ee_initialized_state()
+    credentials = getattr(state, "credentials", None)
+    if credentials is None:
+        return {}
+
+    token = getattr(credentials, "token", None)
+    valid = getattr(credentials, "valid", False)
+    expired = getattr(credentials, "expired", False)
+    if not token or not valid or expired:
+        try:
+            request_cls = getattr(
+                import_module("google.auth.transport.requests"), "Request"
+            )
+            credentials.refresh(request_cls())
+            token = getattr(credentials, "token", None)
+        except Exception:
+            return {}
+
+    if not token:
+        return {}
+
+    config: Dict[str, Any] = {
+        "accessToken": token,
+        "tokenType": "Bearer",
+    }
+    expires_in = _get_ee_token_expires_in(credentials)
+    if expires_in is not None:
+        config["tokenExpiresIn"] = expires_in
+    project_id = getattr(state, "cloud_api_user_project", None)
+    if project_id and project_id != "earthengine-legacy":
+        config["projectId"] = project_id
+    return config
 
 
 class MapLibreMap(MapWidget):
@@ -4383,6 +4458,7 @@ class MapLibreMap(MapWidget):
         allow_code_execution_default: bool = True,
         allow_destructive_tools_default: bool = True,
         show_permission_toggles: bool = False,
+        earth_engine: Optional[Dict[str, Any]] = None,
         basemaps: Optional[Dict[str, Any]] = None,
         class_name: str = "",
         **kwargs,
@@ -4412,6 +4488,13 @@ class MapLibreMap(MapWidget):
             allow_destructive_tools_default: Whether layer removal tools start
                 enabled.
             show_permission_toggles: Whether to show permission toggles.
+            earth_engine: Optional Google Earth Engine tool configuration.
+                If the Earth Engine Python API has already been initialized
+                with ``ee.Initialize()``, a short-lived access token is passed
+                to the browser control. Explicit ``accessToken`` values in this
+                dictionary take precedence. Missing ``oauthClientId`` and
+                ``projectId`` values are filled from ``GEE_OAUTH_CLIENT_ID`` and
+                ``GEE_PROJECT_ID`` environment variables when available.
             basemaps: Optional basemap style registry exposed to the agent.
             class_name: Extra CSS class for the control container.
             **kwargs: Additional maplibre-gl-geoagent options, using camelCase.
@@ -4441,6 +4524,20 @@ class MapLibreMap(MapWidget):
         }
         if default_model is not None:
             js_kwargs["defaultModel"] = default_model
+        gee_oauth_client_id = os.environ.get("GEE_OAUTH_CLIENT_ID", "").strip()
+        gee_project_id = os.environ.get("GEE_PROJECT_ID", "").strip()
+        if earth_engine is not None or gee_oauth_client_id or gee_project_id:
+            earth_engine_config = dict(earth_engine or {})
+            if "accessToken" not in earth_engine_config:
+                earth_engine_config = {
+                    **_get_ee_access_token_config(),
+                    **earth_engine_config,
+                }
+            if gee_oauth_client_id and "oauthClientId" not in earth_engine_config:
+                earth_engine_config["oauthClientId"] = gee_oauth_client_id
+            if gee_project_id and "projectId" not in earth_engine_config:
+                earth_engine_config["projectId"] = gee_project_id
+            js_kwargs["earthEngine"] = earth_engine_config
         if basemaps is not None:
             js_kwargs["basemaps"] = basemaps
         if class_name:

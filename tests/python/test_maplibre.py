@@ -1,7 +1,11 @@
 """Tests for MapLibreMap widget."""
 
-import pytest
+import sys
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from unittest.mock import patch
+
+import pytest
 
 from anymap_ts.maplibre import MapLibreMap
 
@@ -384,6 +388,119 @@ class TestAddControl:
         m.add_control("navigation", position="top-right")
         calls = [c for c in m._js_calls if c["method"] == "addControl"]
         assert len(calls) >= 1
+
+    def test_add_geoagent_control_with_earth_engine(self):
+        m = MapLibreMap(controls={})
+        earth_engine = {
+            "enabled": True,
+            "oauthClientId": "test-client-id",
+            "projectId": "test-project",
+            "includeCommunityCatalog": True,
+        }
+        m.add_geoagent_control(earth_engine=earth_engine)
+
+        calls = [c for c in m._js_calls if c["method"] == "addGeoAgentControl"]
+        assert calls[-1]["kwargs"]["earthEngine"] == earth_engine
+        assert m._controls["geoagent-control"]["earthEngine"] == earth_engine
+
+    def test_add_geoagent_control_uses_gee_env(self, monkeypatch):
+        monkeypatch.setenv("GEE_OAUTH_CLIENT_ID", "env-client-id")
+        monkeypatch.setenv("GEE_PROJECT_ID", "env-project")
+        m = MapLibreMap(controls={})
+
+        m.add_geoagent_control()
+
+        calls = [c for c in m._js_calls if c["method"] == "addGeoAgentControl"]
+        assert calls[-1]["kwargs"]["earthEngine"] == {
+            "oauthClientId": "env-client-id",
+            "projectId": "env-project",
+        }
+
+    def test_add_geoagent_control_explicit_earth_engine_overrides_env(
+        self, monkeypatch
+    ):
+        monkeypatch.setenv("GEE_OAUTH_CLIENT_ID", "env-client-id")
+        monkeypatch.setenv("GEE_PROJECT_ID", "env-project")
+        m = MapLibreMap(controls={})
+
+        m.add_geoagent_control(
+            earth_engine={
+                "enabled": True,
+                "oauthClientId": "explicit-client-id",
+            }
+        )
+
+        calls = [c for c in m._js_calls if c["method"] == "addGeoAgentControl"]
+        assert calls[-1]["kwargs"]["earthEngine"] == {
+            "enabled": True,
+            "oauthClientId": "explicit-client-id",
+            "projectId": "env-project",
+        }
+
+    def test_add_geoagent_control_uses_initialized_ee_token(self, monkeypatch):
+        credentials = SimpleNamespace(
+            token="python-ee-token",
+            valid=True,
+            expired=False,
+            expiry=datetime.now(timezone.utc) + timedelta(minutes=30),
+        )
+        state = SimpleNamespace(
+            credentials=credentials,
+            cloud_api_user_project="ee-project",
+        )
+        ee = SimpleNamespace(
+            data=SimpleNamespace(
+                is_initialized=lambda: True,
+                _get_state=lambda: state,
+            )
+        )
+        monkeypatch.setitem(sys.modules, "ee", ee)
+        m = MapLibreMap(controls={})
+
+        m.add_geoagent_control(earth_engine={"enabled": True})
+
+        calls = [c for c in m._js_calls if c["method"] == "addGeoAgentControl"]
+        earth_engine = calls[-1]["kwargs"]["earthEngine"]
+        assert earth_engine["enabled"] is True
+        assert earth_engine["accessToken"] == "python-ee-token"
+        assert earth_engine["tokenType"] == "Bearer"
+        assert earth_engine["projectId"] == "ee-project"
+        assert earth_engine["tokenExpiresIn"] > 0
+
+    def test_add_geoagent_control_explicit_access_token_overrides_ee(self, monkeypatch):
+        credentials = SimpleNamespace(
+            token="python-ee-token",
+            valid=True,
+            expired=False,
+            expiry=None,
+        )
+        state = SimpleNamespace(
+            credentials=credentials,
+            cloud_api_user_project="ee-project",
+        )
+        ee = SimpleNamespace(
+            data=SimpleNamespace(
+                is_initialized=lambda: True,
+                _get_state=lambda: state,
+            )
+        )
+        monkeypatch.setitem(sys.modules, "ee", ee)
+        m = MapLibreMap(controls={})
+
+        m.add_geoagent_control(
+            earth_engine={
+                "enabled": True,
+                "accessToken": "explicit-token",
+                "projectId": "explicit-project",
+            }
+        )
+
+        calls = [c for c in m._js_calls if c["method"] == "addGeoAgentControl"]
+        assert calls[-1]["kwargs"]["earthEngine"] == {
+            "enabled": True,
+            "accessToken": "explicit-token",
+            "projectId": "explicit-project",
+        }
 
 
 class TestMapLibreHtmlExport:

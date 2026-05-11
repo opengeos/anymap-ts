@@ -15,7 +15,7 @@
     <!-- maplibre-gl-components CSS -->
     <link href="https://unpkg.com/maplibre-gl-components@0.16.2/dist/maplibre-gl-components.css" rel="stylesheet" />
     <!-- maplibre-gl-geoagent CSS -->
-    <link href="https://unpkg.com/maplibre-gl-geoagent@0.3.1/dist/maplibre-gl-geoagent.css" rel="stylesheet" />
+    <link href="https://unpkg.com/maplibre-gl-geoagent@0.4.1/dist/maplibre-gl-geoagent.css" rel="stylesheet" />
     <!-- Geoman for drawing -->
     <script src="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.umd.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@geoman-io/maplibre-geoman-free@0.6.1/dist/maplibre-geoman.css" rel="stylesheet" />
@@ -65,7 +65,7 @@
             .then(mod => { GeoEditorClass = mod.GeoEditor; })
             .catch(() => console.warn('GeoEditor library unavailable — falling back to Geoman'));
 
-        const gaPromise = import('https://esm.sh/maplibre-gl-geoagent@0.3.1')
+        const gaPromise = import('https://esm.sh/maplibre-gl-geoagent@0.4.1')
             .then(mod => { GeoAgentControlClass = mod.GeoAgentControl; })
             .catch(() => console.warn('GeoAgent library unavailable — GeoAgent control will be skipped'));
 
