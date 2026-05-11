@@ -48217,6 +48217,8 @@ full bidirectional communication through anywidget.</p>
         <span class="n">allow_code_execution_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">allow_destructive_tools_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">show_permission_toggles</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">api_keys</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_env_api_keys</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">earth_engine</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">basemaps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -48225,8 +48227,8 @@ full bidirectional communication through anywidget.</p>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the maplibre-gl-geoagent AI assistant control.</span>
 
 <span class="sd">        The control runs provider SDKs in the browser and lets users enter API</span>
-<span class="sd">        keys in the panel. Keys and model preferences are stored in browser</span>
-<span class="sd">        ``sessionStorage`` using ``storage_prefix``.</span>
+<span class="sd">        keys in the panel. Model preferences and user-entered keys are stored</span>
+<span class="sd">        in browser ``sessionStorage`` using ``storage_prefix``.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;,</span>
@@ -48247,6 +48249,16 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">            allow_destructive_tools_default: Whether layer removal tools start</span>
 <span class="sd">                enabled.</span>
 <span class="sd">            show_permission_toggles: Whether to show permission toggles.</span>
+<span class="sd">            api_keys: Optional provider API keys to prefill in the browser</span>
+<span class="sd">                control. Keys use provider IDs such as ``openai-responses``,</span>
+<span class="sd">                ``openai-chat``, ``anthropic``, ``google``, and ``bedrock``.</span>
+<span class="sd">            use_env_api_keys: Whether to prefill provider API keys from</span>
+<span class="sd">                environment variables. Recognized variables include</span>
+<span class="sd">                ``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY``, ``GEMINI_API_KEY``,</span>
+<span class="sd">                ``GOOGLE_API_KEY``, ``GOOGLE_GENERATIVE_AI_API_KEY``,</span>
+<span class="sd">                ``AWS_BEARER_TOKEN_BEDROCK``, ``BEDROCK_API_KEY``, and</span>
+<span class="sd">                ``AWS_BEDROCK_API_KEY``. These values are passed to the</span>
+<span class="sd">                browser runtime.</span>
 <span class="sd">            earth_engine: Optional Google Earth Engine tool configuration.</span>
 <span class="sd">                If the Earth Engine Python API has already been initialized</span>
 <span class="sd">                with ``ee.Initialize()``, a short-lived access token is passed</span>
@@ -48283,6 +48295,21 @@ full bidirectional communication through anywidget.</p>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">default_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;defaultModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_model</span>
+        <span class="n">provider_api_keys</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">use_env_api_keys</span><span class="p">:</span>
+            <span class="n">provider_api_keys</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_get_geoagent_api_keys_from_env</span><span class="p">())</span>
+        <span class="n">explicit_api_keys</span> <span class="o">=</span> <span class="n">api_keys</span> <span class="k">if</span> <span class="n">api_keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;apiKeys&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">explicit_api_keys</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">provider_api_keys</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="n">provider</span><span class="p">:</span> <span class="n">key</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">provider</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">explicit_api_keys</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">key</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">provider_api_keys</span><span class="p">:</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;apiKeys&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">provider_api_keys</span>
         <span class="n">gee_oauth_client_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GEE_OAUTH_CLIENT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="n">gee_project_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GEE_PROJECT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">earth_engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gee_oauth_client_id</span> <span class="ow">or</span> <span class="n">gee_project_id</span><span class="p">:</span>
@@ -53756,7 +53783,7 @@ If None, inferred from geometry type.</p></td>
 
 
 <h4 id="anymap_ts.maplibre.MapLibreMap.add_geoagent_control" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_geoagent_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;GeoAgent&#39;</span><span class="p">,</span> <span class="n">panel_width</span><span class="o">=</span><span class="mi">390</span><span class="p">,</span> <span class="n">panel_min_width</span><span class="o">=</span><span class="mi">320</span><span class="p">,</span> <span class="n">panel_max_width</span><span class="o">=</span><span class="mi">720</span><span class="p">,</span> <span class="n">default_provider</span><span class="o">=</span><span class="s1">&#39;openai-responses&#39;</span><span class="p">,</span> <span class="n">default_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">storage_prefix</span><span class="o">=</span><span class="s1">&#39;geoagent.maplibre&#39;</span><span class="p">,</span> <span class="n">allow_code_execution_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_destructive_tools_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_permission_toggles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">earth_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">basemaps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_geoagent_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;GeoAgent&#39;</span><span class="p">,</span> <span class="n">panel_width</span><span class="o">=</span><span class="mi">390</span><span class="p">,</span> <span class="n">panel_min_width</span><span class="o">=</span><span class="mi">320</span><span class="p">,</span> <span class="n">panel_max_width</span><span class="o">=</span><span class="mi">720</span><span class="p">,</span> <span class="n">default_provider</span><span class="o">=</span><span class="s1">&#39;openai-responses&#39;</span><span class="p">,</span> <span class="n">default_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">storage_prefix</span><span class="o">=</span><span class="s1">&#39;geoagent.maplibre&#39;</span><span class="p">,</span> <span class="n">allow_code_execution_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_destructive_tools_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_permission_toggles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">api_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">use_env_api_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">earth_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">basemaps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.maplibre.MapLibreMap.add_geoagent_control" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -53765,8 +53792,8 @@ If None, inferred from geometry type.</p></td>
 
       <p>Add the maplibre-gl-geoagent AI assistant control.</p>
 <p>The control runs provider SDKs in the browser and lets users enter API
-keys in the panel. Keys and model preferences are stored in browser
-<code>sessionStorage</code> using <code>storage_prefix</code>.</p>
+keys in the panel. Model preferences and user-entered keys are stored
+in browser <code>sessionStorage</code> using <code>storage_prefix</code>.</p>
 
 <p><strong>Parameters:</strong></p>
 <table>
@@ -53858,6 +53885,26 @@ enabled.</p></td>
         <td><code>False</code></td>
       </tr>
       <tr>
+        <td><code>api_keys</code></td>
+        <td><code>Optional[Dict[str, str]]</code></td>
+        <td><p>Optional provider API keys to prefill in the browser
+control. Keys use provider IDs such as <code>openai-responses</code>,
+<code>openai-chat</code>, <code>anthropic</code>, <code>google</code>, and <code>bedrock</code>.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>use_env_api_keys</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to prefill provider API keys from
+environment variables. Recognized variables include
+<code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GEMINI_API_KEY</code>,
+<code>GOOGLE_API_KEY</code>, <code>GOOGLE_GENERATIVE_AI_API_KEY</code>,
+<code>AWS_BEARER_TOKEN_BEDROCK</code>, <code>BEDROCK_API_KEY</code>, and
+<code>AWS_BEDROCK_API_KEY</code>. These values are passed to the
+browser runtime.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
         <td><code>earth_engine</code></td>
         <td><code>Optional[Dict[str, Any]]</code></td>
         <td><p>Optional Google Earth Engine tool configuration.
@@ -53914,6 +53961,8 @@ dictionary take precedence. Missing <code>oauthClientId</code> and
     <span class="n">allow_code_execution_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">allow_destructive_tools_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">show_permission_toggles</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">api_keys</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_env_api_keys</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">earth_engine</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">basemaps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -53922,8 +53971,8 @@ dictionary take precedence. Missing <code>oauthClientId</code> and
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add the maplibre-gl-geoagent AI assistant control.</span>
 
 <span class="sd">    The control runs provider SDKs in the browser and lets users enter API</span>
-<span class="sd">    keys in the panel. Keys and model preferences are stored in browser</span>
-<span class="sd">    ``sessionStorage`` using ``storage_prefix``.</span>
+<span class="sd">    keys in the panel. Model preferences and user-entered keys are stored</span>
+<span class="sd">    in browser ``sessionStorage`` using ``storage_prefix``.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        position: Control position (&#39;top-left&#39;, &#39;top-right&#39;, &#39;bottom-left&#39;,</span>
@@ -53944,6 +53993,16 @@ dictionary take precedence. Missing <code>oauthClientId</code> and
 <span class="sd">        allow_destructive_tools_default: Whether layer removal tools start</span>
 <span class="sd">            enabled.</span>
 <span class="sd">        show_permission_toggles: Whether to show permission toggles.</span>
+<span class="sd">        api_keys: Optional provider API keys to prefill in the browser</span>
+<span class="sd">            control. Keys use provider IDs such as ``openai-responses``,</span>
+<span class="sd">            ``openai-chat``, ``anthropic``, ``google``, and ``bedrock``.</span>
+<span class="sd">        use_env_api_keys: Whether to prefill provider API keys from</span>
+<span class="sd">            environment variables. Recognized variables include</span>
+<span class="sd">            ``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY``, ``GEMINI_API_KEY``,</span>
+<span class="sd">            ``GOOGLE_API_KEY``, ``GOOGLE_GENERATIVE_AI_API_KEY``,</span>
+<span class="sd">            ``AWS_BEARER_TOKEN_BEDROCK``, ``BEDROCK_API_KEY``, and</span>
+<span class="sd">            ``AWS_BEDROCK_API_KEY``. These values are passed to the</span>
+<span class="sd">            browser runtime.</span>
 <span class="sd">        earth_engine: Optional Google Earth Engine tool configuration.</span>
 <span class="sd">            If the Earth Engine Python API has already been initialized</span>
 <span class="sd">            with ``ee.Initialize()``, a short-lived access token is passed</span>
@@ -53980,6 +54039,21 @@ dictionary take precedence. Missing <code>oauthClientId</code> and
     <span class="p">}</span>
     <span class="k">if</span> <span class="n">default_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;defaultModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_model</span>
+    <span class="n">provider_api_keys</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">use_env_api_keys</span><span class="p">:</span>
+        <span class="n">provider_api_keys</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_get_geoagent_api_keys_from_env</span><span class="p">())</span>
+    <span class="n">explicit_api_keys</span> <span class="o">=</span> <span class="n">api_keys</span> <span class="k">if</span> <span class="n">api_keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;apiKeys&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">explicit_api_keys</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">provider_api_keys</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="n">provider</span><span class="p">:</span> <span class="n">key</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">provider</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">explicit_api_keys</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">key</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider_api_keys</span><span class="p">:</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;apiKeys&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">provider_api_keys</span>
     <span class="n">gee_oauth_client_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GEE_OAUTH_CLIENT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="n">gee_project_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GEE_PROJECT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">earth_engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gee_oauth_client_id</span> <span class="ow">or</span> <span class="n">gee_project_id</span><span class="p">:</span>
