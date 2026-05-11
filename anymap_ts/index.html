@@ -48217,6 +48217,7 @@ full bidirectional communication through anywidget.</p>
         <span class="n">allow_code_execution_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">allow_destructive_tools_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">show_permission_toggles</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">earth_engine</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">basemaps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -48246,6 +48247,13 @@ full bidirectional communication through anywidget.</p>
 <span class="sd">            allow_destructive_tools_default: Whether layer removal tools start</span>
 <span class="sd">                enabled.</span>
 <span class="sd">            show_permission_toggles: Whether to show permission toggles.</span>
+<span class="sd">            earth_engine: Optional Google Earth Engine tool configuration.</span>
+<span class="sd">                If the Earth Engine Python API has already been initialized</span>
+<span class="sd">                with ``ee.Initialize()``, a short-lived access token is passed</span>
+<span class="sd">                to the browser control. Explicit ``accessToken`` values in this</span>
+<span class="sd">                dictionary take precedence. Missing ``oauthClientId`` and</span>
+<span class="sd">                ``projectId`` values are filled from ``GEE_OAUTH_CLIENT_ID`` and</span>
+<span class="sd">                ``GEE_PROJECT_ID`` environment variables when available.</span>
 <span class="sd">            basemaps: Optional basemap style registry exposed to the agent.</span>
 <span class="sd">            class_name: Extra CSS class for the control container.</span>
 <span class="sd">            **kwargs: Additional maplibre-gl-geoagent options, using camelCase.</span>
@@ -48275,6 +48283,20 @@ full bidirectional communication through anywidget.</p>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">default_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;defaultModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_model</span>
+        <span class="n">gee_oauth_client_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GEE_OAUTH_CLIENT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">gee_project_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GEE_PROJECT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">earth_engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gee_oauth_client_id</span> <span class="ow">or</span> <span class="n">gee_project_id</span><span class="p">:</span>
+            <span class="n">earth_engine_config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">earth_engine</span> <span class="ow">or</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="s2">&quot;accessToken&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">earth_engine_config</span><span class="p">:</span>
+                <span class="n">earth_engine_config</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="o">**</span><span class="n">_get_ee_access_token_config</span><span class="p">(),</span>
+                    <span class="o">**</span><span class="n">earth_engine_config</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="k">if</span> <span class="n">gee_oauth_client_id</span> <span class="ow">and</span> <span class="s2">&quot;oauthClientId&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">earth_engine_config</span><span class="p">:</span>
+                <span class="n">earth_engine_config</span><span class="p">[</span><span class="s2">&quot;oauthClientId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gee_oauth_client_id</span>
+            <span class="k">if</span> <span class="n">gee_project_id</span> <span class="ow">and</span> <span class="s2">&quot;projectId&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">earth_engine_config</span><span class="p">:</span>
+                <span class="n">earth_engine_config</span><span class="p">[</span><span class="s2">&quot;projectId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gee_project_id</span>
+            <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;earthEngine&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">earth_engine_config</span>
         <span class="k">if</span> <span class="n">basemaps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;basemaps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemaps</span>
         <span class="k">if</span> <span class="n">class_name</span><span class="p">:</span>
@@ -53734,7 +53756,7 @@ If None, inferred from geometry type.</p></td>
 
 
 <h4 id="anymap_ts.maplibre.MapLibreMap.add_geoagent_control" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_geoagent_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;GeoAgent&#39;</span><span class="p">,</span> <span class="n">panel_width</span><span class="o">=</span><span class="mi">390</span><span class="p">,</span> <span class="n">panel_min_width</span><span class="o">=</span><span class="mi">320</span><span class="p">,</span> <span class="n">panel_max_width</span><span class="o">=</span><span class="mi">720</span><span class="p">,</span> <span class="n">default_provider</span><span class="o">=</span><span class="s1">&#39;openai-responses&#39;</span><span class="p">,</span> <span class="n">default_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">storage_prefix</span><span class="o">=</span><span class="s1">&#39;geoagent.maplibre&#39;</span><span class="p">,</span> <span class="n">allow_code_execution_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_destructive_tools_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_permission_toggles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">basemaps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_geoagent_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s1">&#39;top-right&#39;</span><span class="p">,</span> <span class="n">collapsed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;GeoAgent&#39;</span><span class="p">,</span> <span class="n">panel_width</span><span class="o">=</span><span class="mi">390</span><span class="p">,</span> <span class="n">panel_min_width</span><span class="o">=</span><span class="mi">320</span><span class="p">,</span> <span class="n">panel_max_width</span><span class="o">=</span><span class="mi">720</span><span class="p">,</span> <span class="n">default_provider</span><span class="o">=</span><span class="s1">&#39;openai-responses&#39;</span><span class="p">,</span> <span class="n">default_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">storage_prefix</span><span class="o">=</span><span class="s1">&#39;geoagent.maplibre&#39;</span><span class="p">,</span> <span class="n">allow_code_execution_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_destructive_tools_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_permission_toggles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">earth_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">basemaps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">class_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.maplibre.MapLibreMap.add_geoagent_control" class="headerlink" title="Permanent link">&para;</a></h4>
@@ -53836,6 +53858,18 @@ enabled.</p></td>
         <td><code>False</code></td>
       </tr>
       <tr>
+        <td><code>earth_engine</code></td>
+        <td><code>Optional[Dict[str, Any]]</code></td>
+        <td><p>Optional Google Earth Engine tool configuration.
+If the Earth Engine Python API has already been initialized
+with <code>ee.Initialize()</code>, a short-lived access token is passed
+to the browser control. Explicit <code>accessToken</code> values in this
+dictionary take precedence. Missing <code>oauthClientId</code> and
+<code>projectId</code> values are filled from <code>GEE_OAUTH_CLIENT_ID</code> and
+<code>GEE_PROJECT_ID</code> environment variables when available.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
         <td><code>basemaps</code></td>
         <td><code>Optional[Dict[str, Any]]</code></td>
         <td><p>Optional basemap style registry exposed to the agent.</p></td>
@@ -53880,6 +53914,7 @@ enabled.</p></td>
     <span class="n">allow_code_execution_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">allow_destructive_tools_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">show_permission_toggles</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">earth_engine</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">basemaps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -53909,6 +53944,13 @@ enabled.</p></td>
 <span class="sd">        allow_destructive_tools_default: Whether layer removal tools start</span>
 <span class="sd">            enabled.</span>
 <span class="sd">        show_permission_toggles: Whether to show permission toggles.</span>
+<span class="sd">        earth_engine: Optional Google Earth Engine tool configuration.</span>
+<span class="sd">            If the Earth Engine Python API has already been initialized</span>
+<span class="sd">            with ``ee.Initialize()``, a short-lived access token is passed</span>
+<span class="sd">            to the browser control. Explicit ``accessToken`` values in this</span>
+<span class="sd">            dictionary take precedence. Missing ``oauthClientId`` and</span>
+<span class="sd">            ``projectId`` values are filled from ``GEE_OAUTH_CLIENT_ID`` and</span>
+<span class="sd">            ``GEE_PROJECT_ID`` environment variables when available.</span>
 <span class="sd">        basemaps: Optional basemap style registry exposed to the agent.</span>
 <span class="sd">        class_name: Extra CSS class for the control container.</span>
 <span class="sd">        **kwargs: Additional maplibre-gl-geoagent options, using camelCase.</span>
@@ -53938,6 +53980,20 @@ enabled.</p></td>
     <span class="p">}</span>
     <span class="k">if</span> <span class="n">default_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;defaultModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_model</span>
+    <span class="n">gee_oauth_client_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GEE_OAUTH_CLIENT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">gee_project_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GEE_PROJECT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">earth_engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gee_oauth_client_id</span> <span class="ow">or</span> <span class="n">gee_project_id</span><span class="p">:</span>
+        <span class="n">earth_engine_config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">earth_engine</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="s2">&quot;accessToken&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">earth_engine_config</span><span class="p">:</span>
+            <span class="n">earth_engine_config</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="o">**</span><span class="n">_get_ee_access_token_config</span><span class="p">(),</span>
+                <span class="o">**</span><span class="n">earth_engine_config</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="k">if</span> <span class="n">gee_oauth_client_id</span> <span class="ow">and</span> <span class="s2">&quot;oauthClientId&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">earth_engine_config</span><span class="p">:</span>
+            <span class="n">earth_engine_config</span><span class="p">[</span><span class="s2">&quot;oauthClientId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gee_oauth_client_id</span>
+        <span class="k">if</span> <span class="n">gee_project_id</span> <span class="ow">and</span> <span class="s2">&quot;projectId&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">earth_engine_config</span><span class="p">:</span>
+            <span class="n">earth_engine_config</span><span class="p">[</span><span class="s2">&quot;projectId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gee_project_id</span>
+        <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;earthEngine&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">earth_engine_config</span>
     <span class="k">if</span> <span class="n">basemaps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">js_kwargs</span><span class="p">[</span><span class="s2">&quot;basemaps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basemaps</span>
     <span class="k">if</span> <span class="n">class_name</span><span class="p">:</span>
