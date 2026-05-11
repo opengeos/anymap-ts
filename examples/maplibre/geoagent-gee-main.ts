@@ -6,8 +6,8 @@ import 'maplibre-gl-geoagent/style.css';
 const BASEMAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
 const env = import.meta.env as Record<string, string | undefined>;
-const oauthClientId = env.VITE_GEE_OAUTH_CLIENT_ID?.trim();
-const projectId = env.VITE_GEE_PROJECT_ID?.trim();
+const oauthClientId = env.VITE_GEE_OAUTH_CLIENT_ID?.trim() || undefined;
+const projectId = env.VITE_GEE_PROJECT_ID?.trim() || undefined;
 
 const map = new maplibregl.Map({
   container: 'map',
