@@ -98,6 +98,37 @@ def _get_ee_access_token_config() -> Dict[str, Any]:
     return config
 
 
+def _first_env_value(*names: str) -> str:
+    """Return the first non-empty environment variable value."""
+    for name in names:
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _get_geoagent_api_keys_from_env() -> Dict[str, str]:
+    """Build GeoAgent provider API key config from environment variables."""
+    openai_api_key = _first_env_value("OPENAI_API_KEY")
+    keys = {
+        "anthropic": _first_env_value("ANTHROPIC_API_KEY"),
+        "google": _first_env_value(
+            "GEMINI_API_KEY",
+            "GOOGLE_API_KEY",
+            "GOOGLE_GENERATIVE_AI_API_KEY",
+        ),
+        "bedrock": _first_env_value(
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "BEDROCK_API_KEY",
+            "AWS_BEDROCK_API_KEY",
+        ),
+    }
+    if openai_api_key:
+        keys["openai-responses"] = openai_api_key
+        keys["openai-chat"] = openai_api_key
+    return {provider: key for provider, key in keys.items() if key}
+
+
 class MapLibreMap(MapWidget):
     """Interactive map widget using MapLibre GL JS.
 
@@ -4458,6 +4489,8 @@ class MapLibreMap(MapWidget):
         allow_code_execution_default: bool = True,
         allow_destructive_tools_default: bool = True,
         show_permission_toggles: bool = False,
+        api_keys: Optional[Dict[str, str]] = None,
+        use_env_api_keys: bool = True,
         earth_engine: Optional[Dict[str, Any]] = None,
         basemaps: Optional[Dict[str, Any]] = None,
         class_name: str = "",
@@ -4466,8 +4499,8 @@ class MapLibreMap(MapWidget):
         """Add the maplibre-gl-geoagent AI assistant control.
 
         The control runs provider SDKs in the browser and lets users enter API
-        keys in the panel. Keys and model preferences are stored in browser
-        ``sessionStorage`` using ``storage_prefix``.
+        keys in the panel. Model preferences and user-entered keys are stored
+        in browser ``sessionStorage`` using ``storage_prefix``.
 
         Args:
             position: Control position ('top-left', 'top-right', 'bottom-left',
@@ -4488,6 +4521,16 @@ class MapLibreMap(MapWidget):
             allow_destructive_tools_default: Whether layer removal tools start
                 enabled.
             show_permission_toggles: Whether to show permission toggles.
+            api_keys: Optional provider API keys to prefill in the browser
+                control. Keys use provider IDs such as ``openai-responses``,
+                ``openai-chat``, ``anthropic``, ``google``, and ``bedrock``.
+            use_env_api_keys: Whether to prefill provider API keys from
+                environment variables. Recognized variables include
+                ``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY``, ``GEMINI_API_KEY``,
+                ``GOOGLE_API_KEY``, ``GOOGLE_GENERATIVE_AI_API_KEY``,
+                ``AWS_BEARER_TOKEN_BEDROCK``, ``BEDROCK_API_KEY``, and
+                ``AWS_BEDROCK_API_KEY``. These values are passed to the
+                browser runtime.
             earth_engine: Optional Google Earth Engine tool configuration.
                 If the Earth Engine Python API has already been initialized
                 with ``ee.Initialize()``, a short-lived access token is passed
@@ -4524,6 +4567,21 @@ class MapLibreMap(MapWidget):
         }
         if default_model is not None:
             js_kwargs["defaultModel"] = default_model
+        provider_api_keys: Dict[str, str] = {}
+        if use_env_api_keys:
+            provider_api_keys.update(_get_geoagent_api_keys_from_env())
+        explicit_api_keys = api_keys if api_keys is not None else kwargs.get("apiKeys")
+        if isinstance(explicit_api_keys, dict):
+            provider_api_keys.update(
+                {
+                    provider: key.strip()
+                    for provider, key in explicit_api_keys.items()
+                    if isinstance(provider, str)
+                    if isinstance(key, str) and key.strip()
+                }
+            )
+        if provider_api_keys:
+            js_kwargs["apiKeys"] = provider_api_keys
         gee_oauth_client_id = os.environ.get("GEE_OAUTH_CLIENT_ID", "").strip()
         gee_project_id = os.environ.get("GEE_PROJECT_ID", "").strip()
         if earth_engine is not None or gee_oauth_client_id or gee_project_id:

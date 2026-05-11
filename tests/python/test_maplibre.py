@@ -416,6 +416,53 @@ class TestAddControl:
             "projectId": "env-project",
         }
 
+    def test_add_geoagent_control_uses_provider_key_env(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "env-openai-key")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "env-anthropic-key")
+        monkeypatch.setenv("GEMINI_API_KEY", "env-gemini-key")
+        monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "env-bedrock-key")
+        m = MapLibreMap(controls={})
+
+        m.add_geoagent_control()
+
+        calls = [c for c in m._js_calls if c["method"] == "addGeoAgentControl"]
+        assert calls[-1]["kwargs"]["apiKeys"] == {
+            "openai-responses": "env-openai-key",
+            "openai-chat": "env-openai-key",
+            "anthropic": "env-anthropic-key",
+            "google": "env-gemini-key",
+            "bedrock": "env-bedrock-key",
+        }
+
+    def test_add_geoagent_control_can_disable_provider_key_env(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "env-openai-key")
+        m = MapLibreMap(controls={})
+
+        m.add_geoagent_control(use_env_api_keys=False)
+
+        calls = [c for c in m._js_calls if c["method"] == "addGeoAgentControl"]
+        assert "apiKeys" not in calls[-1]["kwargs"]
+
+    def test_add_geoagent_control_explicit_provider_keys_override_env(
+        self, monkeypatch
+    ):
+        monkeypatch.setenv("OPENAI_API_KEY", "env-openai-key")
+        m = MapLibreMap(controls={})
+
+        m.add_geoagent_control(
+            api_keys={
+                "openai-responses": "explicit-openai-key",
+                "anthropic": "explicit-anthropic-key",
+            }
+        )
+
+        calls = [c for c in m._js_calls if c["method"] == "addGeoAgentControl"]
+        assert calls[-1]["kwargs"]["apiKeys"] == {
+            "openai-responses": "explicit-openai-key",
+            "openai-chat": "env-openai-key",
+            "anthropic": "explicit-anthropic-key",
+        }
+
     def test_add_geoagent_control_explicit_earth_engine_overrides_env(
         self, monkeypatch
     ):
