@@ -26,6 +26,7 @@ export class GeoEditorPlugin {
   private geoman: Geoman | null = null;
   private geoEditor: GeoEditor | null = null;
   private onDataChange: ((data: FeatureCollection) => void) | null = null;
+  private wrappedKeyHandler: ((e: KeyboardEvent) => void) | null = null;
 
   constructor(map: MapLibreMap) {
     this.map = map;
@@ -80,6 +81,11 @@ export class GeoEditorPlugin {
 
         // Add control to map
         this.map.addControl(this.geoEditor, position);
+
+        // Scope the editor's document-level keyboard shortcuts to the map
+        // container so they don't hijack Ctrl+C/V/Z/Y outside the widget
+        // (e.g. in Marimo/Jupyter cell editors). See issue #175.
+        this.scopeKeyboardShortcutsToMap();
       } catch (error) {
         console.error('Failed to create GeoEditor:', error);
       }
@@ -98,6 +104,37 @@ export class GeoEditorPlugin {
         createGeoEditor();
       }
     }, 1000);
+  }
+
+  /**
+   * Replace the geo-editor's document-level keydown handler with a wrapper
+   * that only delegates to the original when the event originated inside the
+   * map container. The upstream handler unconditionally calls
+   * `preventDefault()` on Ctrl+C/V/Z/Y, which hijacks copy/paste/undo/redo in
+   * Marimo or Jupyter cells when the widget is rendered. See issue #175.
+   */
+  private scopeKeyboardShortcutsToMap(): void {
+    if (!this.geoEditor) return;
+
+    // boundKeyHandler is a private field on GeoEditor; access defensively.
+    const editor = this.geoEditor as unknown as {
+      boundKeyHandler?: ((e: KeyboardEvent) => void) | null;
+    };
+    const originalHandler = editor.boundKeyHandler;
+    if (typeof originalHandler !== 'function') return;
+
+    document.removeEventListener('keydown', originalHandler);
+
+    const mapContainer = this.map.getContainer();
+    const wrappedHandler = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node) || !mapContainer.contains(target)) {
+        return;
+      }
+      originalHandler(event);
+    };
+    document.addEventListener('keydown', wrappedHandler);
+    this.wrappedKeyHandler = wrappedHandler;
   }
 
   /**
@@ -198,6 +235,10 @@ export class GeoEditorPlugin {
    * Destroy the geo editor.
    */
   destroy(): void {
+    if (this.wrappedKeyHandler) {
+      document.removeEventListener('keydown', this.wrappedKeyHandler);
+      this.wrappedKeyHandler = null;
+    }
     if (this.geoEditor) {
       this.map.removeControl(this.geoEditor);
       this.geoEditor = null;
