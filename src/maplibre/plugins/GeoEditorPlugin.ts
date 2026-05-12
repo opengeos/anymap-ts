@@ -134,6 +134,10 @@ export class GeoEditorPlugin {
       originalHandler(event);
     };
     document.addEventListener('keydown', wrappedHandler);
+    // Point the editor's own reference at our wrapper so its `onRemove`
+    // (called via `map.removeControl(geoEditor)`) cleans up the right
+    // listener even when callers bypass `GeoEditorPlugin.destroy()`.
+    editor.boundKeyHandler = wrappedHandler;
     this.wrappedKeyHandler = wrappedHandler;
   }
 

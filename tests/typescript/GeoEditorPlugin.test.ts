@@ -77,12 +77,19 @@ function setupMocks(): {
 }
 
 describe('GeoEditorPlugin keyboard scoping (issue #175)', () => {
+  let activePlugin: GeoEditorPlugin | null = null;
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
   });
 
   afterEach(() => {
+    // Always destroy the plugin so the document-level keydown listener it
+    // installs doesn't leak across tests (jsdom keeps `document` between
+    // tests; clearing `document.body.innerHTML` does not remove listeners).
+    activePlugin?.destroy();
+    activePlugin = null;
     vi.useRealTimers();
     document.body.innerHTML = '';
   });
@@ -91,6 +98,7 @@ describe('GeoEditorPlugin keyboard scoping (issue #175)', () => {
     const { mapContainer, outsideElement, map, editorState, capturedKeyEvents } = setupMocks();
 
     const plugin = new GeoEditorPlugin(map);
+    activePlugin = plugin;
     plugin.initialize({}, vi.fn());
 
     // Force the gm:loaded fallback timeout to create the GeoEditor.
@@ -133,10 +141,12 @@ describe('GeoEditorPlugin keyboard scoping (issue #175)', () => {
     const { mapContainer, map, capturedKeyEvents } = setupMocks();
 
     const plugin = new GeoEditorPlugin(map);
+    activePlugin = plugin;
     plugin.initialize({}, vi.fn());
     vi.advanceTimersByTime(1100);
 
     plugin.destroy();
+    activePlugin = null;
 
     mapContainer.dispatchEvent(
       new KeyboardEvent('keydown', {
