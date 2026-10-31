@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4694,21 +4694,21 @@
 <span class="c1"># Generate sample 3D point cloud</span>
 <span class="n">points</span> <span class="o">=</span> <span class="p">[</span>
     <span class="p">{</span>
-        <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.4</span> <span class="o">+</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span>
+        <span class="s2">"position"</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.4</span> <span class="o">+</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span>
                      <span class="mf">37.8</span> <span class="o">+</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span>
                      <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">500</span><span class="p">)],</span>
-        <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">]</span>
+        <span class="s2">"color"</span><span class="p">:</span> <span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">]</span>
     <span class="p">}</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
 <span class="p">]</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">MapLibreMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">pitch</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">&quot;CartoDB.DarkMatter&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"CartoDB.DarkMatter"</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">add_point_cloud_layer</span><span class="p">(</span>
     <span class="n">data</span><span class="o">=</span><span class="n">points</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;lidar-scan&quot;</span><span class="p">,</span>
-    <span class="n">get_position</span><span class="o">=</span><span class="s2">&quot;position&quot;</span><span class="p">,</span>
-    <span class="n">get_color</span><span class="o">=</span><span class="s2">&quot;color&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"lidar-scan"</span><span class="p">,</span>
+    <span class="n">get_position</span><span class="o">=</span><span class="s2">"position"</span><span class="p">,</span>
+    <span class="n">get_color</span><span class="o">=</span><span class="s2">"color"</span><span class="p">,</span>
     <span class="n">point_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
     <span class="n">opacity</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
 <span class="p">)</span>
@@ -4745,7 +4745,7 @@
 <span class="normal">27</span>
 <span class="normal">28</span>
 <span class="normal">29</span>
-<span class="normal">30</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">PointCloudLayer</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@deck.gl/layers&#39;</span><span class="p">;</span>
+<span class="normal">30</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">PointCloudLayer</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@deck.gl/layers'</span><span class="p">;</span>
 
 <span class="k">private</span><span class="w"> </span><span class="nx">handleAddPointCloudLayer</span><span class="p">(</span><span class="nx">args</span><span class="o">:</span><span class="w"> </span><span class="kt">unknown</span><span class="p">[],</span><span class="w"> </span><span class="nx">kwargs</span><span class="o">:</span><span class="w"> </span><span class="kt">Record</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">unknown</span><span class="o">&gt;</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="ow">void</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">this</span><span class="p">.</span><span class="nx">initializeDeckOverlay</span><span class="p">();</span>
@@ -4758,13 +4758,13 @@
 <span class="w">    </span><span class="nx">pickable</span><span class="o">:</span><span class="w"> </span><span class="kt">kwargs.pickable</span><span class="w"> </span><span class="o">!==</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">opacity</span><span class="o">:</span><span class="w"> </span><span class="kt">kwargs.opacity</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="kt">number</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">pointSize</span><span class="o">:</span><span class="w"> </span><span class="kt">kwargs.pointSize</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="kt">number</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">sizeUnits</span><span class="o">:</span><span class="w"> </span><span class="kt">kwargs.sizeUnits</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="s1">&#39;pixels&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">sizeUnits</span><span class="o">:</span><span class="w"> </span><span class="kt">kwargs.sizeUnits</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="s1">'pixels'</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">getPosition</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">d</span><span class="p">[</span><span class="nx">kwargs</span><span class="p">.</span><span class="nx">getPosition</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="kt">string</span><span class="p">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">d</span><span class="p">.</span><span class="nx">position</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">getNormal</span><span class="o">:</span><span class="w"> </span><span class="kt">kwargs.getNormal</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="p">[</span><span class="mf">0</span><span class="p">,</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span><span class="w"> </span><span class="mf">1</span><span class="p">],</span>
 <span class="w">    </span><span class="nx">getColor</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">accessor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">kwargs</span><span class="p">.</span><span class="nx">getColor</span><span class="p">;</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">Array</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">accessor</span><span class="p">))</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">accessor</span><span class="p">;</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="ow">typeof</span><span class="w"> </span><span class="nx">accessor</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;string&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">d</span><span class="p">[</span><span class="nx">accessor</span><span class="p">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[</span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">];</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="ow">typeof</span><span class="w"> </span><span class="nx">accessor</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">'string'</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">d</span><span class="p">[</span><span class="nx">accessor</span><span class="p">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[</span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">];</span>
 <span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">[</span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">,</span><span class="w"> </span><span class="mf">255</span><span class="p">];</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">coordinateSystem</span><span class="o">:</span><span class="w"> </span><span class="kt">kwargs.coordinateSystem</span><span class="p">,</span>
@@ -4793,17 +4793,17 @@
 <span class="normal">13</span>
 <span class="normal">14</span>
 <span class="normal">15</span>
-<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1">// Layer IDs starting with &#39;pointcloud-&#39; are managed by DeckLayerAdapter</span>
+<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1">// Layer IDs starting with 'pointcloud-' are managed by DeckLayerAdapter</span>
 <span class="nx">getLayerIds</span><span class="p">()</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">[]</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">Array</span><span class="p">.</span><span class="kr">from</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">deckLayers</span><span class="p">.</span><span class="nx">keys</span><span class="p">()).</span><span class="nx">filter</span><span class="p">(</span><span class="nx">id</span><span class="w"> </span><span class="p">=&gt;</span>
-<span class="w">    </span><span class="nx">id</span><span class="p">.</span><span class="nx">startsWith</span><span class="p">(</span><span class="s1">&#39;arc-&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">id</span><span class="p">.</span><span class="nx">startsWith</span><span class="p">(</span><span class="s1">&#39;pointcloud-&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">id</span><span class="p">.</span><span class="nx">startsWith</span><span class="p">(</span><span class="s1">'arc-'</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">id</span><span class="p">.</span><span class="nx">startsWith</span><span class="p">(</span><span class="s1">'pointcloud-'</span><span class="p">)</span>
 <span class="w">  </span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="c1">// Adjust opacity by cloning the immutable deck.gl layer</span>
 <span class="nx">setOpacity</span><span class="p">(</span><span class="nx">layerId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">opacity</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="ow">void</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">layer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">deckLayers</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">layerId</span><span class="p">);</span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">layer</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="ow">typeof</span><span class="w"> </span><span class="nx">layer</span><span class="p">.</span><span class="nx">clone</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;function&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">layer</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="ow">typeof</span><span class="w"> </span><span class="nx">layer</span><span class="p">.</span><span class="nx">clone</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">'function'</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">updated</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">layer</span><span class="p">.</span><span class="nx">clone</span><span class="p">({</span><span class="w"> </span><span class="nx">opacity</span><span class="w"> </span><span class="p">});</span>
 <span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">deckLayers</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="nx">layerId</span><span class="p">,</span><span class="w"> </span><span class="nx">updated</span><span class="p">);</span>
 <span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">updateOverlay</span><span class="p">();</span>
@@ -5010,15 +5010,122 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../../js/timeago.min.js"></script>
       
         <script src="../../../js/timeago_mkdocs_material.js"></script>
       
     
-  </body>
+  <script data-mkdocs-jupyter-mathjax="{&quot;url&quot;: &quot;https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js&quot;, &quot;version&quot;: 4}">
+/* Shared by full pages and Material's instant navigation. */
+(() => {
+  const config = JSON.parse(document.currentScript.dataset.mkdocsJupyterMathjax);
+  if (window.mkdocsJupyterMathJax) return;
+
+  let loading;
+  let queue = Promise.resolve();
+  let previous = [];
+
+  const ready = async () => {
+    if (!loading) {
+      loading = (async () => {
+        let math = window.MathJax;
+        if (!math?.typesetPromise) {
+          const url = new URL(config.url, document.baseURI).href;
+          const existing = Array.from(document.scripts).find(script =>
+            script.src && (script.src === url || script.id === 'MathJax-script' ||
+              (/mathjax/i.test(script.src) &&
+               /\/(?:MathJax|latest|(?:tex|mml)(?:-mml)?-(?:chtml|svg))\.js(?:[?#]|$)/i.test(script.src))));
+          if (existing) {
+            if (!math?.startup?.promise) {
+              await new Promise((resolve, reject) => {
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+              });
+            }
+          } else {
+            // Keep site macros, delimiters and startup hooks when supplied.
+            const options = math || {};
+            window.MathJax = {
+              ...options,
+              loader: {
+                ...options.loader,
+                load: Array.from(new Set(['ui/safe', ...(options.loader?.load || [])]))
+              },
+              startup: { typeset: false, ...options.startup },
+              tex: {
+                tags: 'ams',
+                useLabelIds: true,
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                ...options.tex
+              }
+            };
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = config.url;
+              script.id = 'MathJax-script';
+              script.async = true;
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+        }
+        math = window.MathJax;
+        await math.startup.promise;
+        return math;
+      })();
+    }
+    const math = await loading;
+    // A site owner can extend the v3 queue again on each navigation.
+    await math.startup.promise;
+    return math;
+  };
+
+  const unrendered = node => {
+    if (node.matches('mjx-container')) return [];
+    if (!node.querySelector('mjx-container')) return [node];
+    // In v3, scanning generated assistive MathML again produces nested output.
+    return Array.from(node.children).flatMap(unrendered);
+  };
+
+  const refresh = () => {
+    // A separate chain also serializes v3, without changing v4's startup promise.
+    queue = queue.then(async () => {
+      const notebooks = Array.from(document.querySelectorAll('.jupyter-wrapper'));
+      if (!notebooks.length && !previous.length) return;
+      if (notebooks.length === previous.length &&
+          notebooks.every((node, index) => node === previous[index])) return;
+      const math = await ready();
+      if (previous.length) {
+        math.typesetClear(previous);
+        math.texReset();
+      }
+      previous = notebooks.filter(node => node.isConnected);
+      const pending = previous.flatMap(unrendered);
+      if (pending.length) await math.typesetPromise(pending);
+    }).catch(error => console.error('mkdocs-jupyter: MathJax rendering failed', error));
+    return queue;
+  };
+
+  window.mkdocsJupyterMathJax = { refresh };
+  const start = () => {
+    if (typeof document$ !== 'undefined') document$.subscribe(refresh);
+    else refresh();
+  };
+  // Theme bundles and user-provided MathJax scripts can follow notebook content.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else start();
+})();
+
+</script>
+</body>
 </html>

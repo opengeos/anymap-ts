@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -33,10 +33,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4867,9 +4867,9 @@
 <span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenLayersMap</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">OpenLayersMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_geojson</span><span class="p">(</span><span class="n">geojson</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;cities&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fillColor&quot;</span><span class="p">:</span> <span class="s2">&quot;rgba(255, 0, 0, 0.8)&quot;</span><span class="p">,</span> <span class="s2">&quot;strokeColor&quot;</span><span class="p">:</span> <span class="s2">&quot;#ffffff&quot;</span><span class="p">,</span> <span class="s2">&quot;radius&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_marker</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4194</span><span class="p">,</span> <span class="mf">37.7749</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#ff0000&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"OpenStreetMap"</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_geojson</span><span class="p">(</span><span class="n">geojson</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"cities"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s2">"fillColor"</span><span class="p">:</span> <span class="s2">"rgba(255, 0, 0, 0.8)"</span><span class="p">,</span> <span class="s2">"strokeColor"</span><span class="p">:</span> <span class="s2">"#ffffff"</span><span class="p">,</span> <span class="s2">"radius"</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_marker</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4194</span><span class="p">,</span> <span class="mf">37.7749</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"#ff0000"</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">fly_to</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4194</span><span class="p">,</span> <span class="mf">37.7749</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
 <span class="n">m</span>
 </code></pre></div></td></tr></table></div>
@@ -4900,22 +4900,22 @@
 <span class="normal">23</span>
 <span class="normal">24</span>
 <span class="normal">25</span>
-<span class="normal">26</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nb">Map</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/Map&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">View</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/View&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">TileLayer</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/layer/Tile&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">VectorLayer</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/layer/Vector&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">VectorSource</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/source/Vector&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">OSM</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/source/OSM&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">XYZ</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/source/XYZ&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">GeoJSON</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/format/GeoJSON&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fromLonLat</span><span class="p">,</span><span class="w"> </span><span class="nx">toLonLat</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/proj&#39;</span><span class="p">;</span>
+<span class="normal">26</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nb">Map</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/Map'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">View</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/View'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">TileLayer</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/layer/Tile'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">VectorLayer</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/layer/Vector'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">VectorSource</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/source/Vector'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">OSM</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/source/OSM'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">XYZ</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/source/XYZ'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">GeoJSON</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/format/GeoJSON'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fromLonLat</span><span class="p">,</span><span class="w"> </span><span class="nx">toLonLat</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/proj'</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">OpenLayersRenderer</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">BaseMapRenderer</span><span class="o">&lt;</span><span class="nb">Map</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">private</span><span class="w"> </span><span class="nx">layersMap</span><span class="o">:</span><span class="w"> </span><span class="kt">Map</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">Layer</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Map</span><span class="p">();</span>
 
 <span class="w">  </span><span class="k">protected</span><span class="w"> </span><span class="nx">createMap</span><span class="p">()</span><span class="o">:</span><span class="w"> </span><span class="nb">Map</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">center</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;center&#39;</span><span class="p">)</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="p">[</span><span class="kt">number</span><span class="p">,</span><span class="w"> </span><span class="kt">number</span><span class="p">];</span>
-<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">zoom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;zoom&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">center</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'center'</span><span class="p">)</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="p">[</span><span class="kt">number</span><span class="p">,</span><span class="w"> </span><span class="kt">number</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">zoom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'zoom'</span><span class="p">);</span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Map</span><span class="p">({</span>
 <span class="w">      </span><span class="nx">target</span><span class="o">:</span><span class="w"> </span><span class="kt">this.mapContainer</span><span class="o">!</span><span class="p">,</span>
@@ -4960,7 +4960,7 @@
 
 <span class="w">  </span><span class="c1">// Parse GeoJSON</span>
 <span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">GeoJSON</span><span class="p">().</span><span class="nx">readFeatures</span><span class="p">(</span><span class="nx">geojson</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">featureProjection</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;EPSG:3857&#39;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Reproject to map projection</span>
+<span class="w">    </span><span class="nx">featureProjection</span><span class="o">:</span><span class="w"> </span><span class="s1">'EPSG:3857'</span><span class="p">,</span><span class="w"> </span><span class="c1">// Reproject to map projection</span>
 <span class="w">  </span><span class="p">});</span>
 
 <span class="w">  </span><span class="c1">// Create vector source and layer</span>
@@ -4998,16 +4998,16 @@
 <span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">private</span><span class="w"> </span><span class="nx">createStyle</span><span class="p">(</span><span class="nx">options?</span><span class="o">:</span><span class="w"> </span><span class="kt">Record</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">unknown</span><span class="o">&gt;</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nx">Style</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Style</span><span class="p">({</span>
 <span class="w">    </span><span class="nx">fill</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Fill</span><span class="p">({</span>
-<span class="w">      </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.fillColor</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;rgba(51, 136, 255, 0.5)&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.fillColor</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'rgba(51, 136, 255, 0.5)'</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}),</span>
 <span class="w">    </span><span class="nx">stroke</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Stroke</span><span class="p">({</span>
-<span class="w">      </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.strokeColor</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;#3388ff&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.strokeColor</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'#3388ff'</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">width</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.strokeWidth</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}),</span>
 <span class="w">    </span><span class="nx">image</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Circle</span><span class="p">({</span>
 <span class="w">      </span><span class="nx">radius</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.radius</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="mf">8</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">fill</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Fill</span><span class="p">({</span><span class="w"> </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.fillColor</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;#3388ff&#39;</span><span class="w"> </span><span class="p">}),</span>
-<span class="w">      </span><span class="nx">stroke</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Stroke</span><span class="p">({</span><span class="w"> </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.strokeColor</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;#ffffff&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">width</span><span class="o">:</span><span class="w"> </span><span class="kt">2</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">      </span><span class="nx">fill</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Fill</span><span class="p">({</span><span class="w"> </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.fillColor</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'#3388ff'</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">      </span><span class="nx">stroke</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Stroke</span><span class="p">({</span><span class="w"> </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="kt">options?.strokeColor</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'#ffffff'</span><span class="p">,</span><span class="w"> </span><span class="nx">width</span><span class="o">:</span><span class="w"> </span><span class="kt">2</span><span class="w"> </span><span class="p">}),</span>
 <span class="w">    </span><span class="p">}),</span>
 <span class="w">  </span><span class="p">});</span>
 <span class="p">}</span>
@@ -5061,7 +5061,7 @@
 <span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">private</span><span class="w"> </span><span class="nx">handleAddMarker</span><span class="p">(</span><span class="nx">args</span><span class="o">:</span><span class="w"> </span><span class="kt">unknown</span><span class="p">[],</span><span class="w"> </span><span class="nx">kwargs</span><span class="o">:</span><span class="w"> </span><span class="kt">Record</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">unknown</span><span class="o">&gt;</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="ow">void</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">lng</span><span class="p">,</span><span class="w"> </span><span class="nx">lat</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">args</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="p">[</span><span class="kt">number</span><span class="p">,</span><span class="w"> </span><span class="kt">number</span><span class="p">];</span>
 <span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">kwargs</span><span class="p">.</span><span class="nx">id</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="sb">`marker-</span><span class="si">${</span><span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">()</span><span class="si">}</span><span class="sb">`</span><span class="p">;</span>
-<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">kwargs</span><span class="p">.</span><span class="nx">color</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;#3388ff&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">kwargs</span><span class="p">.</span><span class="nx">color</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'#3388ff'</span><span class="p">;</span>
 
 <span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">feature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Feature</span><span class="p">({</span>
 <span class="w">    </span><span class="nx">geometry</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Point</span><span class="p">(</span><span class="nx">fromLonLat</span><span class="p">([</span><span class="nx">lng</span><span class="p">,</span><span class="w"> </span><span class="nx">lat</span><span class="p">])),</span>
@@ -5071,7 +5071,7 @@
 <span class="w">    </span><span class="nx">image</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Circle</span><span class="p">({</span>
 <span class="w">      </span><span class="nx">radius</span><span class="o">:</span><span class="w"> </span><span class="kt">8</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">fill</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Fill</span><span class="p">({</span><span class="w"> </span><span class="nx">color</span><span class="w"> </span><span class="p">}),</span>
-<span class="w">      </span><span class="nx">stroke</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Stroke</span><span class="p">({</span><span class="w"> </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;#ffffff&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">width</span><span class="o">:</span><span class="w"> </span><span class="kt">2</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">      </span><span class="nx">stroke</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">Stroke</span><span class="p">({</span><span class="w"> </span><span class="nx">color</span><span class="o">:</span><span class="w"> </span><span class="s1">'#ffffff'</span><span class="p">,</span><span class="w"> </span><span class="nx">width</span><span class="o">:</span><span class="w"> </span><span class="kt">2</span><span class="w"> </span><span class="p">}),</span>
 <span class="w">    </span><span class="p">}),</span>
 <span class="w">  </span><span class="p">}));</span>
 
@@ -5127,7 +5127,7 @@
 <span class="normal">4</span>
 <span class="normal">5</span>
 <span class="normal">6</span>
-<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fromLonLat</span><span class="p">,</span><span class="w"> </span><span class="nx">toLonLat</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;ol/proj&#39;</span><span class="p">;</span>
+<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fromLonLat</span><span class="p">,</span><span class="w"> </span><span class="nx">toLonLat</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'ol/proj'</span><span class="p">;</span>
 
 <span class="c1">// To OpenLayers (EPSG:4326 -&gt; EPSG:3857)</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">olCoord</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">fromLonLat</span><span class="p">([</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span><span class="w"> </span><span class="mf">37.8</span><span class="p">]);</span>
@@ -5233,15 +5233,122 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../../js/timeago.min.js"></script>
       
         <script src="../../../js/timeago_mkdocs_material.js"></script>
       
     
-  </body>
+  <script data-mkdocs-jupyter-mathjax="{&quot;url&quot;: &quot;https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js&quot;, &quot;version&quot;: 4}">
+/* Shared by full pages and Material's instant navigation. */
+(() => {
+  const config = JSON.parse(document.currentScript.dataset.mkdocsJupyterMathjax);
+  if (window.mkdocsJupyterMathJax) return;
+
+  let loading;
+  let queue = Promise.resolve();
+  let previous = [];
+
+  const ready = async () => {
+    if (!loading) {
+      loading = (async () => {
+        let math = window.MathJax;
+        if (!math?.typesetPromise) {
+          const url = new URL(config.url, document.baseURI).href;
+          const existing = Array.from(document.scripts).find(script =>
+            script.src && (script.src === url || script.id === 'MathJax-script' ||
+              (/mathjax/i.test(script.src) &&
+               /\/(?:MathJax|latest|(?:tex|mml)(?:-mml)?-(?:chtml|svg))\.js(?:[?#]|$)/i.test(script.src))));
+          if (existing) {
+            if (!math?.startup?.promise) {
+              await new Promise((resolve, reject) => {
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+              });
+            }
+          } else {
+            // Keep site macros, delimiters and startup hooks when supplied.
+            const options = math || {};
+            window.MathJax = {
+              ...options,
+              loader: {
+                ...options.loader,
+                load: Array.from(new Set(['ui/safe', ...(options.loader?.load || [])]))
+              },
+              startup: { typeset: false, ...options.startup },
+              tex: {
+                tags: 'ams',
+                useLabelIds: true,
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                ...options.tex
+              }
+            };
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = config.url;
+              script.id = 'MathJax-script';
+              script.async = true;
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+        }
+        math = window.MathJax;
+        await math.startup.promise;
+        return math;
+      })();
+    }
+    const math = await loading;
+    // A site owner can extend the v3 queue again on each navigation.
+    await math.startup.promise;
+    return math;
+  };
+
+  const unrendered = node => {
+    if (node.matches('mjx-container')) return [];
+    if (!node.querySelector('mjx-container')) return [node];
+    // In v3, scanning generated assistive MathML again produces nested output.
+    return Array.from(node.children).flatMap(unrendered);
+  };
+
+  const refresh = () => {
+    // A separate chain also serializes v3, without changing v4's startup promise.
+    queue = queue.then(async () => {
+      const notebooks = Array.from(document.querySelectorAll('.jupyter-wrapper'));
+      if (!notebooks.length && !previous.length) return;
+      if (notebooks.length === previous.length &&
+          notebooks.every((node, index) => node === previous[index])) return;
+      const math = await ready();
+      if (previous.length) {
+        math.typesetClear(previous);
+        math.texReset();
+      }
+      previous = notebooks.filter(node => node.isConnected);
+      const pending = previous.flatMap(unrendered);
+      if (pending.length) await math.typesetPromise(pending);
+    }).catch(error => console.error('mkdocs-jupyter: MathJax rendering failed', error));
+    return queue;
+  };
+
+  window.mkdocsJupyterMathJax = { refresh };
+  const start = () => {
+    if (typeof document$ !== 'undefined') document$.subscribe(refresh);
+    else refresh();
+  };
+  // Theme bundles and user-provided MathJax scripts can follow notebook content.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else start();
+})();
+
+</script>
+</body>
 </html>

@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -33,10 +33,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4968,7 +4968,7 @@
 
 <span class="c1"># Create a map centered on a location</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"OpenStreetMap"</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">add_draw_control</span><span class="p">()</span>
 <span class="n">m</span>
 </code></pre></div></td></tr></table></div>
@@ -4984,7 +4984,7 @@
 
 <span class="c1"># Set your Mapbox token (or use MAPBOX_TOKEN env var)</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">MapboxMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"OpenStreetMap"</span><span class="p">)</span>
 <span class="n">m</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="leaflet">Leaflet<a class="headerlink" href="#leaflet" title="Permanent link">&para;</a></h2>
@@ -4996,8 +4996,8 @@
 <span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">LeafletMap</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">LeafletMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_marker</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4194</span><span class="p">,</span> <span class="mf">37.7749</span><span class="p">,</span> <span class="n">popup</span><span class="o">=</span><span class="s2">&quot;San Francisco&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"OpenStreetMap"</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_marker</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4194</span><span class="p">,</span> <span class="mf">37.7749</span><span class="p">,</span> <span class="n">popup</span><span class="o">=</span><span class="s2">"San Francisco"</span><span class="p">)</span>
 <span class="n">m</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="openlayers">OpenLayers<a class="headerlink" href="#openlayers" title="Permanent link">&para;</a></h2>
@@ -5015,13 +5015,13 @@
 <span class="normal">12</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenLayersMap</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">OpenLayersMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"OpenStreetMap"</span><span class="p">)</span>
 
 <span class="c1"># Add WMS layer</span>
 <span class="n">m</span><span class="o">.</span><span class="n">add_wms_layer</span><span class="p">(</span>
-    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://example.com/wms&quot;</span><span class="p">,</span>
-    <span class="n">layers</span><span class="o">=</span><span class="s2">&quot;layer_name&quot;</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;WMS Layer&quot;</span>
+    <span class="n">url</span><span class="o">=</span><span class="s2">"https://example.com/wms"</span><span class="p">,</span>
+    <span class="n">layers</span><span class="o">=</span><span class="s2">"layer_name"</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"WMS Layer"</span>
 <span class="p">)</span>
 <span class="n">m</span>
 </code></pre></div></td></tr></table></div>
@@ -5040,10 +5040,10 @@
 <span class="normal">12</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeckGLMap</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">DeckGLMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">&quot;CartoDB.DarkMatter&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"CartoDB.DarkMatter"</span><span class="p">)</span>
 
 <span class="c1"># Add scatterplot layer</span>
-<span class="n">points</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;coordinates&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}]</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"coordinates"</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="s2">"value"</span><span class="p">:</span> <span class="mi">100</span><span class="p">}]</span>
 <span class="n">m</span><span class="o">.</span><span class="n">add_scatterplot_layer</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">points</span><span class="p">,</span> <span class="n">get_radius</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 
 <span class="c1"># Add hexagon aggregation</span>
@@ -5062,7 +5062,7 @@
 
 <span class="c1"># Set CESIUM_TOKEN env var for terrain/3D Tiles</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">CesiumMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_basemap</span><span class="p">(</span><span class="s2">"OpenStreetMap"</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">set_terrain</span><span class="p">()</span>  <span class="c1"># Enable Cesium World Terrain</span>
 <span class="n">m</span><span class="o">.</span><span class="n">fly_to</span><span class="p">(</span><span class="o">-</span><span class="mf">122.4194</span><span class="p">,</span> <span class="mf">37.7749</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">heading</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">pitch</span><span class="o">=-</span><span class="mi">45</span><span class="p">)</span>
 <span class="n">m</span>
@@ -5087,11 +5087,11 @@
 
 <span class="c1"># Add DataFrame data</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s1">&#39;latitude&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">37.7749</span><span class="p">,</span> <span class="mf">37.8044</span><span class="p">],</span>
-    <span class="s1">&#39;longitude&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.4194</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.2712</span><span class="p">],</span>
-    <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">]</span>
+    <span class="s1">'latitude'</span><span class="p">:</span> <span class="p">[</span><span class="mf">37.7749</span><span class="p">,</span> <span class="mf">37.8044</span><span class="p">],</span>
+    <span class="s1">'longitude'</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.4194</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.2712</span><span class="p">],</span>
+    <span class="s1">'value'</span><span class="p">:</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">]</span>
 <span class="p">})</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_data</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;points&#39;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_data</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'points'</span><span class="p">)</span>
 <span class="n">m</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="potree-point-clouds">Potree (Point Clouds)<a class="headerlink" href="#potree-point-clouds" title="Permanent link">&para;</a></h2>
@@ -5108,7 +5108,7 @@
     <span class="n">point_budget</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span>
     <span class="n">edl_enabled</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
-<span class="n">viewer</span><span class="o">.</span><span class="n">load_point_cloud</span><span class="p">(</span><span class="s2">&quot;path/to/pointcloud/cloud.js&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;lidar&quot;</span><span class="p">)</span>
+<span class="n">viewer</span><span class="o">.</span><span class="n">load_point_cloud</span><span class="p">(</span><span class="s2">"path/to/pointcloud/cloud.js"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"lidar"</span><span class="p">)</span>
 <span class="n">viewer</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="common-methods">Common Methods<a class="headerlink" href="#common-methods" title="Permanent link">&para;</a></h2>
@@ -5177,23 +5177,23 @@
 <span class="normal">16</span>
 <span class="normal">17</span>
 <span class="normal">18</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">geojson</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;FeatureCollection&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"FeatureCollection"</span><span class="p">,</span>
+    <span class="s2">"features"</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Feature&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;geometry&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Point&quot;</span><span class="p">,</span> <span class="s2">&quot;coordinates&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">]},</span>
-            <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;San Francisco&quot;</span><span class="p">}</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Feature"</span><span class="p">,</span>
+            <span class="s2">"geometry"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Point"</span><span class="p">,</span> <span class="s2">"coordinates"</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">]},</span>
+            <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"San Francisco"</span><span class="p">}</span>
         <span class="p">}</span>
     <span class="p">]</span>
 <span class="p">}</span>
 
 <span class="c1"># Works with MapLibre, Mapbox, Leaflet, OpenLayers</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_vector</span><span class="p">(</span><span class="n">geojson</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;points&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_vector</span><span class="p">(</span><span class="n">geojson</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"points"</span><span class="p">)</span>
 
 <span class="c1"># Or with GeoDataFrame (requires geopandas)</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
-<span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.geojson&quot;</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">add_vector</span><span class="p">(</span><span class="n">gdf</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;polygons&quot;</span><span class="p">)</span>
+<span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="s2">"path/to/data.geojson"</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_vector</span><span class="p">(</span><span class="n">gdf</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"polygons"</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="map-navigation">Map Navigation<a class="headerlink" href="#map-navigation" title="Permanent link">&para;</a></h2>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
@@ -5209,7 +5209,7 @@
 <h2 id="export-to-html">Export to HTML<a class="headerlink" href="#export-to-html" title="Permanent link">&para;</a></h2>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># All map types support HTML export</span>
-<span class="n">m</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="s2">&quot;map.html&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Map&quot;</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="s2">"map.html"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"My Map"</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 
@@ -5303,15 +5303,122 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../js/timeago.min.js"></script>
       
         <script src="../js/timeago_mkdocs_material.js"></script>
       
     
-  </body>
+  <script data-mkdocs-jupyter-mathjax="{&quot;url&quot;: &quot;https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js&quot;, &quot;version&quot;: 4}">
+/* Shared by full pages and Material's instant navigation. */
+(() => {
+  const config = JSON.parse(document.currentScript.dataset.mkdocsJupyterMathjax);
+  if (window.mkdocsJupyterMathJax) return;
+
+  let loading;
+  let queue = Promise.resolve();
+  let previous = [];
+
+  const ready = async () => {
+    if (!loading) {
+      loading = (async () => {
+        let math = window.MathJax;
+        if (!math?.typesetPromise) {
+          const url = new URL(config.url, document.baseURI).href;
+          const existing = Array.from(document.scripts).find(script =>
+            script.src && (script.src === url || script.id === 'MathJax-script' ||
+              (/mathjax/i.test(script.src) &&
+               /\/(?:MathJax|latest|(?:tex|mml)(?:-mml)?-(?:chtml|svg))\.js(?:[?#]|$)/i.test(script.src))));
+          if (existing) {
+            if (!math?.startup?.promise) {
+              await new Promise((resolve, reject) => {
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+              });
+            }
+          } else {
+            // Keep site macros, delimiters and startup hooks when supplied.
+            const options = math || {};
+            window.MathJax = {
+              ...options,
+              loader: {
+                ...options.loader,
+                load: Array.from(new Set(['ui/safe', ...(options.loader?.load || [])]))
+              },
+              startup: { typeset: false, ...options.startup },
+              tex: {
+                tags: 'ams',
+                useLabelIds: true,
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                ...options.tex
+              }
+            };
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = config.url;
+              script.id = 'MathJax-script';
+              script.async = true;
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+        }
+        math = window.MathJax;
+        await math.startup.promise;
+        return math;
+      })();
+    }
+    const math = await loading;
+    // A site owner can extend the v3 queue again on each navigation.
+    await math.startup.promise;
+    return math;
+  };
+
+  const unrendered = node => {
+    if (node.matches('mjx-container')) return [];
+    if (!node.querySelector('mjx-container')) return [node];
+    // In v3, scanning generated assistive MathML again produces nested output.
+    return Array.from(node.children).flatMap(unrendered);
+  };
+
+  const refresh = () => {
+    // A separate chain also serializes v3, without changing v4's startup promise.
+    queue = queue.then(async () => {
+      const notebooks = Array.from(document.querySelectorAll('.jupyter-wrapper'));
+      if (!notebooks.length && !previous.length) return;
+      if (notebooks.length === previous.length &&
+          notebooks.every((node, index) => node === previous[index])) return;
+      const math = await ready();
+      if (previous.length) {
+        math.typesetClear(previous);
+        math.texReset();
+      }
+      previous = notebooks.filter(node => node.isConnected);
+      const pending = previous.flatMap(unrendered);
+      if (pending.length) await math.typesetPromise(pending);
+    }).catch(error => console.error('mkdocs-jupyter: MathJax rendering failed', error));
+    return queue;
+  };
+
+  window.mkdocsJupyterMathJax = { refresh };
+  const start = () => {
+    if (typeof document$ !== 'undefined') document$.subscribe(refresh);
+    else refresh();
+  };
+  // Theme bundles and user-provided MathJax scripts can follow notebook content.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else start();
+})();
+
+</script>
+</body>
 </html>

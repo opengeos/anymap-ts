@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4904,7 +4904,7 @@
         <details class="quote">
           <summary>Source code in <code>anymap_ts/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_step_expression</span><span class="p">(</span><span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">breaks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">colors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a MapLibre step expression for choropleth styling.</span>
+<span class="w">    </span><span class="sd">"""Build a MapLibre step expression for choropleth styling.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        column: Property name to style by.</span>
@@ -4913,10 +4913,10 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        MapLibre step expression as a list.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># MapLibre step expression format:</span>
-    <span class="c1"># [&quot;step&quot;, [&quot;get&quot;, &quot;property&quot;], color0, break1, color1, break2, color2, ...]</span>
-    <span class="n">expr</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="n">column</span><span class="p">],</span> <span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="c1"># ["step", ["get", "property"], color0, break1, color1, break2, color2, ...]</span>
+    <span class="n">expr</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"step"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"get"</span><span class="p">,</span> <span class="n">column</span><span class="p">],</span> <span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
 
     <span class="c1"># Add breaks and colors (skip the first break which is the minimum)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">breaks</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
@@ -5027,33 +5027,33 @@
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">manual_breaks</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute classification breaks for choropleth maps.</span>
+<span class="w">    </span><span class="sd">"""Compute classification breaks for choropleth maps.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        values: List of numeric values to classify.</span>
-<span class="sd">        classification: Classification method (&#39;quantile&#39;, &#39;equal_interval&#39;,</span>
-<span class="sd">            &#39;natural_breaks&#39;, &#39;manual&#39;).</span>
+<span class="sd">        classification: Classification method ('quantile', 'equal_interval',</span>
+<span class="sd">            'natural_breaks', 'manual').</span>
 <span class="sd">        k: Number of classes.</span>
-<span class="sd">        manual_breaks: Custom break values for &#39;manual&#39; classification.</span>
+<span class="sd">        manual_breaks: Custom break values for 'manual' classification.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of break values (k+1 values defining class boundaries).</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If classification method is invalid or breaks are incorrect.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">&quot;manual&quot;</span><span class="p">:</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">"manual"</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">manual_breaks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;manual_breaks required for &#39;manual&#39; classification&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"manual_breaks required for 'manual' classification"</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">manual_breaks</span><span class="p">)</span> <span class="o">!=</span> <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;manual_breaks must have </span><span class="si">{</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> values for </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> classes&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"manual_breaks must have </span><span class="si">{</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> values for </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> classes"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">manual_breaks</span>
 
     <span class="n">sorted_values</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
     <span class="n">min_val</span> <span class="o">=</span> <span class="n">sorted_values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">max_val</span> <span class="o">=</span> <span class="n">sorted_values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-    <span class="k">if</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">"quantile"</span><span class="p">:</span>
         <span class="c1"># Equal number of features per class</span>
         <span class="n">breaks</span> <span class="o">=</span> <span class="p">[</span><span class="n">min_val</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
@@ -5062,13 +5062,13 @@
         <span class="n">breaks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">max_val</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">breaks</span>
 
-    <span class="k">elif</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">&quot;equal_interval&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">"equal_interval"</span><span class="p">:</span>
         <span class="c1"># Equal value ranges</span>
         <span class="n">interval</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_val</span> <span class="o">-</span> <span class="n">min_val</span><span class="p">)</span> <span class="o">/</span> <span class="n">k</span>
         <span class="n">breaks</span> <span class="o">=</span> <span class="p">[</span><span class="n">min_val</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">interval</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">breaks</span>
 
-    <span class="k">elif</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">&quot;natural_breaks&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">classification</span> <span class="o">==</span> <span class="s2">"natural_breaks"</span><span class="p">:</span>
         <span class="c1"># Jenks natural breaks - requires jenkspy</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="kn">import</span><span class="w"> </span><span class="nn">jenkspy</span>
@@ -5077,14 +5077,14 @@
             <span class="k">return</span> <span class="n">breaks</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                <span class="s2">&quot;jenkspy is required for natural_breaks classification. &quot;</span>
-                <span class="s2">&quot;Install with: pip install jenkspy&quot;</span>
+                <span class="s2">"jenkspy is required for natural_breaks classification. "</span>
+                <span class="s2">"Install with: pip install jenkspy"</span>
             <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Unknown classification method &#39;</span><span class="si">{</span><span class="n">classification</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
-            <span class="s2">&quot;Options: &#39;quantile&#39;, &#39;equal_interval&#39;, &#39;natural_breaks&#39;, &#39;manual&#39;&quot;</span>
+            <span class="sa">f</span><span class="s2">"Unknown classification method '</span><span class="si">{</span><span class="n">classification</span><span class="si">}</span><span class="s2">'. "</span>
+            <span class="s2">"Options: 'quantile', 'equal_interval', 'natural_breaks', 'manual'"</span>
         <span class="p">)</span>
 </code></pre></div>
         </details>
@@ -5160,7 +5160,7 @@
         <details class="quote">
           <summary>Source code in <code>anymap_ts/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch_geojson</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch GeoJSON data from a URL.</span>
+<span class="w">    </span><span class="sd">"""Fetch GeoJSON data from a URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: URL to fetch GeoJSON from</span>
@@ -5170,18 +5170,18 @@
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the URL cannot be fetched or parsed</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">urlopen</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
-            <span class="n">charset</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get_content_charset</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;utf-8&quot;</span>
+            <span class="n">charset</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get_content_charset</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">"utf-8"</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">charset</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">URLError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch GeoJSON from URL: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to fetch GeoJSON from URL: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
     <span class="k">except</span> <span class="ne">UnicodeDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to decode response as UTF-8: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to decode response as UTF-8: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
     <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON at URL: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid JSON at URL: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -5241,14 +5241,14 @@
         <details class="quote">
           <summary>Source code in <code>anymap_ts/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_bounds</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate bounds from GeoJSON or GeoDataFrame.</span>
+<span class="w">    </span><span class="sd">"""Calculate bounds from GeoJSON or GeoDataFrame.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: GeoJSON dict or GeoDataFrame</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        [west, south, east, north] bounds or None</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">HAS_GEOPANDAS</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">):</span>
         <span class="n">bounds</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">total_bounds</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>
@@ -5346,15 +5346,15 @@ matplotlib is installed. Common options include:
   </tbody>
 </table>
 <p><strong>Examples:</strong></p>
-    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">colors</span> <span class="o">=</span> <span class="n">get_choropleth_colors</span><span class="p">(</span><span class="s1">&#39;viridis&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">colors</span> <span class="o">=</span> <span class="n">get_choropleth_colors</span><span class="p">(</span><span class="s1">'viridis'</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">colors</span>
-<span class="p">[</span><span class="s1">&#39;#440154&#39;</span><span class="p">,</span> <span class="s1">&#39;#3b528b&#39;</span><span class="p">,</span> <span class="s1">&#39;#21918c&#39;</span><span class="p">,</span> <span class="s1">&#39;#5ec962&#39;</span><span class="p">,</span> <span class="s1">&#39;#fde725&#39;</span><span class="p">]</span>
+<span class="p">[</span><span class="s1">'#440154'</span><span class="p">,</span> <span class="s1">'#3b528b'</span><span class="p">,</span> <span class="s1">'#21918c'</span><span class="p">,</span> <span class="s1">'#5ec962'</span><span class="p">,</span> <span class="s1">'#fde725'</span><span class="p">]</span>
 </code></pre></div>
 
         <details class="quote">
           <summary>Source code in <code>anymap_ts/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_choropleth_colors</span><span class="p">(</span><span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get colors for a choropleth map using matplotlib colormaps.</span>
+<span class="w">    </span><span class="sd">"""Get colors for a choropleth map using matplotlib colormaps.</span>
 
 <span class="sd">    Uses matplotlib colormaps when available, falling back to a small</span>
 <span class="sd">    set of built-in colormaps if matplotlib is not installed.</span>
@@ -5362,12 +5362,12 @@ matplotlib is installed. Common options include:
 <span class="sd">    Args:</span>
 <span class="sd">        cmap: Colormap name. Any matplotlib colormap is supported when</span>
 <span class="sd">            matplotlib is installed. Common options include:</span>
-<span class="sd">            - Sequential: &#39;viridis&#39;, &#39;plasma&#39;, &#39;inferno&#39;, &#39;magma&#39;, &#39;cividis&#39;,</span>
-<span class="sd">              &#39;Blues&#39;, &#39;Greens&#39;, &#39;Reds&#39;, &#39;Oranges&#39;, &#39;Purples&#39;, &#39;Greys&#39;</span>
-<span class="sd">            - Diverging: &#39;RdBu&#39;, &#39;RdYlGn&#39;, &#39;RdYlBu&#39;, &#39;Spectral&#39;, &#39;coolwarm&#39;,</span>
-<span class="sd">              &#39;bwr&#39;, &#39;seismic&#39;</span>
-<span class="sd">            - Qualitative: &#39;Set1&#39;, &#39;Set2&#39;, &#39;Set3&#39;, &#39;Paired&#39;, &#39;tab10&#39;, &#39;tab20&#39;</span>
-<span class="sd">            - Perceptually uniform: &#39;viridis&#39;, &#39;plasma&#39;, &#39;inferno&#39;, &#39;magma&#39;</span>
+<span class="sd">            - Sequential: 'viridis', 'plasma', 'inferno', 'magma', 'cividis',</span>
+<span class="sd">              'Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys'</span>
+<span class="sd">            - Diverging: 'RdBu', 'RdYlGn', 'RdYlBu', 'Spectral', 'coolwarm',</span>
+<span class="sd">              'bwr', 'seismic'</span>
+<span class="sd">            - Qualitative: 'Set1', 'Set2', 'Set3', 'Paired', 'tab10', 'tab20'</span>
+<span class="sd">            - Perceptually uniform: 'viridis', 'plasma', 'inferno', 'magma'</span>
 <span class="sd">        k: Number of classes/colors to generate.</span>
 
 <span class="sd">    Returns:</span>
@@ -5377,10 +5377,10 @@ matplotlib is installed. Common options include:
 <span class="sd">        ValueError: If colormap is not found.</span>
 
 <span class="sd">    Example:</span>
-<span class="sd">        &gt;&gt;&gt; colors = get_choropleth_colors(&#39;viridis&#39;, 5)</span>
+<span class="sd">        &gt;&gt;&gt; colors = get_choropleth_colors('viridis', 5)</span>
 <span class="sd">        &gt;&gt;&gt; colors</span>
-<span class="sd">        [&#39;#440154&#39;, &#39;#3b528b&#39;, &#39;#21918c&#39;, &#39;#5ec962&#39;, &#39;#fde725&#39;]</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        ['#440154', '#3b528b', '#21918c', '#5ec962', '#fde725']</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">HAS_MATPLOTLIB</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Get the colormap from matplotlib</span>
@@ -5398,17 +5398,17 @@ matplotlib is installed. Common options include:
 
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Unknown colormap &#39;</span><span class="si">{</span><span class="n">cmap</span><span class="si">}</span><span class="s2">&#39;. See matplotlib colormap documentation &quot;</span>
-                <span class="s2">&quot;for available options: https://matplotlib.org/stable/gallery/color/colormap_reference.html&quot;</span>
+                <span class="sa">f</span><span class="s2">"Unknown colormap '</span><span class="si">{</span><span class="n">cmap</span><span class="si">}</span><span class="s2">'. See matplotlib colormap documentation "</span>
+                <span class="s2">"for available options: https://matplotlib.org/stable/gallery/color/colormap_reference.html"</span>
             <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Fallback to built-in colormaps</span>
         <span class="k">if</span> <span class="n">cmap</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_FALLBACK_COLORMAPS</span><span class="p">:</span>
-            <span class="n">available</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_FALLBACK_COLORMAPS</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="n">available</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_FALLBACK_COLORMAPS</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Colormap &#39;</span><span class="si">{</span><span class="n">cmap</span><span class="si">}</span><span class="s2">&#39; not available. Without matplotlib, only these &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;colormaps are available: </span><span class="si">{</span><span class="n">available</span><span class="si">}</span><span class="s2">. &quot;</span>
-                <span class="s2">&quot;Install matplotlib for full colormap support: pip install matplotlib&quot;</span>
+                <span class="sa">f</span><span class="s2">"Colormap '</span><span class="si">{</span><span class="n">cmap</span><span class="si">}</span><span class="s2">' not available. Without matplotlib, only these "</span>
+                <span class="sa">f</span><span class="s2">"colormaps are available: </span><span class="si">{</span><span class="n">available</span><span class="si">}</span><span class="s2">. "</span>
+                <span class="s2">"Install matplotlib for full colormap support: pip install matplotlib"</span>
             <span class="p">)</span>
 
         <span class="n">full_colors</span> <span class="o">=</span> <span class="n">_FALLBACK_COLORMAPS</span><span class="p">[</span><span class="n">cmap</span><span class="p">]</span>
@@ -5484,42 +5484,42 @@ matplotlib is installed. Common options include:
         <details class="quote">
           <summary>Source code in <code>anymap_ts/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_default_paint</span><span class="p">(</span><span class="n">layer_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get default paint properties for a layer type.</span>
+<span class="w">    </span><span class="sd">"""Get default paint properties for a layer type.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        layer_type: MapLibre layer type</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Paint properties dict</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;circle&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;circle-radius&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-            <span class="s2">&quot;circle-color&quot;</span><span class="p">:</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;circle-opacity&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
-            <span class="s2">&quot;circle-stroke-width&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;circle-stroke-color&quot;</span><span class="p">:</span> <span class="s2">&quot;#ffffff&quot;</span><span class="p">,</span>
+        <span class="s2">"circle"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"circle-radius"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s2">"circle-color"</span><span class="p">:</span> <span class="s2">"#3388ff"</span><span class="p">,</span>
+            <span class="s2">"circle-opacity"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+            <span class="s2">"circle-stroke-width"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"circle-stroke-color"</span><span class="p">:</span> <span class="s2">"#ffffff"</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;line-color&quot;</span><span class="p">:</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;line-width&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-            <span class="s2">&quot;line-opacity&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+        <span class="s2">"line"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"line-color"</span><span class="p">:</span> <span class="s2">"#3388ff"</span><span class="p">,</span>
+            <span class="s2">"line-width"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">"line-opacity"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;fill&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;fill-color&quot;</span><span class="p">:</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;fill-opacity&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
-            <span class="s2">&quot;fill-outline-color&quot;</span><span class="p">:</span> <span class="s2">&quot;#0000ff&quot;</span><span class="p">,</span>
+        <span class="s2">"fill"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"fill-color"</span><span class="p">:</span> <span class="s2">"#3388ff"</span><span class="p">,</span>
+            <span class="s2">"fill-opacity"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+            <span class="s2">"fill-outline-color"</span><span class="p">:</span> <span class="s2">"#0000ff"</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;fill-extrusion&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;fill-extrusion-color&quot;</span><span class="p">:</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;fill-extrusion-opacity&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
-            <span class="s2">&quot;fill-extrusion-height&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="s2">"fill-extrusion"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"fill-extrusion-color"</span><span class="p">:</span> <span class="s2">"#3388ff"</span><span class="p">,</span>
+            <span class="s2">"fill-extrusion-opacity"</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
+            <span class="s2">"fill-extrusion-height"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;raster&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;raster-opacity&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">"raster"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"raster-opacity"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;heatmap&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;heatmap-opacity&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+        <span class="s2">"heatmap"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"heatmap-opacity"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">layer_type</span><span class="p">,</span> <span class="p">{})</span>
@@ -5582,36 +5582,36 @@ matplotlib is installed. Common options include:
         <details class="quote">
           <summary>Source code in <code>anymap_ts/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">infer_layer_type</span><span class="p">(</span><span class="n">geojson</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Infer MapLibre layer type from GeoJSON geometry.</span>
+<span class="w">    </span><span class="sd">"""Infer MapLibre layer type from GeoJSON geometry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        geojson: GeoJSON dict</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Layer type (&#39;circle&#39;, &#39;line&#39;, &#39;fill&#39;)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        Layer type ('circle', 'line', 'fill')</span>
+<span class="sd">    """</span>
     <span class="n">geometry_type</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">if</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;FeatureCollection&quot;</span><span class="p">:</span>
-        <span class="n">features</span> <span class="o">=</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="k">if</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"FeatureCollection"</span><span class="p">:</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"features"</span><span class="p">,</span> <span class="p">[])</span>
         <span class="k">if</span> <span class="n">features</span><span class="p">:</span>
-            <span class="n">geometry_type</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;geometry&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;Feature&quot;</span><span class="p">:</span>
-        <span class="n">geometry_type</span> <span class="o">=</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;geometry&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+            <span class="n">geometry_type</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geometry"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"Feature"</span><span class="p">:</span>
+        <span class="n">geometry_type</span> <span class="o">=</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geometry"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">geometry_type</span> <span class="o">=</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+        <span class="n">geometry_type</span> <span class="o">=</span> <span class="n">geojson</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span>
 
     <span class="n">type_map</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;Point&quot;</span><span class="p">:</span> <span class="s2">&quot;circle&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;MultiPoint&quot;</span><span class="p">:</span> <span class="s2">&quot;circle&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;LineString&quot;</span><span class="p">:</span> <span class="s2">&quot;line&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;MultiLineString&quot;</span><span class="p">:</span> <span class="s2">&quot;line&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Polygon&quot;</span><span class="p">:</span> <span class="s2">&quot;fill&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;MultiPolygon&quot;</span><span class="p">:</span> <span class="s2">&quot;fill&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;GeometryCollection&quot;</span><span class="p">:</span> <span class="s2">&quot;fill&quot;</span><span class="p">,</span>
+        <span class="s2">"Point"</span><span class="p">:</span> <span class="s2">"circle"</span><span class="p">,</span>
+        <span class="s2">"MultiPoint"</span><span class="p">:</span> <span class="s2">"circle"</span><span class="p">,</span>
+        <span class="s2">"LineString"</span><span class="p">:</span> <span class="s2">"line"</span><span class="p">,</span>
+        <span class="s2">"MultiLineString"</span><span class="p">:</span> <span class="s2">"line"</span><span class="p">,</span>
+        <span class="s2">"Polygon"</span><span class="p">:</span> <span class="s2">"fill"</span><span class="p">,</span>
+        <span class="s2">"MultiPolygon"</span><span class="p">:</span> <span class="s2">"fill"</span><span class="p">,</span>
+        <span class="s2">"GeometryCollection"</span><span class="p">:</span> <span class="s2">"fill"</span><span class="p">,</span>
     <span class="p">}</span>
 
-    <span class="k">return</span> <span class="n">type_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">geometry_type</span><span class="p">,</span> <span class="s2">&quot;circle&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">type_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">geometry_type</span><span class="p">,</span> <span class="s2">"circle"</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -5690,7 +5690,7 @@ matplotlib is installed. Common options include:
         <details class="quote">
           <summary>Source code in <code>anymap_ts/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_geojson</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert various data formats to GeoJSON.</span>
+<span class="w">    </span><span class="sd">"""Convert various data formats to GeoJSON.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: GeoJSON dict, GeoDataFrame, file path, or URL</span>
@@ -5701,7 +5701,7 @@ matplotlib is installed. Common options include:
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If data cannot be converted</span>
 <span class="sd">        ImportError: If geopandas is required but not installed</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Already a dict (GeoJSON)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">data</span>
@@ -5714,36 +5714,36 @@ matplotlib is installed. Common options include:
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">)):</span>
         <span class="n">path_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-        <span class="c1"># If it&#39;s a URL, return as-is (will be handled by JS)</span>
-        <span class="k">if</span> <span class="n">path_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">&quot;http://&quot;</span><span class="p">,</span> <span class="s2">&quot;https://&quot;</span><span class="p">)):</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;url&quot;</span><span class="p">,</span> <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">path_str</span><span class="p">}</span>
+        <span class="c1"># If it's a URL, return as-is (will be handled by JS)</span>
+        <span class="k">if</span> <span class="n">path_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">"http://"</span><span class="p">,</span> <span class="s2">"https://"</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"url"</span><span class="p">,</span> <span class="s2">"url"</span><span class="p">:</span> <span class="n">path_str</span><span class="p">}</span>
 
         <span class="c1"># Read file with geopandas</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_GEOPANDAS</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                <span class="s2">&quot;geopandas is required to read vector files. &quot;</span>
-                <span class="s2">&quot;Install with: pip install anymap-ts[vector]&quot;</span>
+                <span class="s2">"geopandas is required to read vector files. "</span>
+                <span class="s2">"Install with: pip install anymap-ts[vector]"</span>
             <span class="p">)</span>
 
         <span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">path_str</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
 
     <span class="c1"># Has __geo_interface__ (shapely geometry, etc.)</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;__geo_interface__&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">"__geo_interface__"</span><span class="p">):</span>
         <span class="n">geo</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">__geo_interface__</span>
-        <span class="k">if</span> <span class="n">geo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span>
-            <span class="s2">&quot;Point&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;LineString&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Polygon&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;MultiPoint&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;MultiLineString&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;MultiPolygon&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;GeometryCollection&quot;</span><span class="p">,</span>
+        <span class="k">if</span> <span class="n">geo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="s2">"Point"</span><span class="p">,</span>
+            <span class="s2">"LineString"</span><span class="p">,</span>
+            <span class="s2">"Polygon"</span><span class="p">,</span>
+            <span class="s2">"MultiPoint"</span><span class="p">,</span>
+            <span class="s2">"MultiLineString"</span><span class="p">,</span>
+            <span class="s2">"MultiPolygon"</span><span class="p">,</span>
+            <span class="s2">"GeometryCollection"</span><span class="p">,</span>
         <span class="p">):</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Feature&quot;</span><span class="p">,</span> <span class="s2">&quot;geometry&quot;</span><span class="p">:</span> <span class="n">geo</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Feature"</span><span class="p">,</span> <span class="s2">"geometry"</span><span class="p">:</span> <span class="n">geo</span><span class="p">,</span> <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{}}</span>
         <span class="k">return</span> <span class="n">geo</span>
 
-    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot convert </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> to GeoJSON&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cannot convert </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> to GeoJSON"</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -5852,15 +5852,122 @@ matplotlib is installed. Common options include:
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../js/timeago.min.js"></script>
       
         <script src="../js/timeago_mkdocs_material.js"></script>
       
     
-  </body>
+  <script data-mkdocs-jupyter-mathjax="{&quot;url&quot;: &quot;https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js&quot;, &quot;version&quot;: 4}">
+/* Shared by full pages and Material's instant navigation. */
+(() => {
+  const config = JSON.parse(document.currentScript.dataset.mkdocsJupyterMathjax);
+  if (window.mkdocsJupyterMathJax) return;
+
+  let loading;
+  let queue = Promise.resolve();
+  let previous = [];
+
+  const ready = async () => {
+    if (!loading) {
+      loading = (async () => {
+        let math = window.MathJax;
+        if (!math?.typesetPromise) {
+          const url = new URL(config.url, document.baseURI).href;
+          const existing = Array.from(document.scripts).find(script =>
+            script.src && (script.src === url || script.id === 'MathJax-script' ||
+              (/mathjax/i.test(script.src) &&
+               /\/(?:MathJax|latest|(?:tex|mml)(?:-mml)?-(?:chtml|svg))\.js(?:[?#]|$)/i.test(script.src))));
+          if (existing) {
+            if (!math?.startup?.promise) {
+              await new Promise((resolve, reject) => {
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+              });
+            }
+          } else {
+            // Keep site macros, delimiters and startup hooks when supplied.
+            const options = math || {};
+            window.MathJax = {
+              ...options,
+              loader: {
+                ...options.loader,
+                load: Array.from(new Set(['ui/safe', ...(options.loader?.load || [])]))
+              },
+              startup: { typeset: false, ...options.startup },
+              tex: {
+                tags: 'ams',
+                useLabelIds: true,
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                ...options.tex
+              }
+            };
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = config.url;
+              script.id = 'MathJax-script';
+              script.async = true;
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+        }
+        math = window.MathJax;
+        await math.startup.promise;
+        return math;
+      })();
+    }
+    const math = await loading;
+    // A site owner can extend the v3 queue again on each navigation.
+    await math.startup.promise;
+    return math;
+  };
+
+  const unrendered = node => {
+    if (node.matches('mjx-container')) return [];
+    if (!node.querySelector('mjx-container')) return [node];
+    // In v3, scanning generated assistive MathML again produces nested output.
+    return Array.from(node.children).flatMap(unrendered);
+  };
+
+  const refresh = () => {
+    // A separate chain also serializes v3, without changing v4's startup promise.
+    queue = queue.then(async () => {
+      const notebooks = Array.from(document.querySelectorAll('.jupyter-wrapper'));
+      if (!notebooks.length && !previous.length) return;
+      if (notebooks.length === previous.length &&
+          notebooks.every((node, index) => node === previous[index])) return;
+      const math = await ready();
+      if (previous.length) {
+        math.typesetClear(previous);
+        math.texReset();
+      }
+      previous = notebooks.filter(node => node.isConnected);
+      const pending = previous.flatMap(unrendered);
+      if (pending.length) await math.typesetPromise(pending);
+    }).catch(error => console.error('mkdocs-jupyter: MathJax rendering failed', error));
+    return queue;
+  };
+
+  window.mkdocsJupyterMathJax = { refresh };
+  const start = () => {
+    if (typeof document$ !== 'undefined') document$.subscribe(refresh);
+    else refresh();
+  };
+  // Theme bundles and user-provided MathJax scripts can follow notebook content.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else start();
+})();
+
+</script>
+</body>
 </html>

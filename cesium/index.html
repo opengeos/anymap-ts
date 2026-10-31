@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -33,10 +33,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5096,14 +5096,14 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">anymap_ts</span><span class="w"> </span><span class="kn">import</span> <span class="n">CesiumMap</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">CesiumMap</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">122.4</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">set_terrain</span><span class="p">()</span>  <span class="c1"># Enable Cesium World Terrain</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_3d_tileset</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;path/to/tileset.json&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">add_3d_tileset</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"path/to/tileset.json"</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">m</span>
 </code></pre></div>
 
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CesiumMap</span><span class="p">(</span><span class="n">MapWidget</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interactive 3D globe widget using Cesium.</span>
+<span class="w">    </span><span class="sd">"""Interactive 3D globe widget using Cesium.</span>
 
 <span class="sd">    This class provides a Python interface to Cesium for 3D globe</span>
 <span class="sd">    visualization with terrain, 3D Tiles, and imagery layer support.</span>
@@ -5112,16 +5112,16 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">        &gt;&gt;&gt; from anymap_ts import CesiumMap</span>
 <span class="sd">        &gt;&gt;&gt; m = CesiumMap(center=[-122.4, 37.8], zoom=10)</span>
 <span class="sd">        &gt;&gt;&gt; m.set_terrain()  # Enable Cesium World Terrain</span>
-<span class="sd">        &gt;&gt;&gt; m.add_3d_tileset(url=&quot;path/to/tileset.json&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; m.add_3d_tileset(url="path/to/tileset.json")</span>
 <span class="sd">        &gt;&gt;&gt; m</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="c1"># ESM module for frontend</span>
-    <span class="n">_esm</span> <span class="o">=</span> <span class="n">STATIC_DIR</span> <span class="o">/</span> <span class="s2">&quot;cesium.js&quot;</span>
-    <span class="n">_css</span> <span class="o">=</span> <span class="n">STATIC_DIR</span> <span class="o">/</span> <span class="s2">&quot;cesium.css&quot;</span>
+    <span class="n">_esm</span> <span class="o">=</span> <span class="n">STATIC_DIR</span> <span class="o">/</span> <span class="s2">"cesium.js"</span>
+    <span class="n">_css</span> <span class="o">=</span> <span class="n">STATIC_DIR</span> <span class="o">/</span> <span class="s2">"cesium.css"</span>
 
     <span class="c1"># Cesium-specific traits</span>
-    <span class="n">access_token</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Unicode</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">access_token</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Unicode</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="c1"># Camera position traits</span>
     <span class="n">camera_height</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="mi">10000000</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -5136,13 +5136,13 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">center</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
         <span class="n">zoom</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-        <span class="n">width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;100%&quot;</span><span class="p">,</span>
-        <span class="n">height</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;600px&quot;</span><span class="p">,</span>
+        <span class="n">width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"100%"</span><span class="p">,</span>
+        <span class="n">height</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"600px"</span><span class="p">,</span>
         <span class="n">access_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">terrain</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a Cesium 3D globe.</span>
+<span class="w">        </span><span class="sd">"""Initialize a Cesium 3D globe.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            center: Globe center as (longitude, latitude).</span>
@@ -5152,7 +5152,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">            access_token: Cesium Ion access token (uses CESIUM_TOKEN env var if not provided).</span>
 <span class="sd">            terrain: Whether to enable terrain on initialization.</span>
 <span class="sd">            **kwargs: Additional widget arguments.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Get access token from env if not provided</span>
         <span class="k">if</span> <span class="n">access_token</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">access_token</span> <span class="o">=</span> <span class="n">get_cesium_token</span><span class="p">()</span>
@@ -5177,48 +5177,48 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_basemap</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">basemap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">,</span>
+        <span class="n">basemap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"OpenStreetMap"</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a basemap imagery layer.</span>
+<span class="w">        </span><span class="sd">"""Add a basemap imagery layer.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            basemap: Name of basemap (e.g., &quot;OpenStreetMap&quot;, &quot;Bing&quot;).</span>
+<span class="sd">            basemap: Name of basemap (e.g., "OpenStreetMap", "Bing").</span>
 <span class="sd">            **kwargs: Additional options.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Common basemap URLs</span>
         <span class="n">basemap_urls</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">:</span> <span class="s2">&quot;https://tile.openstreetmap.org/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;CartoDB.Positron&quot;</span><span class="p">:</span> <span class="s2">&quot;https://a.basemaps.cartocdn.com/light_all/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;CartoDB.DarkMatter&quot;</span><span class="p">:</span> <span class="s2">&quot;https://a.basemaps.cartocdn.com/dark_all/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Stamen.Terrain&quot;</span><span class="p">:</span> <span class="s2">&quot;https://tiles.stadiamaps.com/tiles/stamen_terrain/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png&quot;</span><span class="p">,</span>
+            <span class="s2">"OpenStreetMap"</span><span class="p">:</span> <span class="s2">"https://tile.openstreetmap.org/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png"</span><span class="p">,</span>
+            <span class="s2">"CartoDB.Positron"</span><span class="p">:</span> <span class="s2">"https://a.basemaps.cartocdn.com/light_all/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png"</span><span class="p">,</span>
+            <span class="s2">"CartoDB.DarkMatter"</span><span class="p">:</span> <span class="s2">"https://a.basemaps.cartocdn.com/dark_all/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png"</span><span class="p">,</span>
+            <span class="s2">"Stamen.Terrain"</span><span class="p">:</span> <span class="s2">"https://tiles.stadiamaps.com/tiles/stamen_terrain/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png"</span><span class="p">,</span>
         <span class="p">}</span>
 
-        <span class="n">url</span> <span class="o">=</span> <span class="n">basemap_urls</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">basemap</span><span class="p">,</span> <span class="n">basemap_urls</span><span class="p">[</span><span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">])</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">basemap_urls</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">basemap</span><span class="p">,</span> <span class="n">basemap_urls</span><span class="p">[</span><span class="s2">"OpenStreetMap"</span><span class="p">])</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addBasemap&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">basemap</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"addBasemap"</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">basemap</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_imagery_layer</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">layer_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;xyz&quot;</span><span class="p">,</span>
+        <span class="n">layer_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"xyz"</span><span class="p">,</span>
         <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an imagery layer.</span>
+<span class="w">        </span><span class="sd">"""Add an imagery layer.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            url: Imagery URL or service endpoint.</span>
 <span class="sd">            name: Layer name.</span>
-<span class="sd">            layer_type: Type of imagery (&#39;xyz&#39;, &#39;wms&#39;, &#39;wmts&#39;, &#39;arcgis&#39;).</span>
+<span class="sd">            layer_type: Type of imagery ('xyz', 'wms', 'wmts', 'arcgis').</span>
 <span class="sd">            alpha: Layer opacity (0-1).</span>
 <span class="sd">            **kwargs: Additional options (layers, parameters for WMS, etc.).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;imagery-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="sd">        """</span>
+        <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"imagery-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-            <span class="s2">&quot;addImageryLayer&quot;</span><span class="p">,</span>
+            <span class="s2">"addImageryLayer"</span><span class="p">,</span>
             <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
             <span class="nb">type</span><span class="o">=</span><span class="n">layer_type</span><span class="p">,</span>
@@ -5228,20 +5228,20 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
-            <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;imagery&quot;</span><span class="p">},</span>
+            <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"imagery"</span><span class="p">},</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_imagery_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove an imagery layer.</span>
+<span class="w">        </span><span class="sd">"""Remove an imagery layer.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Layer name to remove.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">:</span>
             <span class="n">layers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">layers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="n">layers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeImageryLayer&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"removeImageryLayer"</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># Terrain Methods</span>
@@ -5253,25 +5253,25 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <span class="n">request_vertex_normals</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">request_water_mask</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enable terrain.</span>
+<span class="w">        </span><span class="sd">"""Enable terrain.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            url: Terrain provider URL. If None, uses Cesium World Terrain (requires Ion token).</span>
 <span class="sd">            request_vertex_normals: Request vertex normals for lighting.</span>
 <span class="sd">            request_water_mask: Request water mask for water effects.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">terrain_enabled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-            <span class="s2">&quot;setTerrain&quot;</span><span class="p">,</span>
-            <span class="n">url</span><span class="o">=</span><span class="n">url</span> <span class="ow">or</span> <span class="s2">&quot;cesium-world-terrain&quot;</span><span class="p">,</span>
+            <span class="s2">"setTerrain"</span><span class="p">,</span>
+            <span class="n">url</span><span class="o">=</span><span class="n">url</span> <span class="ow">or</span> <span class="s2">"cesium-world-terrain"</span><span class="p">,</span>
             <span class="n">requestVertexNormals</span><span class="o">=</span><span class="n">request_vertex_normals</span><span class="p">,</span>
             <span class="n">requestWaterMask</span><span class="o">=</span><span class="n">request_water_mask</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_terrain</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disable terrain and use ellipsoid.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Disable terrain and use ellipsoid."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">terrain_enabled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeTerrain&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"removeTerrain"</span><span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># 3D Tiles Methods</span>
@@ -5285,7 +5285,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <span class="n">fly_to</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a 3D Tileset.</span>
+<span class="w">        </span><span class="sd">"""Add a 3D Tileset.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            url: URL to tileset.json or Cesium Ion asset ID.</span>
@@ -5293,11 +5293,11 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">            maximum_screen_space_error: Maximum screen space error for LOD.</span>
 <span class="sd">            fly_to: Whether to fly to the tileset after loading.</span>
 <span class="sd">            **kwargs: Additional options.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;tileset-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="sd">        """</span>
+        <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"tileset-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-            <span class="s2">&quot;add3DTileset&quot;</span><span class="p">,</span>
+            <span class="s2">"add3DTileset"</span><span class="p">,</span>
             <span class="n">url</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">url</span><span class="p">),</span>
             <span class="n">name</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
             <span class="n">maximumScreenSpaceError</span><span class="o">=</span><span class="n">maximum_screen_space_error</span><span class="p">,</span>
@@ -5307,20 +5307,20 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
-            <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;3dtiles&quot;</span><span class="p">},</span>
+            <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"3dtiles"</span><span class="p">},</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_3d_tileset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a 3D Tileset.</span>
+<span class="w">        </span><span class="sd">"""Remove a 3D Tileset.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Tileset name to remove.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">:</span>
             <span class="n">layers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">layers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="n">layers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;remove3DTileset&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"remove3DTileset"</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># GeoJSON Methods</span>
@@ -5330,14 +5330,14 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">stroke</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
+        <span class="n">stroke</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"#3388ff"</span><span class="p">,</span>
         <span class="n">stroke_width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="n">fill</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rgba(51, 136, 255, 0.5)&quot;</span><span class="p">,</span>
+        <span class="n">fill</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rgba(51, 136, 255, 0.5)"</span><span class="p">,</span>
         <span class="n">clamp_to_ground</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">fly_to</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add GeoJSON data.</span>
+<span class="w">        </span><span class="sd">"""Add GeoJSON data.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data: GeoJSON dict or file path.</span>
@@ -5348,12 +5348,12 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">            clamp_to_ground: Whether to clamp features to terrain.</span>
 <span class="sd">            fly_to: Whether to fly to the data after loading.</span>
 <span class="sd">            **kwargs: Additional options.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">geojson</span> <span class="o">=</span> <span class="n">to_geojson</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;geojson-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"geojson-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-            <span class="s2">&quot;addGeoJSON&quot;</span><span class="p">,</span>
+            <span class="s2">"addGeoJSON"</span><span class="p">,</span>
             <span class="n">data</span><span class="o">=</span><span class="n">geojson</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
             <span class="n">stroke</span><span class="o">=</span><span class="n">stroke</span><span class="p">,</span>
@@ -5366,20 +5366,20 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
-            <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;geojson&quot;</span><span class="p">},</span>
+            <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"geojson"</span><span class="p">},</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_data_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a data source (GeoJSON, etc.).</span>
+<span class="w">        </span><span class="sd">"""Remove a data source (GeoJSON, etc.).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Data source name to remove.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">:</span>
             <span class="n">layers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">layers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="n">layers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeDataSource&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"removeDataSource"</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># Camera Methods</span>
@@ -5396,7 +5396,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <span class="n">roll</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fly to a location.</span>
+<span class="w">        </span><span class="sd">"""Fly to a location.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            lng: Target longitude.</span>
@@ -5407,9 +5407,9 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">            pitch: Camera pitch in degrees (default -90 = looking down).</span>
 <span class="sd">            roll: Camera roll in degrees.</span>
 <span class="sd">            duration: Flight duration in seconds.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-            <span class="s2">&quot;flyTo&quot;</span><span class="p">,</span>
+            <span class="s2">"flyTo"</span><span class="p">,</span>
             <span class="n">lng</span><span class="p">,</span>
             <span class="n">lat</span><span class="p">,</span>
             <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
@@ -5421,12 +5421,12 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">zoom_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Zoom to a layer or data source.</span>
+<span class="w">        </span><span class="sd">"""Zoom to a layer or data source.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            target: Name of the layer or data source to zoom to.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;zoomTo&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"zoomTo"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">set_camera</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -5437,7 +5437,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <span class="n">pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span>
         <span class="n">roll</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the camera position immediately (no animation).</span>
+<span class="w">        </span><span class="sd">"""Set the camera position immediately (no animation).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            longitude: Camera longitude.</span>
@@ -5446,9 +5446,9 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">            heading: Camera heading in degrees.</span>
 <span class="sd">            pitch: Camera pitch in degrees.</span>
 <span class="sd">            roll: Camera roll in degrees.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-            <span class="s2">&quot;setCamera&quot;</span><span class="p">,</span>
+            <span class="s2">"setCamera"</span><span class="p">,</span>
             <span class="n">longitude</span><span class="o">=</span><span class="n">longitude</span><span class="p">,</span>
             <span class="n">latitude</span><span class="o">=</span><span class="n">latitude</span><span class="p">,</span>
             <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
@@ -5458,73 +5458,73 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">reset_view</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset camera to home position.</span>
+<span class="w">        </span><span class="sd">"""Reset camera to home position.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            duration: Animation duration in seconds.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;resetView&quot;</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"resetView"</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># Layer Management</span>
     <span class="c1"># -------------------------------------------------------------------------</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">set_visibility</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set layer visibility.</span>
+<span class="w">        </span><span class="sd">"""Set layer visibility.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Layer name.</span>
 <span class="sd">            visible: Whether layer should be visible.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;setVisibility&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">visible</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"setVisibility"</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">visible</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">set_opacity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">opacity</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set layer opacity (imagery layers only).</span>
+<span class="w">        </span><span class="sd">"""Set layer opacity (imagery layers only).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Layer name.</span>
 <span class="sd">            opacity: Opacity value (0-1).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;setOpacity&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"setOpacity"</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
 
     <span class="c1"># -------------------------------------------------------------------------</span>
     <span class="c1"># HTML Export</span>
     <span class="c1"># -------------------------------------------------------------------------</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_generate_html_template</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate standalone HTML for the globe.&quot;&quot;&quot;</span>
-        <span class="n">template_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;templates&quot;</span> <span class="o">/</span> <span class="s2">&quot;cesium.html&quot;</span>
+<span class="w">        </span><span class="sd">"""Generate standalone HTML for the globe."""</span>
+        <span class="n">template_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"templates"</span> <span class="o">/</span> <span class="s2">"cesium.html"</span>
 
         <span class="k">if</span> <span class="n">template_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="n">template</span> <span class="o">=</span> <span class="n">template_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="n">template</span> <span class="o">=</span> <span class="n">template_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_template</span><span class="p">()</span>
 
         <span class="n">state</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;center&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span>
-            <span class="s2">&quot;zoom&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">zoom</span><span class="p">,</span>
-            <span class="s2">&quot;access_token&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_token</span><span class="p">,</span>
-            <span class="s2">&quot;terrain_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">terrain_enabled</span><span class="p">,</span>
-            <span class="s2">&quot;width&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
-            <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
-            <span class="s2">&quot;layers&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
-            <span class="s2">&quot;js_calls&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_js_calls</span><span class="p">,</span>
+            <span class="s2">"center"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span>
+            <span class="s2">"zoom"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">zoom</span><span class="p">,</span>
+            <span class="s2">"access_token"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_token</span><span class="p">,</span>
+            <span class="s2">"terrain_enabled"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">terrain_enabled</span><span class="p">,</span>
+            <span class="s2">"width"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
+            <span class="s2">"height"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+            <span class="s2">"layers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
+            <span class="s2">"js_calls"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_js_calls</span><span class="p">,</span>
         <span class="p">}</span>
 
-        <span class="n">template</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{{state}}&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{{access_token}}&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_token</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"{{state}}"</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"{{access_token}}"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_token</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">template</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_template</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get default HTML template.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;&lt;!DOCTYPE html&gt;</span>
+<span class="w">        </span><span class="sd">"""Get default HTML template."""</span>
+        <span class="k">return</span> <span class="s2">"""&lt;!DOCTYPE html&gt;</span>
 <span class="s2">&lt;html&gt;</span>
 <span class="s2">&lt;head&gt;</span>
-<span class="s2">    &lt;meta charset=&quot;utf-8&quot;&gt;</span>
+<span class="s2">    &lt;meta charset="utf-8"&gt;</span>
 <span class="s2">    &lt;title&gt;Cesium Globe&lt;/title&gt;</span>
-<span class="s2">    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;</span>
-<span class="s2">    &lt;script src=&quot;https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js&quot;&gt;&lt;/script&gt;</span>
-<span class="s2">    &lt;link href=&quot;https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css&quot; rel=&quot;stylesheet&quot;&gt;</span>
+<span class="s2">    &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</span>
+<span class="s2">    &lt;script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"&gt;&lt;/script&gt;</span>
+<span class="s2">    &lt;link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet"&gt;</span>
 <span class="s2">    &lt;style&gt;</span>
 <span class="s2">        * { margin: 0; padding: 0; box-sizing: border-box; }</span>
 <span class="s2">        html, body { height: 100%; }</span>
@@ -5532,7 +5532,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="s2">    &lt;/style&gt;</span>
 <span class="s2">&lt;/head&gt;</span>
 <span class="s2">&lt;body&gt;</span>
-<span class="s2">    &lt;div id=&quot;cesiumContainer&quot;&gt;&lt;/div&gt;</span>
+<span class="s2">    &lt;div id="cesiumContainer"&gt;&lt;/div&gt;</span>
 <span class="s2">    &lt;script&gt;</span>
 <span class="s2">        const state = {{state}};</span>
 
@@ -5540,7 +5540,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="s2">            Cesium.Ion.defaultAccessToken = state.access_token;</span>
 <span class="s2">        }</span>
 
-<span class="s2">        const viewer = new Cesium.Viewer(&#39;cesiumContainer&#39;, {</span>
+<span class="s2">        const viewer = new Cesium.Viewer('cesiumContainer', {</span>
 <span class="s2">            baseLayerPicker: false,</span>
 <span class="s2">            geocoder: false,</span>
 <span class="s2">            homeButton: false,</span>
@@ -5555,11 +5555,11 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="s2">        }</span>
 
 <span class="s2">        function executeMethod(method, args, kwargs) {</span>
-<span class="s2">            console.log(&#39;Executing:&#39;, method, args, kwargs);</span>
+<span class="s2">            console.log('Executing:', method, args, kwargs);</span>
 <span class="s2">        }</span>
 <span class="s2">    &lt;/script&gt;</span>
 <span class="s2">&lt;/body&gt;</span>
-<span class="s2">&lt;/html&gt;&quot;&quot;&quot;</span>
+<span class="s2">&lt;/html&gt;"""</span>
 </code></pre></div>
         </details>
 
@@ -5586,7 +5586,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
 
 <h3 id="anymap_ts.cesium.CesiumMap.__init__" class="doc doc-heading">
-<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">zoom</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;600px&#39;</span><span class="p">,</span> <span class="n">access_token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">terrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">zoom</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">'100%'</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">'600px'</span><span class="p">,</span> <span class="n">access_token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">terrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
   <span class="doc doc-properties">
       <small class="doc doc-property doc-property-special"><code>special</code></small>
@@ -5659,13 +5659,13 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">center</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
     <span class="n">zoom</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;100%&quot;</span><span class="p">,</span>
-    <span class="n">height</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;600px&quot;</span><span class="p">,</span>
+    <span class="n">width</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"100%"</span><span class="p">,</span>
+    <span class="n">height</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"600px"</span><span class="p">,</span>
     <span class="n">access_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">terrain</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a Cesium 3D globe.</span>
+<span class="w">    </span><span class="sd">"""Initialize a Cesium 3D globe.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        center: Globe center as (longitude, latitude).</span>
@@ -5675,7 +5675,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">        access_token: Cesium Ion access token (uses CESIUM_TOKEN env var if not provided).</span>
 <span class="sd">        terrain: Whether to enable terrain on initialization.</span>
 <span class="sd">        **kwargs: Additional widget arguments.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Get access token from env if not provided</span>
     <span class="k">if</span> <span class="n">access_token</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">access_token</span> <span class="o">=</span> <span class="n">get_cesium_token</span><span class="p">()</span>
@@ -5768,7 +5768,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     <span class="n">fly_to</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a 3D Tileset.</span>
+<span class="w">    </span><span class="sd">"""Add a 3D Tileset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: URL to tileset.json or Cesium Ion asset ID.</span>
@@ -5776,11 +5776,11 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">        maximum_screen_space_error: Maximum screen space error for LOD.</span>
 <span class="sd">        fly_to: Whether to fly to the tileset after loading.</span>
 <span class="sd">        **kwargs: Additional options.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;tileset-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="sd">    """</span>
+    <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"tileset-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-        <span class="s2">&quot;add3DTileset&quot;</span><span class="p">,</span>
+        <span class="s2">"add3DTileset"</span><span class="p">,</span>
         <span class="n">url</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">url</span><span class="p">),</span>
         <span class="n">name</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
         <span class="n">maximumScreenSpaceError</span><span class="o">=</span><span class="n">maximum_screen_space_error</span><span class="p">,</span>
@@ -5790,7 +5790,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
-        <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;3dtiles&quot;</span><span class="p">},</span>
+        <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"3dtiles"</span><span class="p">},</span>
     <span class="p">}</span>
 </code></pre></div>
         </details>
@@ -5805,7 +5805,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
 
 <h3 id="anymap_ts.cesium.CesiumMap.add_basemap" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_basemap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basemap</span><span class="o">=</span><span class="s1">&#39;OpenStreetMap&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_basemap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basemap</span><span class="o">=</span><span class="s1">'OpenStreetMap'</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.cesium.CesiumMap.add_basemap" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -5843,26 +5843,26 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_basemap</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">basemap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">,</span>
+    <span class="n">basemap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"OpenStreetMap"</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a basemap imagery layer.</span>
+<span class="w">    </span><span class="sd">"""Add a basemap imagery layer.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        basemap: Name of basemap (e.g., &quot;OpenStreetMap&quot;, &quot;Bing&quot;).</span>
+<span class="sd">        basemap: Name of basemap (e.g., "OpenStreetMap", "Bing").</span>
 <span class="sd">        **kwargs: Additional options.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Common basemap URLs</span>
     <span class="n">basemap_urls</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">:</span> <span class="s2">&quot;https://tile.openstreetmap.org/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;CartoDB.Positron&quot;</span><span class="p">:</span> <span class="s2">&quot;https://a.basemaps.cartocdn.com/light_all/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;CartoDB.DarkMatter&quot;</span><span class="p">:</span> <span class="s2">&quot;https://a.basemaps.cartocdn.com/dark_all/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Stamen.Terrain&quot;</span><span class="p">:</span> <span class="s2">&quot;https://tiles.stadiamaps.com/tiles/stamen_terrain/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png&quot;</span><span class="p">,</span>
+        <span class="s2">"OpenStreetMap"</span><span class="p">:</span> <span class="s2">"https://tile.openstreetmap.org/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png"</span><span class="p">,</span>
+        <span class="s2">"CartoDB.Positron"</span><span class="p">:</span> <span class="s2">"https://a.basemaps.cartocdn.com/light_all/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png"</span><span class="p">,</span>
+        <span class="s2">"CartoDB.DarkMatter"</span><span class="p">:</span> <span class="s2">"https://a.basemaps.cartocdn.com/dark_all/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png"</span><span class="p">,</span>
+        <span class="s2">"Stamen.Terrain"</span><span class="p">:</span> <span class="s2">"https://tiles.stadiamaps.com/tiles/stamen_terrain/</span><span class="si">{z}</span><span class="s2">/</span><span class="si">{x}</span><span class="s2">/</span><span class="si">{y}</span><span class="s2">.png"</span><span class="p">,</span>
     <span class="p">}</span>
 
-    <span class="n">url</span> <span class="o">=</span> <span class="n">basemap_urls</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">basemap</span><span class="p">,</span> <span class="n">basemap_urls</span><span class="p">[</span><span class="s2">&quot;OpenStreetMap&quot;</span><span class="p">])</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="n">basemap_urls</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">basemap</span><span class="p">,</span> <span class="n">basemap_urls</span><span class="p">[</span><span class="s2">"OpenStreetMap"</span><span class="p">])</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;addBasemap&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">basemap</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"addBasemap"</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">basemap</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -5876,7 +5876,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
 
 <h3 id="anymap_ts.cesium.CesiumMap.add_geojson" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_geojson</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stroke</span><span class="o">=</span><span class="s1">&#39;#3388ff&#39;</span><span class="p">,</span> <span class="n">stroke_width</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="s1">&#39;rgba(51, 136, 255, 0.5)&#39;</span><span class="p">,</span> <span class="n">clamp_to_ground</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fly_to</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_geojson</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stroke</span><span class="o">=</span><span class="s1">'#3388ff'</span><span class="p">,</span> <span class="n">stroke_width</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="s1">'rgba(51, 136, 255, 0.5)'</span><span class="p">,</span> <span class="n">clamp_to_ground</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fly_to</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.cesium.CesiumMap.add_geojson" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -5952,14 +5952,14 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">stroke</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#3388ff&quot;</span><span class="p">,</span>
+    <span class="n">stroke</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"#3388ff"</span><span class="p">,</span>
     <span class="n">stroke_width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="n">fill</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rgba(51, 136, 255, 0.5)&quot;</span><span class="p">,</span>
+    <span class="n">fill</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rgba(51, 136, 255, 0.5)"</span><span class="p">,</span>
     <span class="n">clamp_to_ground</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">fly_to</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add GeoJSON data.</span>
+<span class="w">    </span><span class="sd">"""Add GeoJSON data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: GeoJSON dict or file path.</span>
@@ -5970,12 +5970,12 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">        clamp_to_ground: Whether to clamp features to terrain.</span>
 <span class="sd">        fly_to: Whether to fly to the data after loading.</span>
 <span class="sd">        **kwargs: Additional options.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">geojson</span> <span class="o">=</span> <span class="n">to_geojson</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-    <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;geojson-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"geojson-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-        <span class="s2">&quot;addGeoJSON&quot;</span><span class="p">,</span>
+        <span class="s2">"addGeoJSON"</span><span class="p">,</span>
         <span class="n">data</span><span class="o">=</span><span class="n">geojson</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
         <span class="n">stroke</span><span class="o">=</span><span class="n">stroke</span><span class="p">,</span>
@@ -5988,7 +5988,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
-        <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;geojson&quot;</span><span class="p">},</span>
+        <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"geojson"</span><span class="p">},</span>
     <span class="p">}</span>
 </code></pre></div>
         </details>
@@ -6003,7 +6003,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
 
 <h3 id="anymap_ts.cesium.CesiumMap.add_imagery_layer" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_imagery_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layer_type</span><span class="o">=</span><span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_imagery_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layer_type</span><span class="o">=</span><span class="s1">'xyz'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 
 <a href="#anymap_ts.cesium.CesiumMap.add_imagery_layer" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -6061,23 +6061,23 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">layer_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;xyz&quot;</span><span class="p">,</span>
+    <span class="n">layer_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"xyz"</span><span class="p">,</span>
     <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add an imagery layer.</span>
+<span class="w">    </span><span class="sd">"""Add an imagery layer.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: Imagery URL or service endpoint.</span>
 <span class="sd">        name: Layer name.</span>
-<span class="sd">        layer_type: Type of imagery (&#39;xyz&#39;, &#39;wms&#39;, &#39;wmts&#39;, &#39;arcgis&#39;).</span>
+<span class="sd">        layer_type: Type of imagery ('xyz', 'wms', 'wmts', 'arcgis').</span>
 <span class="sd">        alpha: Layer opacity (0-1).</span>
 <span class="sd">        **kwargs: Additional options (layers, parameters for WMS, etc.).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;imagery-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="sd">    """</span>
+    <span class="n">layer_id</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"imagery-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-        <span class="s2">&quot;addImageryLayer&quot;</span><span class="p">,</span>
+        <span class="s2">"addImageryLayer"</span><span class="p">,</span>
         <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="n">layer_id</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="n">layer_type</span><span class="p">,</span>
@@ -6087,7 +6087,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">,</span>
-        <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;imagery&quot;</span><span class="p">},</span>
+        <span class="n">layer_id</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">layer_id</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"imagery"</span><span class="p">},</span>
     <span class="p">}</span>
 </code></pre></div>
         </details>
@@ -6185,7 +6185,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     <span class="n">roll</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fly to a location.</span>
+<span class="w">    </span><span class="sd">"""Fly to a location.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        lng: Target longitude.</span>
@@ -6196,9 +6196,9 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">        pitch: Camera pitch in degrees (default -90 = looking down).</span>
 <span class="sd">        roll: Camera roll in degrees.</span>
 <span class="sd">        duration: Flight duration in seconds.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-        <span class="s2">&quot;flyTo&quot;</span><span class="p">,</span>
+        <span class="s2">"flyTo"</span><span class="p">,</span>
         <span class="n">lng</span><span class="p">,</span>
         <span class="n">lat</span><span class="p">,</span>
         <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
@@ -6252,16 +6252,16 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_3d_tileset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a 3D Tileset.</span>
+<span class="w">    </span><span class="sd">"""Remove a 3D Tileset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Tileset name to remove.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">:</span>
         <span class="n">layers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">layers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="n">layers</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;remove3DTileset&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"remove3DTileset"</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6306,16 +6306,16 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_data_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a data source (GeoJSON, etc.).</span>
+<span class="w">    </span><span class="sd">"""Remove a data source (GeoJSON, etc.).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Data source name to remove.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">:</span>
         <span class="n">layers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">layers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="n">layers</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeDataSource&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"removeDataSource"</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6360,16 +6360,16 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_imagery_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove an imagery layer.</span>
+<span class="w">    </span><span class="sd">"""Remove an imagery layer.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Layer name to remove.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">:</span>
         <span class="n">layers</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_layers</span><span class="p">)</span>
         <span class="k">del</span> <span class="n">layers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_layers</span> <span class="o">=</span> <span class="n">layers</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeImageryLayer&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"removeImageryLayer"</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6395,9 +6395,9 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_terrain</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Disable terrain and use ellipsoid.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Disable terrain and use ellipsoid."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">terrain_enabled</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;removeTerrain&quot;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"removeTerrain"</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6442,12 +6442,12 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reset_view</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset camera to home position.</span>
+<span class="w">    </span><span class="sd">"""Reset camera to home position.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        duration: Animation duration in seconds.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;resetView&quot;</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"resetView"</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6530,7 +6530,7 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     <span class="n">pitch</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span>
     <span class="n">roll</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the camera position immediately (no animation).</span>
+<span class="w">    </span><span class="sd">"""Set the camera position immediately (no animation).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        longitude: Camera longitude.</span>
@@ -6539,9 +6539,9 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
 <span class="sd">        heading: Camera heading in degrees.</span>
 <span class="sd">        pitch: Camera pitch in degrees.</span>
 <span class="sd">        roll: Camera roll in degrees.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-        <span class="s2">&quot;setCamera&quot;</span><span class="p">,</span>
+        <span class="s2">"setCamera"</span><span class="p">,</span>
         <span class="n">longitude</span><span class="o">=</span><span class="n">longitude</span><span class="p">,</span>
         <span class="n">latitude</span><span class="o">=</span><span class="n">latitude</span><span class="p">,</span>
         <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
@@ -6599,13 +6599,13 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_opacity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">opacity</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set layer opacity (imagery layers only).</span>
+<span class="w">    </span><span class="sd">"""Set layer opacity (imagery layers only).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Layer name.</span>
 <span class="sd">        opacity: Opacity value (0-1).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;setOpacity&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"setOpacity"</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6667,17 +6667,17 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     <span class="n">request_vertex_normals</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">request_water_mask</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enable terrain.</span>
+<span class="w">    </span><span class="sd">"""Enable terrain.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: Terrain provider URL. If None, uses Cesium World Terrain (requires Ion token).</span>
 <span class="sd">        request_vertex_normals: Request vertex normals for lighting.</span>
 <span class="sd">        request_water_mask: Request water mask for water effects.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">terrain_enabled</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span>
-        <span class="s2">&quot;setTerrain&quot;</span><span class="p">,</span>
-        <span class="n">url</span><span class="o">=</span><span class="n">url</span> <span class="ow">or</span> <span class="s2">&quot;cesium-world-terrain&quot;</span><span class="p">,</span>
+        <span class="s2">"setTerrain"</span><span class="p">,</span>
+        <span class="n">url</span><span class="o">=</span><span class="n">url</span> <span class="ow">or</span> <span class="s2">"cesium-world-terrain"</span><span class="p">,</span>
         <span class="n">requestVertexNormals</span><span class="o">=</span><span class="n">request_vertex_normals</span><span class="p">,</span>
         <span class="n">requestWaterMask</span><span class="o">=</span><span class="n">request_water_mask</span><span class="p">,</span>
     <span class="p">)</span>
@@ -6731,13 +6731,13 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_visibility</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set layer visibility.</span>
+<span class="w">    </span><span class="sd">"""Set layer visibility.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Layer name.</span>
 <span class="sd">        visible: Whether layer should be visible.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;setVisibility&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">visible</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"setVisibility"</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">visible</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6782,12 +6782,12 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">zoom_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Zoom to a layer or data source.</span>
+<span class="w">    </span><span class="sd">"""Zoom to a layer or data source.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target: Name of the layer or data source to zoom to.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">&quot;zoomTo&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">call_js_method</span><span class="p">(</span><span class="s2">"zoomTo"</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6839,12 +6839,12 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
         <details class="quote">
           <summary>Source code in <code>anymap_ts/cesium.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_cesium_token</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get Cesium Ion access token from environment variable.</span>
+<span class="w">    </span><span class="sd">"""Get Cesium Ion access token from environment variable.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Cesium Ion access token or empty string if not set.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CESIUM_TOKEN&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"CESIUM_TOKEN"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -6953,15 +6953,122 @@ visualization with terrain, 3D Tiles, and imagery layer support.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../js/timeago.min.js"></script>
       
         <script src="../js/timeago_mkdocs_material.js"></script>
       
     
-  </body>
+  <script data-mkdocs-jupyter-mathjax="{&quot;url&quot;: &quot;https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js&quot;, &quot;version&quot;: 4}">
+/* Shared by full pages and Material's instant navigation. */
+(() => {
+  const config = JSON.parse(document.currentScript.dataset.mkdocsJupyterMathjax);
+  if (window.mkdocsJupyterMathJax) return;
+
+  let loading;
+  let queue = Promise.resolve();
+  let previous = [];
+
+  const ready = async () => {
+    if (!loading) {
+      loading = (async () => {
+        let math = window.MathJax;
+        if (!math?.typesetPromise) {
+          const url = new URL(config.url, document.baseURI).href;
+          const existing = Array.from(document.scripts).find(script =>
+            script.src && (script.src === url || script.id === 'MathJax-script' ||
+              (/mathjax/i.test(script.src) &&
+               /\/(?:MathJax|latest|(?:tex|mml)(?:-mml)?-(?:chtml|svg))\.js(?:[?#]|$)/i.test(script.src))));
+          if (existing) {
+            if (!math?.startup?.promise) {
+              await new Promise((resolve, reject) => {
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+              });
+            }
+          } else {
+            // Keep site macros, delimiters and startup hooks when supplied.
+            const options = math || {};
+            window.MathJax = {
+              ...options,
+              loader: {
+                ...options.loader,
+                load: Array.from(new Set(['ui/safe', ...(options.loader?.load || [])]))
+              },
+              startup: { typeset: false, ...options.startup },
+              tex: {
+                tags: 'ams',
+                useLabelIds: true,
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                ...options.tex
+              }
+            };
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = config.url;
+              script.id = 'MathJax-script';
+              script.async = true;
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+        }
+        math = window.MathJax;
+        await math.startup.promise;
+        return math;
+      })();
+    }
+    const math = await loading;
+    // A site owner can extend the v3 queue again on each navigation.
+    await math.startup.promise;
+    return math;
+  };
+
+  const unrendered = node => {
+    if (node.matches('mjx-container')) return [];
+    if (!node.querySelector('mjx-container')) return [node];
+    // In v3, scanning generated assistive MathML again produces nested output.
+    return Array.from(node.children).flatMap(unrendered);
+  };
+
+  const refresh = () => {
+    // A separate chain also serializes v3, without changing v4's startup promise.
+    queue = queue.then(async () => {
+      const notebooks = Array.from(document.querySelectorAll('.jupyter-wrapper'));
+      if (!notebooks.length && !previous.length) return;
+      if (notebooks.length === previous.length &&
+          notebooks.every((node, index) => node === previous[index])) return;
+      const math = await ready();
+      if (previous.length) {
+        math.typesetClear(previous);
+        math.texReset();
+      }
+      previous = notebooks.filter(node => node.isConnected);
+      const pending = previous.flatMap(unrendered);
+      if (pending.length) await math.typesetPromise(pending);
+    }).catch(error => console.error('mkdocs-jupyter: MathJax rendering failed', error));
+    return queue;
+  };
+
+  window.mkdocsJupyterMathJax = { refresh };
+  const start = () => {
+    if (typeof document$ !== 'undefined') document$.subscribe(refresh);
+    else refresh();
+  };
+  // Theme bundles and user-provided MathJax scripts can follow notebook content.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else start();
+})();
+
+</script>
+</body>
 </html>
