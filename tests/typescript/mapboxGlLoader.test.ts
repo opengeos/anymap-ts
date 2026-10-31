@@ -116,7 +116,7 @@ describe('loadMapboxGl', () => {
     const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
       amdDuringDownload = page.define?.amd;
       expect(init.integrity).toBe(MAPBOX_GL_SCRIPT_INTEGRITY);
-      return new Response('mapbox source');
+      return new Response('void 0;');
     });
     vi.stubGlobal('fetch', fetchMock);
     // jsdom does not run scripts, so observe the flag at the moment of the append.
@@ -124,7 +124,7 @@ describe('loadMapboxGl', () => {
     vi.spyOn(document.head, 'appendChild').mockImplementation((node) => {
       if ((node as HTMLElement).tagName === 'SCRIPT') {
         amdDuringRun = page.define?.amd;
-        expect(node.textContent).toBe('mapbox source');
+        expect(node.textContent).toBe('void 0;');
         page.mapboxgl = {};
       }
       return append(node);
