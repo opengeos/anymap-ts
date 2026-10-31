@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   loadMapboxGl,
   MAPBOX_GL_SCRIPT_INTEGRITY,
@@ -45,6 +45,7 @@ describe('loadMapboxGl', () => {
     ];
     delete page.mapboxgl;
     delete page.define;
+    vi.unstubAllGlobals();
   });
 
   it('pins the installed package version and bytes', () => {
@@ -82,11 +83,15 @@ describe('loadMapboxGl', () => {
     expect(document.head.querySelectorAll('script')).toHaveLength(1);
   });
 
-  it('rejects on a network failure, then retries', async () => {
+  it('waits for both files before rejecting, then retries', async () => {
     const failed = loadMapboxGl();
+    link().dispatchEvent(new Event('error'));
+    await new Promise((done) => setTimeout(done));
+    // The script is still loading, so a new widget shares this attempt.
+    expect(loadMapboxGl()).toBe(failed);
+
     script().dispatchEvent(new Event('error'));
-    await expect(failed).rejects.toThrow(MAPBOX_GL_SCRIPT_URL);
-    link().remove();
+    await expect(failed).rejects.toThrow('Could not load');
 
     const retried = loadMapboxGl();
     expect(retried).not.toBe(failed);
@@ -103,17 +108,36 @@ describe('loadMapboxGl', () => {
     await expect(load).rejects.toThrow('did not define');
   });
 
-  it('hides an AMD loader only while the script loads', async () => {
+  it('hides an AMD loader only while the script runs', async () => {
     const amd = { jQuery: true };
     page.define = { amd };
-    const load = loadMapboxGl();
-    expect(page.define.amd).toBeUndefined();
+    let amdDuringDownload: unknown;
+    let amdDuringRun: unknown = 'unset';
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
+      amdDuringDownload = page.define?.amd;
+      expect(init.integrity).toBe(MAPBOX_GL_SCRIPT_INTEGRITY);
+      return new Response('mapbox source');
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    // jsdom does not run scripts, so observe the flag at the moment of the append.
+    const append = document.head.appendChild.bind(document.head);
+    vi.spyOn(document.head, 'appendChild').mockImplementation((node) => {
+      if ((node as HTMLElement).tagName === 'SCRIPT') {
+        amdDuringRun = page.define?.amd;
+        expect(node.textContent).toBe('mapbox source');
+        page.mapboxgl = {};
+      }
+      return append(node);
+    });
 
-    page.mapboxgl = {};
-    script().dispatchEvent(new Event('load'));
+    const load = loadMapboxGl();
     link().dispatchEvent(new Event('load'));
     await load;
-    expect(page.define.amd).toBe(amd);
+    expect(fetchMock).toHaveBeenCalledWith(MAPBOX_GL_SCRIPT_URL, expect.anything());
+    expect(amdDuringDownload).toBe(amd);
+    expect(amdDuringRun).toBeUndefined();
+    expect(page.define?.amd).toBe(amd);
+    vi.restoreAllMocks();
   });
 });
 

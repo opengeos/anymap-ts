@@ -55,28 +55,47 @@ function appendAndWait(element: HTMLElement, url: string): Promise<void> {
 }
 
 /**
- * Load the Mapbox GL JS script.
+ * Run the Mapbox GL JS script on a page with an AMD loader.
  *
- * Classic notebooks define an AMD loader, which would make the UMD script
- * register an anonymous module instead of setting `window.mapboxgl`. Hiding
- * `define.amd` during the load leaves that loader working for everything else.
+ * Classic notebooks define one, which would make the UMD script register an
+ * anonymous module instead of setting `window.mapboxgl`. An inline script runs
+ * synchronously on append, so `define.amd` is hidden only while Mapbox's own
+ * code runs and other modules loading through that loader are not affected.
+ *
+ * @param define The page's AMD `define`.
+ * @returns A promise that settles once the script has run.
+ */
+async function runScriptUnderAmd(define: { amd?: unknown }): Promise<void> {
+  const response = await fetch(MAPBOX_GL_SCRIPT_URL, { integrity: MAPBOX_GL_SCRIPT_INTEGRITY });
+  if (!response.ok) {
+    throw new Error(`Could not load ${MAPBOX_GL_SCRIPT_URL} (HTTP ${response.status})`);
+  }
+  const script = document.createElement('script');
+  script.textContent = await response.text();
+
+  const amd = define.amd;
+  define.amd = undefined;
+  try {
+    document.head.appendChild(script);
+  } finally {
+    define.amd = amd;
+  }
+}
+
+/**
+ * Load the Mapbox GL JS script.
  *
  * @returns A promise that settles once the script has run.
  */
-async function loadScript(): Promise<void> {
+function loadScript(): Promise<void> {
+  const define = (globalThis as unknown as LoaderGlobals).define;
+  if (define?.amd) return runScriptUnderAmd(define);
+
   const script = document.createElement('script');
   script.src = MAPBOX_GL_SCRIPT_URL;
   script.integrity = MAPBOX_GL_SCRIPT_INTEGRITY;
   script.crossOrigin = 'anonymous';
-
-  const define = (globalThis as unknown as LoaderGlobals).define;
-  const amd = define?.amd;
-  if (define) define.amd = undefined;
-  try {
-    await appendAndWait(script, MAPBOX_GL_SCRIPT_URL);
-  } finally {
-    if (define) define.amd = amd;
-  }
+  return appendAndWait(script, MAPBOX_GL_SCRIPT_URL);
 }
 
 /**
@@ -96,7 +115,8 @@ function loadStyle(): Promise<void> {
 /**
  * Load Mapbox GL JS and its stylesheet, once per page.
  *
- * A failed load is not cached, so the next widget tries again.
+ * A failed load is not cached, so the next widget tries again. Both files settle
+ * before that can happen, so a retry never overlaps an attempt still in flight.
  *
  * @returns The `mapboxgl` namespace.
  */
@@ -105,8 +125,11 @@ export function loadMapboxGl(): Promise<MapboxGl> {
   const cached = page[LOAD_KEY];
   if (cached) return cached;
 
-  const load = Promise.all([loadScript(), loadStyle()])
-    .then(() => {
+  const load = Promise.allSettled([loadScript(), loadStyle()])
+    .then((results) => {
+      for (const result of results) {
+        if (result.status === 'rejected') throw result.reason;
+      }
       // A script that throws while running still fires `load`.
       if (!page.mapboxgl) throw new Error('Mapbox GL JS did not define `mapboxgl`.');
       return page.mapboxgl;
