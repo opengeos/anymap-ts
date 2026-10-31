@@ -147,6 +147,8 @@ npm run build:leaflet   -->  anymap_ts/static/leaflet.js
 
 This keeps bundle sizes manageable since users only load the renderer they need. The Python build system (hatchling + hatch-jupyter-builder) automatically runs `npm run build:prod` when building wheels.
 
+Mapbox GL JS v2+ is proprietary, so it must never enter a bundle. `src/mapbox/mapboxGlLoader.ts` loads it from Mapbox's CDN when a Mapbox widget renders, and the npm package is a pinned dev dependency used only for types. To upgrade it, update the version in `package.json` and the version and both SRI hashes in the loader; `tests/typescript/mapboxGlLoader.test.ts` fails until they match. The `--alias:mapbox-gl=...` flag on each build script points at a path that does not exist, so a runtime import of `mapbox-gl`, direct or transitive, fails the build. Bundles that carry MapLibre run `scripts/isolateMaplibreRegistry.mjs` afterwards, because MapLibre and Mapbox GL JS collide on a `_classRegistryKey` property when they share a page. `npm run watch` never reaches that step, so run `npm run build:maplibre` before testing a MapLibre widget beside a Mapbox one. CI has no Mapbox token, so after upgrading either library, load a Mapbox style with a real token and check that tiles render.
+
 ## Adding a New Mapping Library
 
 1. Create a new directory under `src/` (e.g., `src/newlib/`)
