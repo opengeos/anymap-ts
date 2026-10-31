@@ -3,16 +3,9 @@
  * Nearly identical to MapLibre since they share the same API.
  */
 
-import mapboxgl, {
-  Map as MapboxMap,
-  NavigationControl,
-  ScaleControl,
-  FullscreenControl,
-  GeolocateControl,
-  AttributionControl,
-  Marker,
-  Popup,
-} from 'mapbox-gl';
+import type mapboxgl from 'mapbox-gl';
+import type { Map as MapboxMap, Marker, Popup } from 'mapbox-gl';
+import { loadMapboxGl, type MapboxGl } from './mapboxGlLoader';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MapboxOverlay } from '@deck.gl/mapbox';
@@ -177,6 +170,10 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   protected lidarControl: LidarControl | null = null;
   protected lidarLayers: globalThis.Map<string, string> = new globalThis.Map();
 
+  // Mapbox GL JS namespace, set once it has loaded from the CDN
+  private gl!: MapboxGl;
+  private destroyed = false;
+
   constructor(model: MapWidgetModel, el: HTMLElement) {
     super(model, el);
     this.stateManager = new StateManager(model);
@@ -187,10 +184,21 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
    * Initialize the Mapbox map.
    */
   async initialize(): Promise<void> {
+    try {
+      this.gl = await loadMapboxGl();
+    } catch (error) {
+      if (!this.destroyed) {
+        this.el.textContent = `Failed to load Mapbox GL JS: ${(error as Error).message}. Mapbox maps need access to api.mapbox.com.`;
+      }
+      throw error;
+    }
+    // The widget may have been removed while the library was loading
+    if (this.destroyed) return;
+
     // Set Mapbox access token
     const accessToken = this.model.get('access_token') as string;
     if (accessToken) {
-      mapboxgl.accessToken = accessToken;
+      this.gl.accessToken = accessToken;
     }
 
     // Create container
@@ -270,7 +278,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     const maxPitchValue = this.model.get('max_pitch');
     const maxPitch = typeof maxPitchValue === 'number' ? maxPitchValue : 85;
 
-    return new MapboxMap({
+    return new this.gl.Map({
       container: this.mapContainer!,
       style: typeof style === 'string' ? style : (style as mapboxgl.StyleSpecification),
       center: center as [number, number],
@@ -940,29 +948,29 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
 
     switch (controlType) {
       case 'navigation':
-        control = new NavigationControl({
+        control = new this.gl.NavigationControl({
           showCompass: kwargs.showCompass !== false,
           showZoom: kwargs.showZoom !== false,
           visualizePitch: kwargs.visualizePitch !== false,
         });
         break;
       case 'scale':
-        control = new ScaleControl({
+        control = new this.gl.ScaleControl({
           maxWidth: (kwargs.maxWidth as number) || 100,
           unit: (kwargs.unit as 'imperial' | 'metric' | 'nautical') || 'metric',
         });
         break;
       case 'fullscreen':
-        control = new FullscreenControl();
+        control = new this.gl.FullscreenControl();
         break;
       case 'geolocate':
-        control = new GeolocateControl({
+        control = new this.gl.GeolocateControl({
           positionOptions: { enableHighAccuracy: true },
           trackUserLocation: kwargs.trackUserLocation !== false,
         });
         break;
       case 'attribution':
-        control = new AttributionControl({
+        control = new this.gl.AttributionControl({
           compact: kwargs.compact !== false,
         });
         break;
@@ -1139,10 +1147,10 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     const color = (kwargs.color as string) || '#3388ff';
     const popup = kwargs.popup as string | undefined;
 
-    const marker = new Marker({ color }).setLngLat([lng, lat]);
+    const marker = new this.gl.Marker({ color }).setLngLat([lng, lat]);
 
     if (popup) {
-      marker.setPopup(new Popup().setHTML(popup));
+      marker.setPopup(new this.gl.Popup().setHTML(popup));
     }
 
     marker.addTo(this.map);
@@ -1158,8 +1166,8 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     for (let i = 0; i < markers.length; i++) {
       const m = markers[i];
       const markerId = `${id}-${i}`;
-      const marker = new Marker({ color }).setLngLat(m.lngLat);
-      if (m.popup) marker.setPopup(new Popup().setHTML(m.popup));
+      const marker = new this.gl.Marker({ color }).setLngLat(m.lngLat);
+      if (m.popup) marker.setPopup(new this.gl.Popup().setHTML(m.popup));
       marker.addTo(this.map);
       this.markersMap.set(markerId, marker);
     }
@@ -1192,7 +1200,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       } else {
         content = Object.entries(props).map(([k, v]) => `${k}: ${v}`).join('<br>');
       }
-      new Popup().setLngLat(e.lngLat).setHTML(content).addTo(this.map!);
+      new this.gl.Popup().setLngLat(e.lngLat).setHTML(content).addTo(this.map!);
     });
     this.map.on('mouseenter', layerId, () => { if (this.map) this.map.getCanvas().style.cursor = 'pointer'; });
     this.map.on('mouseleave', layerId, () => { if (this.map) this.map.getCanvas().style.cursor = ''; });
@@ -1905,7 +1913,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       this.tooltipLayerHandlers.delete(layerId);
     }
 
-    const popup = new Popup({ closeButton: false, closeOnClick: false });
+    const popup = new this.gl.Popup({ closeButton: false, closeOnClick: false });
     const handler = (e: mapboxgl.MapMouseEvent & { features?: GeoJSON.Feature[] }) => {
       if (!e.features?.length) {
         popup.remove();
@@ -2724,7 +2732,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       const props = feature.properties || {};
       const content = this.buildPMTilesPopupHTML(props, config);
 
-      new mapboxgl.Popup({ maxWidth: '320px' })
+      new this.gl.Popup({ maxWidth: '320px' })
         .setLngLat(e.lngLat)
         .setHTML(content)
         .addTo(this.map!);
@@ -2779,7 +2787,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       const wrapperStyle = 'max-height: 300px; overflow-y: auto;';
       const content = `<div class="anymap-pmtiles-popup" style="${wrapperStyle}">${sections.join('')}</div>`;
 
-      new mapboxgl.Popup({ maxWidth: '320px' })
+      new this.gl.Popup({ maxWidth: '320px' })
         .setLngLat(e.lngLat)
         .setHTML(content)
         .addTo(this.map!);
@@ -2957,7 +2965,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
 
     const line = lineString(coordinates);
     const routeLength = length(line, { units: 'kilometers' });
-    const marker = new Marker({ color: (kwargs.markerColor as string) || '#3388ff' })
+    const marker = new this.gl.Marker({ color: (kwargs.markerColor as string) || '#3388ff' })
       .setLngLat(coordinates[0])
       .addTo(this.map);
 
@@ -3231,7 +3239,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
     this.splitMapContainer = rightContainer;
 
     const style = this.model.get('style');
-    this.splitMapRight = new MapboxMap({
+    this.splitMapRight = new this.gl.Map({
       container: rightContainer,
       style: typeof style === 'string' ? style : (style as mapboxgl.StyleSpecification),
       center: this.map.getCenter(),
@@ -3437,7 +3445,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
       }
 
       if (fitBounds && features.length > 0) {
-        const b = new mapboxgl.LngLatBounds();
+        const b = new this.gl.LngLatBounds();
         for (const f of features) {
           const g = f.geometry;
           if (g.type === 'Point') b.extend(g.coordinates as [number, number]);
@@ -3501,6 +3509,7 @@ export class MapboxRenderer extends BaseMapRenderer<MapboxMap> {
   // -------------------------------------------------------------------------
 
   destroy(): void {
+    this.destroyed = true;
     if (this.splitActive) this.handleRemoveSplitMap([], {});
     this.removeModelListeners();
 

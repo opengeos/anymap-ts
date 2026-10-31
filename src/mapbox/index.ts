@@ -5,8 +5,6 @@
 import { MapboxRenderer } from './MapboxRenderer';
 import type { AnyModel } from '@anywidget/types';
 
-// Import Mapbox CSS
-import 'mapbox-gl/dist/mapbox-gl.css';
 // Import LiDAR Control CSS
 import 'maplibre-gl-lidar/style.css';
 // Import maplibre-gl-components CSS (works with Mapbox too)
